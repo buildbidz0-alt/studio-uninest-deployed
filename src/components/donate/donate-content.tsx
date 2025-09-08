@@ -39,11 +39,11 @@ export default function DonateContent() {
         body: JSON.stringify({ amount: amount * 100, currency: 'INR' }),
       });
       
-      if (!response.ok) {
-          throw new Error('Failed to create order');
-      }
-
       const order = await response.json();
+
+      if (!response.ok) {
+          throw new Error(order.error || 'Failed to create order');
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
@@ -78,7 +78,7 @@ export default function DonateContent() {
         toast({
             variant: 'destructive',
             title: 'Donation Failed',
-            description: 'Could not connect to the payment gateway. Please try again later.',
+            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway. Please try again later.',
         });
     } finally {
         setIsDonating(false);

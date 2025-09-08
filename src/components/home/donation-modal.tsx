@@ -47,20 +47,17 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
 
     setIsDonating(true);
     try {
-      // TODO: Replace with a call to your backend to create the order
-      // Example:
-      // const response = await fetch('/api/donation/create', { ... });
       const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: selectedAmount * 100, currency: 'INR' }),
       });
       
-      if (!response.ok) {
-          throw new Error('Failed to create order');
-      }
-
       const order = await response.json();
+
+      if (!response.ok) {
+          throw new Error(order.error || 'Failed to create order');
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
@@ -104,7 +101,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
         toast({
             variant: 'destructive',
             title: 'Donation Failed',
-            description: 'Could not connect to the payment gateway. Please try again later.',
+            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway. Please try again later.',
         });
         setIsDonating(false);
     }
@@ -120,7 +117,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
                     <Heart className="size-8" />
                 </div>
                 <DialogTitle className="text-3xl font-bold">Support UniNest</DialogTitle>
-                <DialogDescription className="text-md">
+                <DialogDescription>
                     Our platform is free for all students. Your donation helps cover server costs and keeps the community thriving.
                 </DialogDescription>
             </DialogHeader>
