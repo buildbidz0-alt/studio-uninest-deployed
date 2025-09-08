@@ -68,8 +68,8 @@ export default function HomePage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <FeatureCard icon={Users} title="Social Feed" description="Connect with peers, join study groups, and share your academic journey." />
               <FeatureCard icon={Briefcase} title="Marketplace" description="Buy and sell textbooks, notes, and other essentials in a secure, student-focused marketplace." />
-              <FeatureCard icon={BookOpen} title="Study Hub" description="Upload, share, and discover notes. Get organized with our powerful resource management tools." />
-              <FeatureCard icon={PenTool} title="AI Tools" description="Leverage AI for automatic note tagging, content summarization, and enhanced search capabilities." />
+              <FeatureCard icon={BookOpen} title="Study Hub (Coming Soon)" description="Upload, share, and discover notes. Get organized with our powerful resource management tools." />
+              <FeatureCard icon={PenTool} title="AI Tools (Coming Soon)" description="Leverage AI for automatic note tagging, content summarization, and enhanced search capabilities." />
               <FeatureCard icon={LayoutDashboard} title="Vendor Dashboard" description="A dedicated space for campus vendors to manage listings, track sales, and connect with students." />
               <FeatureCard icon={GraduationCap} title="Community Growth" description="Join a global network of learners and educators dedicated to academic excellence and collaboration." />
             </div>

@@ -1,8 +1,4 @@
-
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import NoteUploadForm from '@/components/notes/note-upload-form';
-import NoteCard from '@/components/notes/note-card';
+import { PenTool } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -10,37 +6,16 @@ export const metadata: Metadata = {
   description: 'Upload, share, and find study notes.',
 };
 
-const notes: any[] = [];
-
 export default function NotesPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Notes Hub</h1>
-        <p className="text-muted-foreground">Upload your notes and discover resources from your peers.</p>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+      <div className="bg-primary text-primary-foreground rounded-full p-6 mb-6">
+        <PenTool className="size-12" />
       </div>
-
-      <NoteUploadForm />
-
-      <div>
-        <h2 className="mb-4 text-2xl font-semibold tracking-tight">Discover Notes</h2>
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by course, topic, or keyword..." className="pl-10" />
-        </div>
-        <div className="space-y-4">
-          {notes.length > 0 ? (
-            notes.map((note) => (
-              <NoteCard key={note.id} note={note} />
-            ))
-          ) : (
-            <div className="text-center text-muted-foreground py-12">
-              <h2 className="text-xl font-semibold">No notes found</h2>
-              <p>Upload your notes to help others and get started!</p>
-            </div>
-          )}
-        </div>
-      </div>
+      <h1 className="text-4xl font-bold tracking-tight text-primary">Coming Soon</h1>
+      <p className="mt-4 max-w-xl text-lg text-muted-foreground">
+        We're hard at work building an incredible Notes Hub for you. Soon, you'll be able to upload, tag, and discover study materials like never before. Stay tuned!
+      </p>
     </div>
   );
 }
