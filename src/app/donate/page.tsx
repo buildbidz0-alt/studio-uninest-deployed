@@ -1,15 +1,20 @@
 
+'use client';
+
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Trophy } from 'lucide-react';
+import { Heart, Trophy, Loader2 } from 'lucide-react';
+import { useRazorpay } from '@/hooks/use-razorpay';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
-export const metadata: Metadata = {
-  title: 'Donate | UniNest',
-  description: 'Support UniNest and help keep the platform running for students everywhere.',
-};
+// export const metadata: Metadata = {
+//   title: 'Donate | UniNest',
+//   description: 'Support UniNest and help keep the platform running for students everywhere.',
+// };
 
 // Placeholder data - replace with API calls
 const raisedAmount = 3500;
@@ -24,6 +29,74 @@ const topDonors = [
 
 
 export default function DonatePage() {
+  const { openCheckout, isLoaded } = useRazorpay();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const handleDonate = async () => {
+    // 1. Create Order on your backend
+    // This is a mock API call. Replace with your actual API endpoint.
+    // const response = await fetch('/api/razorpay/create-order', {
+    //   method: 'POST',
+    //   body: JSON.stringify({ amount: 5000, currency: 'INR' }), // Example amount: ₹50
+    // });
+    // const order = await response.json();
+    
+    // MOCK ORDER
+    const order = {
+      id: 'order_mock_' + Date.now(),
+      amount: 5000, // 5000 paise = ₹50.00
+      currency: 'INR'
+    };
+
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Use environment variables
+      amount: order.amount,
+      currency: order.currency,
+      name: 'UniNest Donation',
+      description: 'Support student innovation!',
+      order_id: order.id,
+      handler: async function (response: any) {
+        // 2. Verify payment on your backend
+        // const verificationResponse = await fetch('/api/razorpay/verify-payment', {
+        //   method: 'POST',
+        //   body: JSON.stringify({
+        //     razorpay_order_id: response.razorpay_order_id,
+        //     razorpay_payment_id: response.razorpay_payment_id,
+        //     razorpay_signature: response.razorpay_signature,
+        //   }),
+        // });
+        // const result = await verificationResponse.json();
+
+        // if (result.success) {
+          toast({
+            title: '🎉 Thank you for your support!',
+            description: 'Your donation helps keep UniNest running.',
+          });
+        // } else {
+        //   toast({
+        //     variant: 'destructive',
+        //     title: 'Payment Verification Failed',
+        //     description: 'Please contact support if the amount was deducted.',
+        //   });
+        // }
+      },
+      prefill: {
+        name: user?.displayName || '',
+        email: user?.email || '',
+      },
+      notes: {
+        type: 'donation',
+        userId: user?.uid,
+      },
+      theme: {
+        color: '#1B365D', // Deep Sapphire Blue
+      },
+    };
+
+    openCheckout(options);
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-12">
       <section className="text-center">
@@ -49,9 +122,8 @@ export default function DonatePage() {
                 <span className="text-muted-foreground">Goal: ₹{goalAmount.toLocaleString()}</span>
               </div>
             </div>
-             {/* This button is a placeholder for Razorpay integration */}
-            <Button size="lg" className="w-full text-lg">
-                <Heart className="mr-2 size-5" />
+            <Button size="lg" className="w-full text-lg" onClick={handleDonate} disabled={!isLoaded}>
+                {isLoaded ? <Heart className="mr-2 size-5" /> : <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Donate Now
             </Button>
           </CardContent>

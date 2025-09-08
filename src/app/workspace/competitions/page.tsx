@@ -1,14 +1,19 @@
 
+'use client';
+
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Calendar, IndianRupee } from 'lucide-react';
+import { Trophy, Calendar, IndianRupee, Loader2 } from 'lucide-react';
+import { useRazorpay } from '@/hooks/use-razorpay';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
-export const metadata: Metadata = {
-  title: 'Competitions | UniNest Workspace',
-  description: 'Browse and apply for exclusive competitions.',
-};
+// export const metadata: Metadata = {
+//   title: 'Competitions | UniNest Workspace',
+//   description: 'Browse and apply for exclusive competitions.',
+// };
 
 // Mock data - replace with API call
 const competitions = [
@@ -39,6 +44,60 @@ const competitions = [
 ];
 
 export default function CompetitionsPage() {
+  const { openCheckout, isLoaded } = useRazorpay();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const handleApply = async (competition: typeof competitions[0]) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to apply for competitions.' });
+        return;
+    }
+
+    if (competition.entryFee <= 0) {
+        // Handle free application logic here
+        toast({ title: 'Application Successful!', description: `You have successfully applied for ${competition.title}.` });
+        return;
+    }
+    
+    // MOCK ORDER
+    const order = {
+      id: 'order_mock_comp_' + Date.now(),
+      amount: competition.entryFee * 100, // Convert to paise
+      currency: 'INR'
+    };
+
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      amount: order.amount,
+      currency: order.currency,
+      name: `Entry Fee: ${competition.title}`,
+      description: `Payment for ${competition.title}`,
+      order_id: order.id,
+      handler: async function (response: any) {
+        // MOCK VERIFICATION
+        toast({
+          title: 'Payment Successful!',
+          description: `You are now registered for ${competition.title}.`,
+        });
+      },
+      prefill: {
+        name: user.displayName || '',
+        email: user.email || '',
+      },
+      notes: {
+        type: 'competition',
+        competitionId: competition.id,
+        userId: user.uid,
+      },
+      theme: {
+        color: '#1B365D',
+      },
+    };
+
+    openCheckout(options);
+  };
+
   return (
     <div className="space-y-8">
       <section>
@@ -70,7 +129,9 @@ export default function CompetitionsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full">Apply Now</Button>
+              <Button className="w-full" onClick={() => handleApply(comp)} disabled={!isLoaded && comp.entryFee > 0}>
+                 {isLoaded || comp.entryFee === 0 ? 'Apply Now' : <Loader2 className="animate-spin"/>}
+              </Button>
             </CardFooter>
           </Card>
         ))}
