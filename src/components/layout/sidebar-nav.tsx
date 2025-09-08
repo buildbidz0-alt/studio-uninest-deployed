@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home, admin: false },
@@ -34,10 +35,10 @@ export function SidebarNav() {
             asChild
             isActive={pathname === item.href}
           >
-            <a href={item.href}>
+            <Link href={item.href}>
               <item.icon className="size-4" />
               <span>{item.label}</span>
-            </a>
+            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
