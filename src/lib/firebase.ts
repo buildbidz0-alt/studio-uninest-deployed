@@ -2,12 +2,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  "apiKey": "YOUR_API_KEY",
-  "authDomain": "YOUR_AUTH_DOMAIN",
-  "projectId": "YOUR_PROJECT_ID",
-  "storageBucket": "YOUR_STORAGE_BUCKET",
-  "messagingSenderId": "YOUR_MESSAGING_SENDER_ID",
-  "appId": "YOUR_APP_ID"
+  "projectId": "student-hub-gdi0m",
+  "appId": "1:1003811331041:web:2e67d4a79452d1a003d0a0",
+  "storageBucket": "student-hub-gdi0m.firebasestorage.app",
+  "apiKey": "AIzaSyDWnAQp63KIOmgxtz5t1hXOsKAbV1oQfNY",
+  "authDomain": "student-hub-gdi0m.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "1003811331041"
 };
 
 // Initialize Firebase
