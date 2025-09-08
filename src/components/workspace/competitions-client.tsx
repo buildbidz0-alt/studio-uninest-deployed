@@ -24,7 +24,7 @@ const competitions = [
     id: 2,
     title: 'Campus Photography Contest',
     prize: 10000,
-    deadline: '2024-09-15',
+    deadline: '20-09-2024',
     entryFee: 100,
     description: 'Capture the spirit of your campus. The best photo wins.'
   },
@@ -104,7 +104,7 @@ export default function CompetitionsClient() {
         toast({
             variant: 'destructive',
             title: 'Application Failed',
-            description: 'Could not connect to the payment gateway. Please try again.',
+            description: 'Could not connect to the payment gateway. Please try again later.',
         });
     } finally {
         setApplyingCompetitionId(null);
