@@ -8,6 +8,7 @@ import { Trophy, Calendar, IndianRupee, Loader2 } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { useState } from 'react';
 
 // Mock data - replace with API call
 const competitions = [
@@ -41,6 +42,7 @@ export default function CompetitionsClient() {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [applyingCompetitionId, setApplyingCompetitionId] = useState<number | null>(null);
 
   const handleApply = async (competition: typeof competitions[0]) => {
     if (!user) {
@@ -54,42 +56,59 @@ export default function CompetitionsClient() {
         return;
     }
     
-    // MOCK ORDER
-    const order = {
-      id: 'order_mock_comp_' + Date.now(),
-      amount: competition.entryFee * 100, // Convert to paise
-      currency: 'INR'
-    };
+    setApplyingCompetitionId(competition.id);
 
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      amount: order.amount,
-      currency: order.currency,
-      name: `Entry Fee: ${competition.title}`,
-      description: `Payment for ${competition.title}`,
-      order_id: order.id,
-      handler: async function (response: any) {
-        // MOCK VERIFICATION
-        toast({
-          title: 'Payment Successful!',
-          description: `You are now registered for ${competition.title}.`,
+    try {
+        const response = await fetch('/api/razorpay/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: competition.entryFee * 100, currency: 'INR' }),
         });
-      },
-      prefill: {
-        name: user.displayName || '',
-        email: user.email || '',
-      },
-      notes: {
-        type: 'competition',
-        competitionId: competition.id,
-        userId: user.uid,
-      },
-      theme: {
-        color: '#1B365D',
-      },
-    };
 
-    openCheckout(options);
+        if (!response.ok) {
+            throw new Error('Failed to create order');
+        }
+        
+        const order = await response.json();
+
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: `Entry Fee: ${competition.title}`,
+          description: `Payment for ${competition.title}`,
+          order_id: order.id,
+          handler: async function (response: any) {
+            toast({
+              title: 'Payment Successful!',
+              description: `You are now registered for ${competition.title}.`,
+            });
+          },
+          prefill: {
+            name: user.displayName || '',
+            email: user.email || '',
+          },
+          notes: {
+            type: 'competition',
+            competitionId: competition.id,
+            userId: user.uid,
+          },
+          theme: {
+            color: '#1B365D',
+          },
+        };
+
+        openCheckout(options);
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Application Failed',
+            description: 'Could not connect to the payment gateway. Please try again.',
+        });
+    } finally {
+        setApplyingCompetitionId(null);
+    }
   };
 
   return (
@@ -123,8 +142,12 @@ export default function CompetitionsClient() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" onClick={() => handleApply(comp)} disabled={!isLoaded && comp.entryFee > 0}>
-                 {isLoaded || comp.entryFee === 0 ? 'Apply Now' : <Loader2 className="animate-spin"/>}
+              <Button 
+                className="w-full" 
+                onClick={() => handleApply(comp)} 
+                disabled={(!isLoaded && comp.entryFee > 0) || applyingCompetitionId === comp.id}
+              >
+                 {(isLoaded || comp.entryFee === 0) && applyingCompetitionId !== comp.id ? 'Apply Now' : <Loader2 className="animate-spin"/>}
               </Button>
             </CardFooter>
           </Card>

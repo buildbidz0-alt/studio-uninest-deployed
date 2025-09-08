@@ -10,6 +10,7 @@ import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import type { Metadata } from 'next';
+import { useState } from 'react';
 
 // Placeholder data - replace with API calls
 const raisedAmount = 3500;
@@ -26,69 +27,64 @@ function DonateContent() {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isDonating, setIsDonating] = useState(false);
   
-  const handleDonate = async () => {
-    // 1. Create Order on your backend
-    // This is a mock API call. Replace with your actual API endpoint.
-    // const response = await fetch('/api/razorpay/create-order', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ amount: 5000, currency: 'INR' }), // Example amount: ₹50
-    // });
-    // const order = await response.json();
-    
-    // MOCK ORDER
-    const order = {
-      id: 'order_mock_' + Date.now(),
-      amount: 5000, // 5000 paise = ₹50.00
-      currency: 'INR'
-    };
+  const handleDonate = async (amount: number) => {
+    setIsDonating(true);
+    try {
+      // 1. Create Order on your backend
+      const response = await fetch('/api/razorpay/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amount * 100, currency: 'INR' }), // amount in paise
+      });
+      
+      if (!response.ok) {
+          throw new Error('Failed to create order');
+      }
 
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Use environment variables
-      amount: order.amount,
-      currency: order.currency,
-      name: 'UniNest Donation',
-      description: 'Support student innovation!',
-      order_id: order.id,
-      handler: async function (response: any) {
-        // 2. Verify payment on your backend
-        // const verificationResponse = await fetch('/api/razorpay/verify-payment', {
-        //   method: 'POST',
-        //   body: JSON.stringify({
-        //     razorpay_order_id: response.razorpay_order_id,
-        //     razorpay_payment_id: response.razorpay_payment_id,
-        //     razorpay_signature: response.razorpay_signature,
-        //   }),
-        // });
-        // const result = await verificationResponse.json();
+      const order = await response.json();
 
-        // if (result.success) {
-          toast({
-            title: '🎉 Thank you for your support!',
-            description: 'Your donation helps keep UniNest running.',
-          });
-        // } else {
-        //   toast({
-        //     variant: 'destructive',
-        //     title: 'Payment Verification Failed',
-        //     description: 'Please contact support if the amount was deducted.',
-        //   });
-        // }
-      },
-      prefill: {
-        name: user?.displayName || '',
-        email: user?.email || '',
-      },
-      notes: {
-        type: 'donation',
-        userId: user?.uid,
-      },
-      theme: {
-        color: '#1B365D', // Deep Sapphire Blue
-      },
-    };
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+        amount: order.amount,
+        currency: order.currency,
+        name: 'UniNest Donation',
+        description: 'Support student innovation!',
+        order_id: order.id,
+        handler: async function (response: any) {
+          // 2. Verify payment on your backend
+          // In a real app, you'd call a verification endpoint here.
+          // For now, we'll assume success on handler callback.
+            toast({
+              title: '🎉 Thank you for your support!',
+              description: 'Your donation helps keep UniNest running.',
+            });
+        },
+        prefill: {
+          name: user?.displayName || '',
+          email: user?.email || '',
+        },
+        notes: {
+          type: 'donation',
+          userId: user?.uid,
+        },
+        theme: {
+          color: '#1B365D', // Deep Sapphire Blue
+        },
+      };
 
-    openCheckout(options);
+      openCheckout(options);
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Donation Failed',
+            description: 'Could not connect to the payment gateway. Please try again later.',
+        });
+    } finally {
+        setIsDonating(false);
+    }
   };
 
   return (
@@ -105,7 +101,7 @@ function DonateContent() {
           <CardHeader>
             <CardTitle>Help Us Reach Our Goal</CardTitle>
             <CardDescription>
-              Our monthly server cost is ₹10,000. Every rupee helps keep the platform running and ad-free for everyone. Even ₹50 makes a difference ❤️.
+              Our monthly server cost is ₹10,000. Every rupee helps keep the platform running and ad-free for everyone.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -116,9 +112,14 @@ function DonateContent() {
                 <span className="text-muted-foreground">Goal: ₹{goalAmount.toLocaleString()}</span>
               </div>
             </div>
-            <Button size="lg" className="w-full text-lg" onClick={handleDonate} disabled={!isLoaded}>
+             <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" onClick={() => handleDonate(50)}>₹50</Button>
+                <Button variant="outline" onClick={() => handleDonate(100)}>₹100</Button>
+                <Button variant="outline" onClick={() => handleDonate(250)}>₹250</Button>
+             </div>
+            <Button size="lg" className="w-full text-lg" onClick={() => handleDonate(500)} disabled={!isLoaded || isDonating}>
                 {isLoaded ? <Heart className="mr-2 size-5" /> : <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Donate Now
+                {isDonating ? 'Processing...' : 'Donate Now'}
             </Button>
           </CardContent>
         </Card>
