@@ -67,7 +67,7 @@ export default function LoginForm() {
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Welcome Back!</CardTitle>
-        <CardDescription>Enter your credentials to access your account.</CardDescription>
+        <CardDescription>Log in to continue to Uninest.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
