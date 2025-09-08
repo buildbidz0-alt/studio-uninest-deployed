@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, useEffect } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SidebarNav } from './sidebar-nav';
+import { AdminSidebarNav } from '@/components/admin/admin-sidebar-nav';
 import { Logo } from '@/components/icons';
 import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -26,9 +26,27 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export default function MainLayout({ children }: { children: ReactNode }) {
-  const { user, signOut } = useAuth();
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  const { user, signOut, role, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (role !== 'admin') {
+        router.push('/');
+      }
+    }
+  }, [role, loading, router]);
+  
+  if (loading || role !== 'admin') {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    )
+  }
 
   return (
     <SidebarProvider>
@@ -36,46 +54,32 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             <Logo className="size-8 text-primary" />
-            <h1 className="text-xl font-semibold">Uninest</h1>
+            <h1 className="text-xl font-semibold">UniNest Admin</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarNav />
+          <AdminSidebarNav />
         </SidebarContent>
         <SidebarFooter>
-          {user ? (
             <div className="flex items-center gap-3">
               <Avatar className="size-8">
-                <AvatarImage src={user.user_metadata?.avatar_url || 'https://picsum.photos/id/237/40/40'} alt="User avatar" />
-                <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                <AvatarImage src={user?.user_metadata?.avatar_url || ''} alt="Admin avatar" />
+                <AvatarFallback>A</AvatarFallback>
               </Avatar>
               <div className="flex flex-col text-sm">
-                <span className="font-semibold">{user.user_metadata?.full_name || 'User'}</span>
-                <span className="text-muted-foreground">{user.email}</span>
+                <span className="font-semibold">{user?.user_metadata?.full_name || 'Admin User'}</span>
+                <span className="text-muted-foreground">{user?.email}</span>
               </div>
             </div>
-          ) : (
-             <div className="flex items-center gap-3">
-                <Avatar className="size-8">
-                  <AvatarFallback>G</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col text-sm">
-                  <span className="font-semibold">Guest</span>
-                  <a href="/login" className="text-sm text-primary hover:underline">
-                    Login to get started
-                  </a>
-                </div>
-              </div>
-          )}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6">
-          <div className="flex items-center gap-2 md:hidden">
+            <div className="flex items-center gap-2 md:hidden">
               <SidebarTrigger className="-ml-2" />
                <Logo className="size-7 text-primary" />
-               <h1 className="text-lg font-semibold">Uninest</h1>
-          </div>
+               <h1 className="text-lg font-semibold">UniNest Admin</h1>
+            </div>
           <div className="flex flex-1 items-center justify-end gap-4">
              <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
@@ -85,7 +89,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
                     <Avatar className="size-8">
-                       {user && <AvatarImage src={user.user_metadata?.avatar_url || 'https://picsum.photos/id/237/40/40'} alt="User avatar" />}
+                       {user && <AvatarImage src={user.user_metadata?.avatar_url || ''} alt="Admin avatar" />}
                       <AvatarFallback>
                         {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-5" />}
                       </AvatarFallback>
@@ -93,14 +97,13 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {user ? (
                     <>
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                          <Link href="/settings">
                             <Settings className="mr-2 size-4" />
-                            Settings
+                            Profile Settings
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={signOut}>
@@ -108,21 +111,11 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                         Logout
                       </DropdownMenuItem>
                     </>
-                  ) : (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href="/login">Login</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/signup">Sign Up</Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-muted/40">
           {children}
         </main>
       </SidebarInset>

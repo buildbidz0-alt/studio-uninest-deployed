@@ -5,8 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -61,6 +60,7 @@ export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const supabase = createClient();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -76,22 +76,34 @@ export default function SignupForm() {
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
-    const role = values.userType === 'student' ? 'student' : values.vendorCategories;
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      
-      console.log('User created with role(s):', role);
+    
+    const role = values.userType;
+    const { data, error } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+      options: {
+        data: {
+          role: role,
+          vendor_categories: role === 'vendor' ? values.vendorCategories : undefined
+        }
+      }
+    });
 
-      router.push('/');
-    } catch (error: any) {
-      toast({
+    if (error) {
+       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
         description: error.message,
       });
-    } finally {
-      setIsLoading(false);
+    } else if (data.user) {
+        toast({
+            title: 'Success!',
+            description: 'Check your email for a verification link.',
+        });
+        router.push('/login');
     }
+    
+    setIsLoading(false);
   }
 
   return (

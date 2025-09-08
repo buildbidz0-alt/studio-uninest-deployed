@@ -1,11 +1,11 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const supabase = createClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,18 +50,19 @@ export default function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/feed');
-    } catch (error: any) {
+    const { error } = await supabase.auth.signInWithPassword(values);
+
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
         description: error.message,
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      router.push('/feed');
+      router.refresh(); // Refresh to trigger auth state change handling
     }
+    setIsLoading(false);
   }
 
   return (

@@ -1,11 +1,11 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase/client';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +35,7 @@ const formSchema = z.object({
 export default function PasswordResetForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const supabase = createClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -45,21 +46,24 @@ export default function PasswordResetForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    try {
-      await sendPasswordResetEmail(auth, values.email);
-      toast({
-        title: 'Password Reset Email Sent',
-        description: 'Check your inbox for instructions to reset your password.',
-      });
-    } catch (error: any) {
+    const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+      redirectTo: `${window.location.origin}/password-update`, // You need to create a page for this
+    });
+
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
         description: error.message,
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      toast({
+        title: 'Password Reset Email Sent',
+        description: 'Check your inbox for instructions to reset your password.',
+      });
     }
+    
+    setIsLoading(false);
   }
 
   return (

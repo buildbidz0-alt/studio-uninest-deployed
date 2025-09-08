@@ -2,11 +2,10 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { type User } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 
-// In a real app, you'd fetch this from a database (e.g., Firestore)
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 interface AuthContextType {
@@ -27,35 +26,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const supabase = createClient();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setLoading(true);
-      setUser(user);
-      if (user) {
-        // --- MOCK ROLE DETERMINATION ---
-        if (user.email === 'admin@uninest.com') {
-          setRole('admin');
-        } else if (user.email && user.email.includes('vendor')) {
-            setRole('vendor');
-        }
-        else {
-          setRole('student');
-        }
-        // --- END MOCK ---
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const userRole = currentUser.user_metadata?.role || 'student';
+        setRole(userRole);
       } else {
         setRole('guest');
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   useEffect(() => {
     if (loading) return;
-    
-    // Allow access to admin routes if role is admin
+
     if (pathname.startsWith('/admin')) {
       if (role !== 'admin') {
         router.push('/');
@@ -65,15 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const isPublic = publicRoutes.includes(pathname) || 
                      studentGuestRoutes.some(route => pathname.startsWith(route));
-    
+
     if (!isPublic && role === 'guest') {
       router.push('/login');
     }
-
   }, [user, loading, pathname, router, role]);
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
+    await supabase.auth.signOut();
     setRole('guest');
     router.push('/login');
   };
