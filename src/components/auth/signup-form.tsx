@@ -138,7 +138,7 @@ export default function SignupForm() {
                 name="vendorCategories"
                 render={() => (
                   <FormItem>
-                     <Separator />
+                     <Separator className="my-4" />
                     <div className="mb-4">
                       <FormLabel className="text-base">Vendor Categories</FormLabel>
                     </div>
