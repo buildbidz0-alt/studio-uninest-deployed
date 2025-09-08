@@ -6,11 +6,13 @@ import CreatePostForm from '@/components/feed/create-post-form';
 import PostCard, { type Post } from '@/components/feed/post-card';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function FeedContent() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     // TODO: Fetch posts from your API
@@ -20,7 +22,7 @@ export default function FeedContent() {
 
 
   const addPost = (content: string) => {
-    // TODO: Send new post to your API and update the state with the response
+    // TODO: Send new post to your API (e.g., POST /api/feed/posts) and update the state with the response
     const newPost: Post = {
       id: Date.now(),
       author: user?.user_metadata?.full_name || 'Guest User',
@@ -35,17 +37,37 @@ export default function FeedContent() {
   };
 
   const deletePost = (id: number) => {
-    // TODO: Send delete request to your API
+    // TODO: Send delete request to your API (e.g., DELETE /api/feed/posts/{id})
     setPosts(posts.filter(p => p.id !== id));
+    toast({ title: "Post Deleted", description: "Your post has been successfully removed." });
   };
 
   const editPost = (id: number, newContent: string) => {
-    // TODO: Send edit request to your API
+    // TODO: Send edit request to your API (e.g., PUT /api/feed/posts/{id})
+    /*
+    fetch(`/api/feed/post/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${YOUR_TOKEN}` },
+      body: JSON.stringify({ content: newContent })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to edit post');
+      return res.json();
+    })
+    .then(updatedPost => {
+      setPosts(posts.map(p => p.id === id ? updatedPost : p));
+      toast({ title: "Post Updated", description: "Your post has been successfully updated." });
+    })
+    .catch(err => {
+      toast({ variant: 'destructive', title: "Error", description: "Could not update the post." });
+    });
+    */
     setPosts(posts.map(p => p.id === id ? { ...p, content: newContent } : p));
+    toast({ title: "Post Updated", description: "Your post has been successfully updated." });
   };
 
   const addComment = (postId: number, commentContent: string) => {
-    // TODO: Send new comment to your API
+    // TODO: Send new comment to your API (e.g., POST /api/feed/posts/{id}/comments)
     const newComment = {
       id: Date.now(),
       author: user?.user_metadata?.full_name || 'Guest User',
@@ -61,7 +83,7 @@ export default function FeedContent() {
   };
   
   const updateLikes = (postId: number, newLikeCount: number) => {
-    // TODO: Send like/unlike request to your API
+    // TODO: Send like/unlike request to your API (e.g., POST /api/feed/posts/{id}/like)
     setPosts(posts.map(p => p.id === postId ? { ...p, likes: newLikeCount } : p));
   }
 

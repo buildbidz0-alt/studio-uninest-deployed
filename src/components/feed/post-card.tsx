@@ -26,6 +26,7 @@ import {
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { useAuth } from '@/hooks/use-auth';
+import { Label } from '../ui/label';
 
 type Comment = {
   id: number;
@@ -55,13 +56,16 @@ type PostCardProps = {
 };
 
 export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: PostCardProps) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
-  const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(post.content);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
+
+  const isAuthor = user?.email?.split('@')[0] === post.handle;
+  const isAdmin = role === 'admin';
+  const canEditOrDelete = isAuthor || isAdmin;
 
   const handleLike = () => {
     if (!user) return;
@@ -74,7 +78,6 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
 
   const handleSaveEdit = () => {
     onEdit(post.id, editedContent);
-    setIsEditing(false);
   };
 
   const handleAddComment = () => {
@@ -86,7 +89,8 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
 
   const getFormattedTimestamp = () => {
     try {
-      return new Date(post.timestamp).toLocaleString();
+      const date = new Date(post.timestamp);
+      return date.toLocaleString();
     } catch (e) {
       return post.timestamp;
     }
@@ -108,7 +112,7 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
              <p className="text-sm text-muted-foreground">{getFormattedTimestamp()}</p>
           </div>
         </div>
-        {user && (
+        {canEditOrDelete && (
           <AlertDialog>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -117,118 +121,112 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => { setIsEditing(true); setEditedContent(post.content); }}>
-                  <Edit className="mr-2 size-4" />
-                  Edit
-                </DropdownMenuItem>
                 <AlertDialogTrigger asChild>
-                  <DropdownMenuItem className="text-destructive">
-                    <Trash2 className="mr-2 size-4" />
-                    Delete
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Edit className="mr-2 size-4" />
+                    Edit
                   </DropdownMenuItem>
                 </AlertDialogTrigger>
+                <DropdownMenuItem className="text-destructive" onClick={() => onDelete(post.id)}>
+                  <Trash2 className="mr-2 size-4" />
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {/* This is the dialog for editing a post */}
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>Edit Post</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your post from our servers.
+                  Make changes to your post. Click save when you're done.
                 </AlertDialogDescription>
               </AlertDialogHeader>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-post" className="sr-only">Edit Post</Label>
+                <Textarea 
+                  id="edit-post"
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="min-h-[120px]"
+                />
+              </div>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDelete(post.id)}>Delete</AlertDialogAction>
+                <AlertDialogAction onClick={handleSaveEdit}>Save</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         )}
       </CardHeader>
       <CardContent className="px-4 pb-2 pt-0">
-        {isEditing ? (
-          <div className="space-y-2">
-            <Textarea 
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="min-h-[100px]"
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
-              <Button onClick={handleSaveEdit}>Save</Button>
-            </div>
-          </div>
-        ) : (
           <p className="whitespace-pre-wrap text-sm">{post.content}</p>
-        )}
       </CardContent>
-      {!isEditing && (
-        <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2">
-            <div className='flex items-center justify-start gap-4'>
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex items-center gap-2 text-muted-foreground"
-                    onClick={handleLike}
-                    disabled={!user}
-                >
-                    <Heart className={`size-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                    <span>{likeCount}</span>
-                </Button>
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex items-center gap-2 text-muted-foreground"
-                    onClick={() => setShowComments(!showComments)}
-                >
-                    <MessageCircle className="size-4" />
-                    <span>{post.comments.length}</span>
-                </Button>
-            </div>
-            {showComments && (
-                <div className='w-full pt-4 space-y-4'>
-                    <Separator />
-                    {user ? (
-                      <div className="flex items-start gap-2">
-                          <Avatar className="size-8">
-                              <AvatarImage src="https://picsum.photos/id/237/40/40" alt="Your avatar" />
-                              <AvatarFallback>U</AvatarFallback>
-                          </Avatar>
-                          <div className="w-full space-y-2">
-                                <Textarea
-                                  placeholder="Write a comment..."
-                                  className="min-h-[60px] w-full resize-none"
-                                  value={newComment}
-                                  onChange={(e) => setNewComment(e.target.value)}
-                              />
-                              <div className="flex justify-end">
-                                  <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>Reply</Button>
-                              </div>
-                          </div>
-                      </div>
-                    ) : (
-                       <p className="text-sm text-muted-foreground text-center">
-                         <Link href="/login" className="text-primary font-semibold hover:underline">Log in</Link> to join the conversation.
-                      </p>
-                    )}
-                    {post.comments.map(comment => (
-                        <div key={comment.id} className="flex items-start gap-2">
-                             <Avatar className="size-8">
-                                <AvatarImage src={comment.avatarUrl} alt={`${comment.author}'s avatar`} data-ai-hint="person face"/>
-                                <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 rounded-lg bg-muted px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                    <p className="font-semibold text-sm">{comment.author}</p>
-                                    <p className="text-xs text-muted-foreground">@{comment.handle}</p>
-                                </div>
-                                <p className="text-sm">{comment.content}</p>
+      <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2">
+          <div className='flex items-center justify-start gap-4'>
+              <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-2 text-muted-foreground"
+                  onClick={handleLike}
+                  disabled={!user}
+              >
+                  <Heart className={`size-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                  <span>{likeCount}</span>
+              </Button>
+              <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-2 text-muted-foreground"
+                  onClick={() => setShowComments(!showComments)}
+              >
+                  <MessageCircle className="size-4" />
+                  <span>{post.comments.length}</span>
+              </Button>
+          </div>
+          {showComments && (
+              <div className='w-full pt-4 space-y-4'>
+                  <Separator />
+                  {user ? (
+                    <div className="flex items-start gap-2">
+                        <Avatar className="size-8">
+                            <AvatarImage src={user.user_metadata?.avatar_url || 'https://picsum.photos/id/237/40/40'} alt="Your avatar" />
+                            <AvatarFallback>{user.email?.[0].toUpperCase() || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div className="w-full space-y-2">
+                              <Textarea
+                                placeholder="Write a comment..."
+                                className="min-h-[60px] w-full resize-none"
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                            />
+                            <div className="flex justify-end">
+                                <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>Reply</Button>
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
-        </CardFooter>
-      )}
+                    </div>
+                  ) : (
+                     <p className="text-sm text-muted-foreground text-center">
+                       <a href="/login" className="text-primary font-semibold hover:underline">Log in</a> to join the conversation.
+                    </p>
+                  )}
+                  {post.comments.map(comment => (
+                      <div key={comment.id} className="flex items-start gap-2">
+                           <Avatar className="size-8">
+                              <AvatarImage src={comment.avatarUrl} alt={`${comment.author}'s avatar`} data-ai-hint="person face"/>
+                              <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 rounded-lg bg-muted px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                  <p className="font-semibold text-sm">{comment.author}</p>
+                                  <p className="text-xs text-muted-foreground">@{comment.handle}</p>
+                              </div>
+                              <p className="text-sm">{comment.content}</p>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          )}
+      </CardFooter>
     </Card>
   );
 }
