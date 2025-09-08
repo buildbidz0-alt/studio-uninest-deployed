@@ -10,33 +10,35 @@ import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import type { Metadata } from 'next';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-// Placeholder data - replace with API calls
-const raisedAmount = 3500;
-const goalAmount = 10000;
-const progressPercentage = (raisedAmount / goalAmount) * 100;
-
-const topDonors = [
-  { name: 'Priya Sharma', amount: 500, avatar: 'https://picsum.photos/seed/priya/100' },
-  { name: 'David Chen', amount: 300, avatar: 'https://picsum.photos/seed/david/100' },
-  { name: 'Anonymous', amount: 250, avatar: '' },
-];
+// TODO: Fetch donation data from an API
+const goalAmount = 10000; // This could be a static or configurable value
 
 function DonateContent() {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isDonating, setIsDonating] = useState(false);
+  const [raisedAmount, setRaisedAmount] = useState(0);
+  const [topDonors, setTopDonors] = useState<any[]>([]);
+
+  useEffect(() => {
+    // TODO: Fetch raised amount and top donors from your API
+    // e.g., fetch('/api/donations/stats').then(...)
+    setRaisedAmount(0);
+    setTopDonors([]);
+  }, []);
+
+  const progressPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
   
   const handleDonate = async (amount: number) => {
     setIsDonating(true);
     try {
-      // 1. Create Order on your backend
       const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amount * 100, currency: 'INR' }), // amount in paise
+        body: JSON.stringify({ amount: amount * 100, currency: 'INR' }),
       });
       
       if (!response.ok) {
@@ -53,13 +55,11 @@ function DonateContent() {
         description: 'Support student innovation!',
         order_id: order.id,
         handler: async function (response: any) {
-          // 2. Verify payment on your backend
-          // In a real app, you'd call a verification endpoint here.
-          // For now, we'll assume success on handler callback.
             toast({
               title: '🎉 Thank you for your support!',
               description: 'Your donation helps keep UniNest running.',
             });
+            // TODO: Call your backend to verify the payment and update donation stats
         },
         prefill: {
           name: user?.user_metadata?.full_name || '',
@@ -70,7 +70,7 @@ function DonateContent() {
           userId: user?.id,
         },
         theme: {
-          color: '#1B365D', // Deep Sapphire Blue
+          color: '#1B365D',
         },
       };
 
@@ -101,7 +101,7 @@ function DonateContent() {
           <CardHeader>
             <CardTitle>Help Us Reach Our Goal</CardTitle>
             <CardDescription>
-              Our monthly server cost is ₹10,000. Every rupee helps keep the platform running and ad-free for everyone.
+              Our monthly server cost is ₹{goalAmount.toLocaleString()}. Every rupee helps keep the platform running and ad-free for everyone.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -133,21 +133,27 @@ function DonateContent() {
             <CardDescription>Thank you for your incredible support!</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {topDonors.map((donor, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    {donor.avatar && <AvatarImage src={donor.avatar} alt={donor.name} data-ai-hint="person face" />}
-                    <AvatarFallback>{donor.name === 'Anonymous' ? 'A' : donor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{donor.name}</p>
-                    <p className="text-sm text-muted-foreground">Donated ₹{donor.amount}</p>
+            {topDonors.length > 0 ? (
+              topDonors.map((donor, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      {donor.avatar && <AvatarImage src={donor.avatar} alt={donor.name} data-ai-hint="person face" />}
+                      <AvatarFallback>{donor.name ? donor.name.split(' ').map((n: string) => n[0]).join('') : 'A'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{donor.name || 'Anonymous'}</p>
+                      <p className="text-sm text-muted-foreground">Donated ₹{donor.amount}</p>
+                    </div>
                   </div>
+                  <div className="font-bold text-lg text-primary">#{index + 1}</div>
                 </div>
-                <div className="font-bold text-lg text-primary">#{index + 1}</div>
-              </div>
-            ))}
+              ))
+            ) : (
+                <div className="text-center text-muted-foreground py-10">
+                    <p>Be the first to donate!</p>
+                </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -161,6 +167,11 @@ function DonateContent() {
     </div>
   );
 }
+
+export const metadata: Metadata = {
+  title: 'Support UniNest – Help Us Reach Our Monthly Goal',
+  description: 'UniNest runs on community support. Our monthly server cost is ₹10,000. Every rupee counts. Donate now to help keep the platform running for students.',
+};
 
 export default function DonatePage() {
     return <DonateContent />

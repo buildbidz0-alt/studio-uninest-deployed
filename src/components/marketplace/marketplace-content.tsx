@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -9,49 +10,10 @@ import { useAuth } from '@/hooks/use-auth';
 import type { Product } from '@/components/marketplace/product-card';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
 
-const allProducts: Product[] = [
-  {
-    id: 1,
-    name: 'Introduction to Algorithms, 3rd Edition',
-    price: 4500,
-    imageUrl: 'https://picsum.photos/seed/book1/400/300',
-    category: 'Books',
-    seller: 'Priya S.',
-    description: 'The "Bible" of algorithms. A must-have for any serious CS student. Great condition.',
-    aiHint: 'textbook cover',
-  },
-  {
-    id: 2,
-    name: 'Noise-Cancelling Headphones',
-    price: 8000,
-    imageUrl: 'https://picsum.photos/seed/gadget1/400/300',
-    category: 'Other Products',
-    seller: 'David C.',
-    description: 'Perfect for studying in noisy environments. Comes with the original case.',
-    aiHint: 'headphones product',
-  },
-  {
-    id: 3,
-    name: 'Mini Fridge for Hostel Room',
-    price: 5500,
-    imageUrl: 'https://picsum.photos/seed/other1/400/300',
-    category: 'Hostels',
-    seller: 'Aisha M.',
-    description: 'Compact and efficient. Barely used for one semester.',
-    aiHint: 'mini fridge',
-  },
-  {
-    id: 4,
-    name: 'Organic Chemistry Notes',
-    price: 999,
-    imageUrl: 'https://picsum.photos/seed/notes1/400/300',
-    category: 'Books',
-    seller: 'Priya S.',
-    description: 'Complete, handwritten notes for the entire semester. Includes diagrams and key reaction mechanisms.',
-    aiHint: 'notebook pages',
-  },
-];
+// TODO: Fetch products from your API instead of using this mock data
+const allProducts: Product[] = [];
 
 const categories = [
   { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services' },
@@ -66,7 +28,8 @@ export default function MarketplaceContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const selectedCategory = searchParams.get('category');
-
+  
+  // In a real app, this filtering would be done by your backend API
   const filteredProducts = selectedCategory
     ? allProducts.filter(p => p.category === selectedCategory)
     : allProducts;
@@ -80,7 +43,6 @@ export default function MarketplaceContent() {
         </p>
       </section>
 
-      {/* Category Grid */}
       <section>
          <h2 className="text-2xl font-bold tracking-tight mb-6">Categories</h2>
          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -95,8 +57,6 @@ export default function MarketplaceContent() {
          </div>
       </section>
 
-
-      {/* Featured Listings */}
       <section>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <h2 className="text-2xl font-bold tracking-tight">{selectedCategory ? `${selectedCategory} Listings` : 'Featured Listings'}</h2>
@@ -129,7 +89,7 @@ export default function MarketplaceContent() {
         ) : (
           <div className="text-center text-muted-foreground py-16">
             <h2 className="text-xl font-semibold">No listings found</h2>
-            <p>There are no products in the "{selectedCategory}" category yet. Check back later!</p>
+            <p>{selectedCategory ? `There are no products in the "${selectedCategory}" category yet.` : 'No products have been listed on the marketplace yet.'} Check back later!</p>
           </div>
         )}
       </section>

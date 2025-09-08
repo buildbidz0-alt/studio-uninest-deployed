@@ -9,33 +9,18 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function FeedContent() {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
-    setIsMounted(true);
+    // TODO: Fetch posts from your API
+    // e.g., fetch('/api/feed').then(res => res.json()).then(data => setPosts(data));
+    setLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (isMounted) {
-      try {
-        const savedPosts = localStorage.getItem('uninest-posts');
-        if (savedPosts) {
-          setPosts(JSON.parse(savedPosts));
-        }
-      } catch (error) {
-        console.error("Failed to parse posts from localStorage", error);
-      }
-    }
-  }, [isMounted]);
-
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('uninest-posts', JSON.stringify(posts));
-    }
-  }, [posts, isMounted]);
 
   const addPost = (content: string) => {
+    // TODO: Send new post to your API and update the state with the response
     const newPost: Post = {
       id: Date.now(),
       author: user?.user_metadata?.full_name || 'Guest User',
@@ -50,14 +35,17 @@ export default function FeedContent() {
   };
 
   const deletePost = (id: number) => {
+    // TODO: Send delete request to your API
     setPosts(posts.filter(p => p.id !== id));
   };
 
   const editPost = (id: number, newContent: string) => {
+    // TODO: Send edit request to your API
     setPosts(posts.map(p => p.id === id ? { ...p, content: newContent } : p));
   };
 
   const addComment = (postId: number, commentContent: string) => {
+    // TODO: Send new comment to your API
     const newComment = {
       id: Date.now(),
       author: user?.user_metadata?.full_name || 'Guest User',
@@ -73,6 +61,7 @@ export default function FeedContent() {
   };
   
   const updateLikes = (postId: number, newLikeCount: number) => {
+    // TODO: Send like/unlike request to your API
     setPosts(posts.map(p => p.id === postId ? { ...p, likes: newLikeCount } : p));
   }
 
@@ -82,7 +71,7 @@ export default function FeedContent() {
       <div className="space-y-8">
         <CreatePostForm onPost={addPost} />
         <div className="space-y-4">
-          {!isMounted ? (
+          {loading ? (
             <div className="flex justify-center items-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>

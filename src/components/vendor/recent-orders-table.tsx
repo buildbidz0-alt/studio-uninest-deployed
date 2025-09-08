@@ -2,6 +2,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+// TODO: Fetch recent orders from your API
 const recentOrders: any[] = [];
 
 export default function RecentOrdersTable() {
@@ -9,7 +10,9 @@ export default function RecentOrdersTable() {
     <Card className="shadow-sm">
       <CardHeader>
         <CardTitle>Recent Orders</CardTitle>
-        <CardDescription>You have no sales this month.</CardDescription>
+        <CardDescription>
+            {recentOrders.length > 0 ? `You have ${recentOrders.length} orders this month.` : 'You have no sales this month.'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">

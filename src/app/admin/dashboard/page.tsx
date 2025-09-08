@@ -8,6 +8,12 @@ import ListingsByCategoryChart from '@/components/admin/charts/listings-by-categ
 import TopDonorsTable from '@/components/admin/top-donors-table';
 
 export default function AdminDashboardPage() {
+  // TODO: Fetch data from your backend API
+  // Example endpoints:
+  // - /admin/analytics/stats
+  // - /admin/analytics/revenue/monthly
+  // - /admin/analytics/listings/counts
+  // - /admin/analytics/top/donors
   return (
     <div className="space-y-8">
       <PageHeader title="Dashboard" description="An overview of your platform's performance." />
@@ -15,27 +21,27 @@ export default function AdminDashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard 
             title="Total Revenue (MTD)" 
-            value="₹12,540" 
+            value="₹0" 
             icon={DollarSign} 
-            change="+15.2% from last month" 
+            change="No data available" 
         />
         <StatsCard 
             title="Donations (MTD)" 
-            value="₹3,500" 
+            value="₹0" 
             icon={Gift} 
-            change="+5.1% from last month" 
+            change="No data available" 
         />
         <StatsCard 
             title="Active Users (Daily)" 
-            value="1,234" 
+            value="0" 
             icon={Users} 
-            change="+30 since yesterday" 
+            change="No data available" 
         />
         <StatsCard 
             title="Active Listings" 
-            value="452" 
+            value="0" 
             icon={ShoppingCart} 
-            change="+12 since last week" 
+            change="No data available" 
         />
       </div>
 
