@@ -59,7 +59,7 @@ export default function CompetitionsClient() {
     setApplyingCompetitionId(competition.id);
 
     try {
-        const response = await fetch('/api/razorpay/create-order', {
+        const response = await fetch('/api/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: competition.entryFee * 100, currency: 'INR' }),
@@ -85,13 +85,13 @@ export default function CompetitionsClient() {
             });
           },
           prefill: {
-            name: user.displayName || '',
+            name: user.user_metadata?.full_name || '',
             email: user.email || '',
           },
           notes: {
             type: 'competition',
             competitionId: competition.id,
-            userId: user.uid,
+            userId: user.id,
           },
           theme: {
             color: '#1B365D',

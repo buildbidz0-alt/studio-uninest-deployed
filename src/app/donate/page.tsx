@@ -33,7 +33,7 @@ function DonateContent() {
     setIsDonating(true);
     try {
       // 1. Create Order on your backend
-      const response = await fetch('/api/razorpay/create-order', {
+      const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: amount * 100, currency: 'INR' }), // amount in paise
@@ -62,12 +62,12 @@ function DonateContent() {
             });
         },
         prefill: {
-          name: user?.displayName || '',
+          name: user?.user_metadata?.full_name || '',
           email: user?.email || '',
         },
         notes: {
           type: 'donation',
-          userId: user?.uid,
+          userId: user?.id,
         },
         theme: {
           color: '#1B365D', // Deep Sapphire Blue

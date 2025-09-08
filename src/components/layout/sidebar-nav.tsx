@@ -9,12 +9,12 @@ import Link from 'next/link';
 import { Separator } from '../ui/separator';
 
 const navItems = [
-  { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest'] },
-  { href: '/feed', label: 'Social Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest'] },
+  { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/feed', label: 'Social Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest'] },
-  { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest'] },
+  { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student', 'guest'] },
-  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest'] },
+  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, roles: ['vendor'] },
 ];
 

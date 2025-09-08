@@ -63,11 +63,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <SidebarFooter>
             <div className="flex items-center gap-3">
               <Avatar className="size-8">
-                <AvatarImage src={user?.photoURL || ''} alt="Admin avatar" />
+                <AvatarImage src={user?.user_metadata?.avatar_url || ''} alt="Admin avatar" />
                 <AvatarFallback>A</AvatarFallback>
               </Avatar>
               <div className="flex flex-col text-sm">
-                <span className="font-semibold">{user?.displayName || 'Admin User'}</span>
+                <span className="font-semibold">{user?.user_metadata?.full_name || 'Admin User'}</span>
                 <span className="text-muted-foreground">{user?.email}</span>
               </div>
             </div>
@@ -89,7 +89,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
                     <Avatar className="size-8">
-                       {user && <AvatarImage src={user.photoURL || ''} alt="Admin avatar" />}
+                       {user && <AvatarImage src={user.user_metadata?.avatar_url || ''} alt="Admin avatar" />}
                       <AvatarFallback>
                         {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-5" />}
                       </AvatarFallback>
