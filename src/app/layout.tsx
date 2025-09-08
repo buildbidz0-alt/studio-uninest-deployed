@@ -6,7 +6,7 @@ import MainLayout from '@/components/layout/main-layout';
 import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
-  title: 'Uninest',
+  title: 'UniNest',
   description: 'A global, enterprise-grade, full-stack platform for students and libraries.',
 };
 

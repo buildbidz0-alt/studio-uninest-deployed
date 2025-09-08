@@ -1,59 +1,95 @@
-
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { Users, Target, BookOpen } from 'lucide-react';
+import { Target, Globe, ShieldCheck, TrendingUp, Handshake, Users, Info, Settings } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = {
-  title: 'About Us | Uninest',
-  description: 'Learn more about Uninest and our mission to empower students.',
+  title: 'About Us | UniNest',
+  description: 'Learn more about UniNest and our mission to empower students, libraries, and vendors with a unified digital ecosystem.',
 };
 
 export default function AboutPage() {
   return (
-    <div className="space-y-12">
-      <section className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">About Uninest</h1>
-        <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
-          Uninest is dedicated to enhancing the student experience by providing a centralized platform for academic, social, and commercial needs.
+    <div className="space-y-16">
+      {/* Page Header */}
+      <section className="text-center py-12">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-primary">
+          Our Mission at UniNest
+        </h1>
+        <p className="mt-6 max-w-3xl mx-auto text-lg text-muted-foreground">
+          To empower students, libraries, and vendors by creating a unified digital ecosystem that fosters knowledge sharing, simplifies resource management, and builds a global community dedicated to academic and professional growth.
         </p>
       </section>
-
+      
+      {/* Company Vision Section */}
       <section>
-        <div className="relative h-64 md:h-96 rounded-xl overflow-hidden">
-          <Image
-            src="https://picsum.photos/seed/about-team/1200/400"
-            alt="Our Team"
-            layout="fill"
-            objectFit="cover"
-            data-ai-hint="diverse group students"
-          />
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="relative h-80 rounded-xl overflow-hidden shadow-lg">
+                <Image
+                    src="https://picsum.photos/seed/vision/800/600"
+                    alt="Our Vision"
+                    fill
+                    objectFit="cover"
+                    data-ai-hint="futuristic abstract"
+                />
+            </div>
+            <div>
+                <h2 className="text-3xl font-bold tracking-tight text-primary">Our Vision</h2>
+                <p className="mt-4 text-muted-foreground">
+                    We envision a world where education is accessible, transparent, and collaborative. UniNest aims to be the digital backbone of the academic world, breaking down barriers and connecting every member of the educational community—from individual students to global institutions—on a single, intelligent platform.
+                </p>
+            </div>
         </div>
       </section>
 
-      <section className="grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Our Mission</h2>
-          <p className="mt-4 text-muted-foreground">
-            Our mission is to simplify student life. We believe that by connecting students and providing easy access to resources, we can foster a more collaborative and supportive educational environment. We aim to be the go-to digital campus for students worldwide, where they can thrive academically and socially.
-          </p>
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Our Vision</h2>
-          <p className="mt-4 text-muted-foreground">
-            We envision a world where every student has the tools they need to succeed at their fingertips. Uninest strives to break down barriers, whether it's finding an affordable textbook, getting help on a difficult subject, or simply making new friends on campus.
-          </p>
-        </div>
-      </section>
-
-       <section className="bg-muted rounded-lg p-8">
-          <h2 className="text-3xl font-bold tracking-tight text-center mb-8">Why We Started</h2>
-          <div className="max-w-4xl mx-auto text-center text-muted-foreground">
-            <p>
-              Uninest was born from our own experiences as students. We juggled multiple apps and websites for everything: one for class notes, another for buying books, and several for social connections. It was disjointed and inefficient. We knew there had to be a better way. We created Uninest to be the single, integrated solution we wish we had—a place to build community, share knowledge, and make student life easier.
-            </p>
+      {/* Core Values Section */}
+      <section className="bg-muted py-16 rounded-lg">
+        <div className="container px-4 md:px-6">
+          <h2 className="text-3xl font-bold tracking-tight text-center mb-12 text-primary">Our Core Values</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <ValueCard icon={ShieldCheck} title="Trust & Security" description="We prioritize the security of your data and transactions, building a platform you can rely on." />
+            <ValueCard icon={Handshake} title="Knowledge Sharing" description="We believe in the power of shared knowledge to elevate learning and drive innovation." />
+            <ValueCard icon={Users} title="Inclusivity" description="Creating a welcoming and accessible environment for students and partners from all backgrounds." />
+            <ValueCard icon={TrendingUp} title="Continuous Growth" description="We are committed to constant improvement, evolving with the needs of our users." />
           </div>
-        </section>
-
+        </div>
+      </section>
+      
+      {/* Why UniNest Section */}
+      <section>
+         <div className="text-center mb-12">
+             <h2 className="text-3xl font-bold tracking-tight text-primary">Why UniNest?</h2>
+             <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
+                Differentiating from traditional platforms, UniNest is built on an enterprise-grade foundation, offering an integrated, secure, and scalable solution that traditional, fragmented tools cannot match.
+             </p>
+         </div>
+         <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="p-6 border rounded-lg shadow-sm">
+                <h3 className="text-xl font-semibold mb-2 text-primary">Unified Ecosystem</h3>
+                <p className="text-muted-foreground">One platform for social, academic, and commercial needs, eliminating the need for multiple, disjointed apps.</p>
+            </div>
+            <div className="p-6 border rounded-lg shadow-sm">
+                <h3 className="text-xl font-semibold mb-2 text-primary">AI-Powered Efficiency</h3>
+                <p className="text-muted-foreground">Smart tools for tagging, search, and resource management save you time and improve your workflow.</p>
+            </div>
+             <div className="p-6 border rounded-lg shadow-sm">
+                <h3 className="text-xl font-semibold mb-2 text-primary">Global & Scalable</h3>
+                <p className="text-muted-foreground">Built for institutions of all sizes, connecting students and vendors across a secure, global network.</p>
+            </div>
+         </div>
+      </section>
     </div>
   );
 }
+
+const ValueCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
+    <div className="text-center p-6">
+        <div className="mb-4 flex justify-center">
+             <div className="bg-primary text-primary-foreground rounded-full p-4">
+                <Icon className="size-8" />
+            </div>
+        </div>
+        <h3 className="text-xl font-bold mb-2">{title}</h3>
+        <p className="text-muted-foreground">{description}</p>
+    </div>
+);
