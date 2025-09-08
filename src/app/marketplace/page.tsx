@@ -1,16 +1,18 @@
 
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package } from 'lucide-react';
+import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import type { Product } from '@/components/marketplace/product-card';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { Suspense } from 'react';
 
-const products: Product[] = [
+const allProducts: Product[] = [
   {
     id: 1,
     name: 'Introduction to Algorithms, 3rd Edition',
@@ -26,7 +28,7 @@ const products: Product[] = [
     name: 'Noise-Cancelling Headphones',
     price: 8000,
     imageUrl: 'https://picsum.photos/seed/gadget1/400/300',
-    category: 'Gadgets',
+    category: 'Other Products',
     seller: 'David C.',
     description: 'Perfect for studying in noisy environments. Comes with the original case.',
     aiHint: 'headphones product',
@@ -36,12 +38,12 @@ const products: Product[] = [
     name: 'Mini Fridge for Hostel Room',
     price: 5500,
     imageUrl: 'https://picsum.photos/seed/other1/400/300',
-    category: 'Other',
+    category: 'Hostels',
     seller: 'Aisha M.',
     description: 'Compact and efficient. Barely used for one semester.',
     aiHint: 'mini fridge',
   },
-    {
+  {
     id: 4,
     name: 'Organic Chemistry Notes',
     price: 999,
@@ -54,16 +56,22 @@ const products: Product[] = [
 ];
 
 const categories = [
-  { name: 'Library Services', icon: Library, href: '#' },
-  { name: 'Food Mess', icon: Utensils, href: '#' },
-  { name: 'Cyber Café', icon: Laptop, href: '#' },
-  { name: 'Books', icon: Book, href: '#' },
-  { name: 'Hostels', icon: Bed, href: '#' },
-  { name: 'Other Products', icon: Package, href: '#' },
+  { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services' },
+  { name: 'Food Mess', icon: Utensils, href: '/marketplace?category=Food+Mess' },
+  { name: 'Cyber Café', icon: Laptop, href: '/marketplace?category=Cyber+Café' },
+  { name: 'Books', icon: Book, href: '/marketplace?category=Books' },
+  { name: 'Hostels', icon: Bed, href: '/marketplace?category=Hostels' },
+  { name: 'Other Products', icon: Package, href: '/marketplace?category=Other+Products' },
 ];
 
-export default function MarketplacePage() {
+function MarketplaceContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const selectedCategory = searchParams.get('category');
+
+  const filteredProducts = selectedCategory
+    ? allProducts.filter(p => p.category === selectedCategory)
+    : allProducts;
 
   return (
     <div className="space-y-12">
@@ -93,7 +101,7 @@ export default function MarketplacePage() {
       {/* Featured Listings */}
       <section>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-bold tracking-tight">Featured Listings</h2>
+            <h2 className="text-2xl font-bold tracking-tight">{selectedCategory ? `${selectedCategory} Listings` : 'Featured Listings'}</h2>
             <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -103,23 +111,39 @@ export default function MarketplacePage() {
                     <ListFilter className="size-4" />
                     Filters
                 </Button>
+                {selectedCategory && (
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link href="/marketplace">
+                      <X className="size-4" />
+                    </Link>
+                  </Button>
+                )}
                 <Button disabled={!user}>+ Add Listing</Button>
             </div>
         </div>
 
-        {products.length > 0 ? (
+        {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
           <div className="text-center text-muted-foreground py-16">
-            <h2 className="text-xl font-semibold">Marketplace is empty</h2>
-            <p>Check back later or be the first to add a listing!</p>
+            <h2 className="text-xl font-semibold">No listings found</h2>
+            <p>There are no products in the "{selectedCategory}" category yet. Check back later!</p>
           </div>
         )}
       </section>
     </div>
   );
+}
+
+
+export default function MarketplacePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MarketplaceContent />
+    </Suspense>
+  )
 }
