@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CreatePostForm from '@/components/feed/create-post-form';
 import PostCard, { type Post } from '@/components/feed/post-card';
 import type { Metadata } from 'next';
@@ -16,6 +16,25 @@ import type { Metadata } from 'next';
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    try {
+      const savedPosts = localStorage.getItem('uninest-posts');
+      if (savedPosts) {
+        setPosts(JSON.parse(savedPosts));
+      }
+    } catch (error) {
+      console.error("Failed to parse posts from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('uninest-posts', JSON.stringify(posts));
+    }
+  }, [posts, isMounted]);
 
   const addPost = (content: string) => {
     const newPost: Post = {
@@ -26,7 +45,7 @@ export default function FeedPage() {
       content,
       likes: 0,
       comments: [],
-      timestamp: 'Just now',
+      timestamp: new Date().toLocaleString(),
     };
     setPosts([newPost, ...posts]);
   };
@@ -53,6 +72,14 @@ export default function FeedPage() {
         : p
     ));
   };
+  
+  const updateLikes = (postId: number, newLikeCount: number) => {
+    setPosts(posts.map(p => p.id === postId ? { ...p, likes: newLikeCount } : p));
+  }
+
+  if (!isMounted) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -68,6 +95,7 @@ export default function FeedPage() {
                 onDelete={deletePost}
                 onEdit={editPost}
                 onComment={addComment}
+                onLike={updateLikes}
               />
             ))
           ) : (

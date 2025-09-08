@@ -50,9 +50,10 @@ type PostCardProps = {
   onDelete: (id: number) => void;
   onEdit: (id: number, newContent: string) => void;
   onComment: (postId: number, commentContent: string) => void;
+  onLike: (postId: number, newLikeCount: number) => void;
 };
 
-export default function PostCard({ post, onDelete, onEdit, onComment }: PostCardProps) {
+export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [isEditing, setIsEditing] = useState(false);
@@ -61,8 +62,11 @@ export default function PostCard({ post, onDelete, onEdit, onComment }: PostCard
   const [newComment, setNewComment] = useState('');
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
+    const newIsLiked = !isLiked;
+    const newLikeCount = newIsLiked ? likeCount + 1 : likeCount - 1;
+    setIsLiked(newIsLiked);
+    setLikeCount(newLikeCount);
+    onLike(post.id, newLikeCount);
   };
 
   const handleSaveEdit = () => {
@@ -90,7 +94,7 @@ export default function PostCard({ post, onDelete, onEdit, onComment }: PostCard
               <p className="font-semibold">{post.author}</p>
               <p className="text-sm text-muted-foreground">@{post.handle}</p>
             </div>
-             <p className="text-sm text-muted-foreground">{post.timestamp}</p>
+             <p className="text-sm text-muted-foreground">{new Date(post.timestamp).toLocaleString()}</p>
           </div>
         </div>
         <AlertDialog>
