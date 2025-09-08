@@ -10,9 +10,9 @@ import Link from 'next/link';
 const navItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest'] },
   { href: '/feed', label: 'Social Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest'] },
-  { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student'] },
+  { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest'] },
   { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest'] },
-  { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student'] },
+  { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student', 'guest'] },
   { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest'] },
   { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, roles: ['vendor'] },
 ];

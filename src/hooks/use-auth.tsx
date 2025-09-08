@@ -19,7 +19,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Adjusted public routes
-const publicRoutes = ['/login', '/signup', '/password-reset', '/', '/about', '/terms'];
+const publicRoutes = ['/login', '/signup', '/password-reset', '/', '/about', '/terms', '/marketplace', '/workspace'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
