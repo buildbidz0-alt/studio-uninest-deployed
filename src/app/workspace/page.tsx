@@ -1,6 +1,4 @@
 
-'use client';
-
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,12 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Briefcase, Trophy, PlusCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
-// export const metadata: Metadata = {
-//   title: 'Workspace | UniNest',
-//   description: 'Unlock your potential with competitions and internships on UniNest.',
-// };
+export const metadata: Metadata = {
+  title: 'Workspace | UniNest',
+  description: 'Unlock your potential with competitions and internships on UniNest.',
+};
 
-export default function WorkspacePage() {
+function WorkspaceClient() {
+  'use client';
+  
   const { role } = useAuth();
   const isAdmin = role === 'admin' || role === 'vendor'; // Assuming vendors can also be admins for now
 
@@ -90,4 +90,9 @@ export default function WorkspacePage() {
       </div>
     </div>
   );
+}
+
+
+export default function WorkspacePage() {
+    return <WorkspaceClient />;
 }
