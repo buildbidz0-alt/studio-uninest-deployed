@@ -1,74 +1,144 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ChatList from './chat-list';
 import ChatMessages from './chat-messages';
 import type { Room, Message } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
+import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 type ChatLayoutProps = {
   initialRooms: Room[];
-  initialMessages: Message[];
 };
 
-export default function ChatLayout({ initialRooms, initialMessages }: ChatLayoutProps) {
+export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(initialRooms[0] || null);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const supabase = createClient();
 
-  const handleSelectRoom = (room: Room) => {
+  // Compute room names and avatars
+  useEffect(() => {
+    if (!user) return;
+    const computeRoomDetails = (room: Room) => {
+      const otherParticipant = room.participants.find(p => p.profile.id !== user.id);
+      return {
+        ...room,
+        name: otherParticipant?.profile.full_name || 'Chat',
+        avatar: otherParticipant?.profile.avatar_url || `https://picsum.photos/seed/${room.id}/40`,
+      };
+    };
+    setRooms(initialRooms.map(computeRoomDetails));
+    
+    if (initialRooms.length > 0) {
+        const firstRoom = computeRoomDetails(initialRooms[0]);
+        if (!isMobile) {
+            handleSelectRoom(firstRoom);
+        }
+    }
+
+  }, [initialRooms, user, isMobile]);
+
+  // Real-time message subscription
+  useEffect(() => {
+    if (!selectedRoom) return;
+
+    const channel = supabase
+      .channel(`chat_room_${selectedRoom.id}`)
+      .on<Message>(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${selectedRoom.id}` },
+        async (payload) => {
+          const newMessage = payload.new as Message;
+          // Fetch profile for the new message
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', newMessage.user_id)
+            .single();
+          
+          if (!error) {
+              newMessage.profile = profileData;
+          }
+
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedRoom, supabase]);
+  
+
+  const handleSelectRoom = useCallback(async (room: Room) => {
     setSelectedRoom(room);
-    // TODO: Fetch messages for the selected room from your backend API
-    // e.g., fetch(`/api/chat/rooms/${room.id}/messages`).then(...)
-    // For now, we'll just clear messages or set some mock data.
-    if (room.id === '1') {
-        setMessages(initialMessages);
+    setLoadingMessages(true);
+    setMessages([]);
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*, profile:profiles(*)')
+      .eq('room_id', room.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error fetching messages' });
+      console.error(error);
     } else {
-        setMessages([]);
+      setMessages(data || []);
+    }
+    setLoadingMessages(false);
+  }, [supabase, toast]);
+
+  const handleSendMessage = async (content: string) => {
+    if (!selectedRoom || !user) return;
+
+    const { error } = await supabase
+      .from('chat_messages')
+      .insert({
+        content,
+        room_id: selectedRoom.id,
+        user_id: user.id,
+      });
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error sending message' });
+      console.error(error);
     }
   };
 
-  const handleSendMessage = (text: string) => {
-    if (!selectedRoom) return;
-
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      text,
-      sender: 'You', // This should be the current user's name or ID
-      timestamp: new Date().toISOString(),
-    };
-
-    // TODO: Send the new message to your backend via API or WebSocket
-    // e.g., socket.emit('sendMessage', { roomId: selectedRoom.id, text });
-
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-  };
-  
   if (isMobile) {
     return (
-        <div className="h-[calc(100vh-8rem)]">
-            {selectedRoom ? (
-                <div className="flex flex-col h-full">
-                     <button onClick={() => setSelectedRoom(null)} className="flex items-center gap-2 p-2 mb-2 font-semibold text-primary">
-                        <ArrowLeft className="size-4" />
-                        All Chats
-                    </button>
-                    <ChatMessages 
-                        room={selectedRoom}
-                        messages={messages}
-                        onSendMessage={handleSendMessage}
-                    />
-                </div>
-            ) : (
-                <ChatList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={handleSelectRoom} />
-            )}
-        </div>
-    )
+      <div className="h-[calc(100vh-8rem)]">
+        {selectedRoom ? (
+          <div className="flex flex-col h-full">
+            <button onClick={() => setSelectedRoom(null)} className="flex items-center gap-2 p-2 mb-2 font-semibold text-primary">
+              <ArrowLeft className="size-4" />
+              All Chats
+            </button>
+            <ChatMessages
+              room={selectedRoom}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              loading={loadingMessages}
+            />
+          </div>
+        ) : (
+          <ChatList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={handleSelectRoom} />
+        )}
+      </div>
+    );
   }
 
   return (
@@ -77,10 +147,11 @@ export default function ChatLayout({ initialRooms, initialMessages }: ChatLayout
         <ChatList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={handleSelectRoom} />
       </div>
       <div className="col-span-2 flex flex-col">
-        <ChatMessages 
-            room={selectedRoom}
-            messages={messages}
-            onSendMessage={handleSendMessage}
+        <ChatMessages
+          room={selectedRoom}
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          loading={loadingMessages}
         />
       </div>
     </Card>

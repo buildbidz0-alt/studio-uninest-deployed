@@ -31,20 +31,22 @@ export default function ChatList({ rooms, selectedRoom, onSelectRoom }: ChatList
                 )}
               >
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={`https://picsum.photos/seed/${room.name}/40`} alt={room.name} data-ai-hint="person face"/>
-                  <AvatarFallback>{room.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={room.avatar} alt={room.name} data-ai-hint="person face" />
+                  <AvatarFallback>{room.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 truncate">
                   <p className="font-semibold">{room.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{room.lastMessage}</p>
+                  {/* TODO: Add last message preview */}
+                  <p className="text-sm text-muted-foreground truncate">Select to view messages</p>
                 </div>
                 <div className="flex flex-col items-end text-xs text-muted-foreground">
-                    <span>{formatDistanceToNow(new Date(room.timestamp), { addSuffix: true })}</span>
+                    {/* TODO: Add real timestamp and unread count */}
+                    {/* <span>{formatDistanceToNow(new Date(room.timestamp), { addSuffix: true })}</span>
                     {room.unreadCount > 0 && (
                         <span className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
                         {room.unreadCount}
                         </span>
-                    )}
+                    )} */}
                 </div>
               </button>
             ))

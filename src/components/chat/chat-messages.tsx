@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Paperclip, Send } from 'lucide-react';
+import { Paperclip, Send, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Room, Message } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,11 +15,22 @@ type ChatMessagesProps = {
   room: Room | null;
   messages: Message[];
   onSendMessage: (text: string) => void;
+  loading: boolean;
 };
 
-export default function ChatMessages({ room, messages, onSendMessage }: ChatMessagesProps) {
+export default function ChatMessages({ room, messages, onSendMessage, loading }: ChatMessagesProps) {
   const [newMessage, setNewMessage] = useState('');
-  const { user } = useAuth(); // Assuming 'You' is the current user
+  const { user } = useAuth();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector('div');
+        if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+    }
+  }, [messages]);
 
   const handleSend = () => {
     if (newMessage.trim()) {
@@ -28,6 +39,14 @@ export default function ChatMessages({ room, messages, onSendMessage }: ChatMess
     }
   };
 
+  if (loading) {
+     return (
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        <Loader2 className="size-8 animate-spin" />
+      </div>
+    );
+  }
+
   if (!room) {
     return (
       <div className="flex flex-1 items-center justify-center text-muted-foreground">
@@ -35,20 +54,27 @@ export default function ChatMessages({ room, messages, onSendMessage }: ChatMess
       </div>
     );
   }
+  
+  const roomAvatar = room.avatar || `https://picsum.photos/seed/${room.id}/40`;
+  const roomName = room.name || 'Chat';
 
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex items-center gap-3 border-b p-4">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={`https://picsum.photos/seed/${room.name}/40`} alt={room.name} data-ai-hint="person face" />
-          <AvatarFallback>{room.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={roomAvatar} alt={roomName} data-ai-hint="person face" />
+          <AvatarFallback>{roomName.charAt(0)}</AvatarFallback>
         </Avatar>
-        <h2 className="text-lg font-semibold">{room.name}</h2>
+        <h2 className="text-lg font-semibold">{roomName}</h2>
       </div>
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((message) => {
-            const isSentByMe = message.sender === 'You';
+            const isSentByMe = message.user_id === user?.id;
+            const senderProfile = message.profile;
+            const senderAvatar = senderProfile?.avatar_url || 'https://picsum.photos/seed/user/40/40';
+            const senderName = senderProfile?.full_name || 'User';
+
             return (
               <div
                 key={message.id}
@@ -56,8 +82,8 @@ export default function ChatMessages({ room, messages, onSendMessage }: ChatMess
               >
                 {!isSentByMe && (
                   <Avatar className="h-8 w-8">
-                     <AvatarImage src={`https://picsum.photos/seed/${room.name}/40`} alt={room.name} data-ai-hint="person face"/>
-                    <AvatarFallback>{room.name.charAt(0)}</AvatarFallback>
+                     <AvatarImage src={senderAvatar} alt={senderName} data-ai-hint="person face"/>
+                    <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                   </Avatar>
                 )}
                 <div
@@ -66,9 +92,9 @@ export default function ChatMessages({ room, messages, onSendMessage }: ChatMess
                     isSentByMe ? 'bg-primary text-primary-foreground' : 'bg-muted'
                   )}
                 >
-                  <p className="text-sm">{message.text}</p>
+                  <p className="text-sm">{message.content}</p>
                    <p className={cn("text-xs mt-1", isSentByMe ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                       {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                    </p>
                 </div>
                  {isSentByMe && (
