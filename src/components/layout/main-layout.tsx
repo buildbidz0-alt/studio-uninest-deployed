@@ -34,9 +34,12 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <Logo className="size-8 text-primary" />
-            <h1 className="text-xl font-semibold">Uninest</h1>
+          <div className="flex items-center justify-between">
+             <div className="flex items-center gap-2">
+                <Logo className="size-8 text-primary" />
+                <h1 className="text-xl font-semibold">Uninest</h1>
+             </div>
+             <SidebarTrigger className="md:hidden -mr-2" />
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -70,8 +73,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6">
-          <SidebarTrigger className="md:hidden" />
+        <header className="flex h-14 items-center justify-end border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6">
           <div className="flex flex-1 items-center justify-end gap-4">
              <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />

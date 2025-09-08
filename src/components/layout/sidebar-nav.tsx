@@ -15,15 +15,23 @@ const navItems = [
   { href: '/workspace', label: 'Workspace', icon: Briefcase, admin: false },
   { href: '/donate', label: 'Donate', icon: Heart, admin: false },
   { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, admin: true },
-  { href: '/settings', label: 'Settings', icon: Settings, admin: false },
-  { href: '/about', label: 'About Us', icon: Info, admin: false },
 ];
+
+const bottomNavItems = [
+    { href: '/settings', label: 'Settings', icon: Settings, admin: false },
+    { href: '/about', label: 'About Us', icon: Info, admin: false },
+]
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { user } = useAuth();
 
   const filteredNavItems = navItems.filter(item => {
+    if (!item.admin) return true;
+    return user?.email === 'admin@uninest.com';
+  });
+
+  const filteredBottomNavItems = bottomNavItems.filter(item => {
     if (!item.admin) return true;
     return user?.email === 'admin@uninest.com';
   });
@@ -43,6 +51,22 @@ export function SidebarNav() {
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
+
+        <div className='flex-grow' />
+
+        {filteredBottomNavItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
+            >
+                <Link href={item.href}>
+                <item.icon className="size-4" />
+                <span>{item.label}</span>
+                </Link>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+        ))}
     </SidebarMenu>
   );
 }
