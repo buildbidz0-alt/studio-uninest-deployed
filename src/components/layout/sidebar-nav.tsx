@@ -1,7 +1,8 @@
+
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -11,6 +12,7 @@ const navItems = [
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, admin: false },
   { href: '/notes', label: 'Notes Hub', icon: FileText, admin: false },
   { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, admin: true },
+  { href: '/settings', label: 'Settings', icon: Settings, admin: false },
   { href: '/about', label: 'About Us', icon: Info, admin: false },
 ];
 

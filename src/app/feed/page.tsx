@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -30,6 +31,14 @@ export default function FeedPage() {
     setPosts([newPost, ...posts]);
   };
 
+  const deletePost = (id: number) => {
+    setPosts(posts.filter(p => p.id !== id));
+  };
+
+  const editPost = (id: number, newContent: string) => {
+    setPosts(posts.map(p => p.id === id ? { ...p, content: newContent } : p));
+  };
+
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-6 text-3xl font-bold tracking-tight">Social Feed</h1>
@@ -38,7 +47,12 @@ export default function FeedPage() {
         <div className="space-y-4">
           {posts.length > 0 ? (
             posts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                onDelete={deletePost}
+                onEdit={editPost}
+              />
             ))
           ) : (
             <div className="text-center text-muted-foreground py-12">
