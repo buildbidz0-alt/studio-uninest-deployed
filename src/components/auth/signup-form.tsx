@@ -26,9 +26,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -93,30 +93,24 @@ export default function SignupForm() {
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <FormLabel>I am a...</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="student" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
+                   <FormControl>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={field.value === 'student' ? 'default' : 'outline'}
+                          onClick={() => field.onChange('student')}
+                        >
                           Student
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="vendor" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={field.value === 'vendor' ? 'default' : 'outline'}
+                          onClick={() => field.onChange('vendor')}
+                        >
                           Vendor
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
+                        </Button>
+                      </div>
+                    </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
