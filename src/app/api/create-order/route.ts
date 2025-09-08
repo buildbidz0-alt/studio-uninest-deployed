@@ -9,17 +9,26 @@ const orderSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    console.error('Razorpay environment variables are not set.');
+    return NextResponse.json({ error: 'Server configuration error: Missing Razorpay credentials.' }, { status: 500 });
+  }
+
   try {
     const razorpay = new Razorpay({
-        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+        key_id: keyId,
+        key_secret: keySecret,
     });
 
     const body = await request.json();
     const parsedBody = orderSchema.safeParse(body);
 
     if (!parsedBody.success) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+      console.error('Invalid request body:', parsedBody.error.flatten());
+      return NextResponse.json({ error: 'Invalid request body', details: parsedBody.error.flatten() }, { status: 400 });
     }
 
     const { amount, currency } = parsedBody.data;
@@ -29,16 +38,18 @@ export async function POST(request: Request) {
       currency,
       receipt: `receipt_order_${new Date().getTime()}`,
     };
-
+    
+    console.log('Creating Razorpay order with options:', options);
     const order = await razorpay.orders.create(options);
+    console.log('Razorpay order created successfully:', order);
 
     return NextResponse.json(order, { status: 200 });
     
   } catch (error) {
-    console.error('Razorpay order creation failed:', error);
+    console.error('!!! Razorpay order creation failed:', error);
     if (error instanceof Error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: `Razorpay API Error: ${error.message}` }, { status: 500 });
     }
-    return NextResponse.json({ error: 'An unknown error occurred' }, { status: 500 });
+    return NextResponse.json({ error: 'An unknown error occurred during payment processing.' }, { status: 500 });
   }
 }
