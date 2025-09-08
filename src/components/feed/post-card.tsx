@@ -84,6 +84,14 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
     }
   }
 
+  const getFormattedTimestamp = () => {
+    try {
+      return new Date(post.timestamp).toLocaleString();
+    } catch (e) {
+      return post.timestamp;
+    }
+  }
+
   return (
     <Card className="shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="flex flex-row items-start gap-4 p-4">
@@ -97,7 +105,7 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
               <p className="font-semibold">{post.author}</p>
               <p className="text-sm text-muted-foreground">@{post.handle}</p>
             </div>
-             <p className="text-sm text-muted-foreground">{new Date(post.timestamp).toLocaleString()}</p>
+             <p className="text-sm text-muted-foreground">{getFormattedTimestamp()}</p>
           </div>
         </div>
         {user && (

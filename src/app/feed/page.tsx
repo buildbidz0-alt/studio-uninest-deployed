@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import CreatePostForm from '@/components/feed/create-post-form';
 import PostCard, { type Post } from '@/components/feed/post-card';
 import type { Metadata } from 'next';
+import { Loader2 } from 'lucide-react';
 
 // Note: This is a temporary solution for metadata in a client component.
 // For a production app, you might handle metadata differently.
@@ -19,15 +20,20 @@ function FeedContent() {
 
   useEffect(() => {
     setIsMounted(true);
-    try {
-      const savedPosts = localStorage.getItem('uninest-posts');
-      if (savedPosts) {
-        setPosts(JSON.parse(savedPosts));
-      }
-    } catch (error) {
-      console.error("Failed to parse posts from localStorage", error);
-    }
   }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      try {
+        const savedPosts = localStorage.getItem('uninest-posts');
+        if (savedPosts) {
+          setPosts(JSON.parse(savedPosts));
+        }
+      } catch (error) {
+        console.error("Failed to parse posts from localStorage", error);
+      }
+    }
+  }, [isMounted]);
 
   useEffect(() => {
     if (isMounted) {
@@ -44,7 +50,7 @@ function FeedContent() {
       content,
       likes: 0,
       comments: [],
-      timestamp: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
     };
     setPosts([newPost, ...posts]);
   };
@@ -76,17 +82,17 @@ function FeedContent() {
     setPosts(posts.map(p => p.id === postId ? { ...p, likes: newLikeCount } : p));
   }
 
-  if (!isMounted) {
-    return null; // or a loading spinner
-  }
-
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-6 text-3xl font-bold tracking-tight">Social Feed</h1>
       <div className="space-y-8">
         <CreatePostForm onPost={addPost} />
         <div className="space-y-4">
-          {posts.length > 0 ? (
+          {!isMounted ? (
+            <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : posts.length > 0 ? (
             posts.map((post) => (
               <PostCard 
                 key={post.id} 
