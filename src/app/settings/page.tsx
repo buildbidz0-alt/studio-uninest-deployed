@@ -51,7 +51,7 @@ function SettingsContent() {
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      username: user?.displayName || '',
+      username: user?.user_metadata?.full_name || '',
       email: user?.email || '',
     },
   });
@@ -191,13 +191,6 @@ function SettingsContent() {
     </div>
   );
 }
-
-
-export const metadata: Metadata = {
-  title: 'Account Settings',
-  description: 'Manage your UniNest account settings, update your profile, and change your password.',
-};
-
 
 export default function SettingsPage() {
     return <SettingsContent />
