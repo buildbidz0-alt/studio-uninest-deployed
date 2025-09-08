@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { type ReactNode } from 'react';
@@ -14,8 +15,17 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNav } from './sidebar-nav';
 import { Logo } from '@/components/icons';
-import { Bell, LogOut, Settings } from 'lucide-react';
+import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import Link from 'next/link';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
@@ -43,9 +53,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                 <span className="font-semibold">{user.displayName || 'User'}</span>
                 <span className="text-muted-foreground">{user.email}</span>
               </div>
-              <Button variant="ghost" size="icon" className="ml-auto" onClick={signOut}>
-                <LogOut className="size-4" />
-              </Button>
             </div>
           ) : (
              <div className="flex items-center gap-3">
@@ -70,6 +77,45 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                 <Bell className="h-5 w-5" />
                 <span className="sr-only">Toggle notifications</span>
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="size-8">
+                       {user && <AvatarImage src={user.photoURL || 'https://picsum.photos/id/237/40/40'} alt="User avatar" />}
+                      <AvatarFallback>
+                        {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {user ? (
+                    <>
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                         <Link href="/settings">
+                            <Settings className="mr-2 size-4" />
+                            Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={signOut}>
+                        <LogOut className="mr-2 size-4" />
+                        Logout
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/login">Login</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/signup">Sign Up</Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
