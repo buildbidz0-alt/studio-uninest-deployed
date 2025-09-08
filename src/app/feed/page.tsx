@@ -7,13 +7,6 @@ import PostCard, { type Post } from '@/components/feed/post-card';
 import type { Metadata } from 'next';
 import { Loader2 } from 'lucide-react';
 
-// Note: This is a temporary solution for metadata in a client component.
-// For a production app, you might handle metadata differently.
-// export const metadata: Metadata = {
-//   title: 'Social Feed | Uninest',
-//   description: 'Connect with your peers and share updates.',
-// };
-
 function FeedContent() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isMounted, setIsMounted] = useState(false);
@@ -115,13 +108,13 @@ function FeedContent() {
   );
 }
 
-const FeedPage = () => {
-  return <FeedContent />;
-}
-
+// Metadata is defined here, in the Server Component part of the file.
 export const metadata: Metadata = {
   title: 'Student Social Feed – Connect, Post, Like, and Comment',
   description: 'Join the conversation on the UniNest student social feed. Connect with peers, share updates, and stay engaged with your campus community.',
 };
 
-export default FeedPage;
+// The default export is the Page component, which is a Server Component.
+export default function FeedPage() {
+  return <FeedContent />;
+}
