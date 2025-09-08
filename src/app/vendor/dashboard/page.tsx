@@ -18,7 +18,7 @@ export default function VendorDashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <StatsCard title="Total Revenue" value="$45,231.89" icon={DollarSign} change="+20.1% from last month" />
+        <StatsCard title="Total Revenue" value="₹4,52,31,890" icon={DollarSign} change="+20.1% from last month" />
         <StatsCard title="Total Orders" value="+2,350" icon={ShoppingCart} change="+180.1% from last month" />
         <StatsCard title="Products Sold" value="+1,980" icon={BookOpen} change="+19% from last month" />
       </div>
