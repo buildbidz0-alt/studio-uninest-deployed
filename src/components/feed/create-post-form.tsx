@@ -1,9 +1,25 @@
+'use client';
+
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-export default function CreatePostForm() {
+type CreatePostFormProps = {
+  onPost: (content: string) => void;
+};
+
+export default function CreatePostForm({ onPost }: CreatePostFormProps) {
+  const [content, setContent] = useState('');
+
+  const handleSubmit = () => {
+    if (content.trim()) {
+      onPost(content);
+      setContent('');
+    }
+  };
+
   return (
     <Card className="shadow-sm">
       <CardContent className="p-4">
@@ -16,9 +32,11 @@ export default function CreatePostForm() {
             <Textarea
               placeholder="What's on your mind?"
               className="min-h-[80px] w-full resize-none border-0 px-0 shadow-none focus-visible:ring-0"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
             />
             <div className="flex justify-end">
-              <Button>Post</Button>
+              <Button onClick={handleSubmit} disabled={!content.trim()}>Post</Button>
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, MoreHorizontal } from 'lucide-react';
 
-type Post = {
+export type Post = {
   id: number;
   author: string;
   handle: string;
