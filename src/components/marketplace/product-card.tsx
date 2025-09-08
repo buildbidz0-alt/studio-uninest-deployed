@@ -4,6 +4,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
+import { MessageSquare } from 'lucide-react';
+import Link from 'next/link';
 
 export type Product = {
   id: number;
@@ -22,6 +24,8 @@ type ProductCardProps = {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
+  // TODO: Replace this with actual logic based on user's purchase history from your backend
+  const hasPurchased = false; 
 
   return (
     <Card className="overflow-hidden shadow-sm transition-shadow hover:shadow-lg flex flex-col">
@@ -43,9 +47,20 @@ export default function ProductCard({ product }: ProductCardProps) {
         <p className="text-sm">Sold by <span className="font-medium text-primary">{product.seller}</span></p>
       </CardContent>
       <CardFooter className="p-4 pt-0 mt-auto">
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between w-full gap-2">
             <p className="text-xl font-bold text-primary">₹{product.price.toLocaleString()}</p>
-            <Button disabled={!user}>Buy Now</Button>
+            <div className='flex gap-2'>
+              {hasPurchased && (
+                  <Button variant="outline" size="icon" asChild>
+                    {/* TODO: This should link to the specific chat room with the vendor */}
+                    <Link href="/chat">
+                      <MessageSquare className="size-4"/>
+                      <span className="sr-only">Chat with vendor</span>
+                    </Link>
+                  </Button>
+              )}
+              <Button disabled={!user}>Buy Now</Button>
+            </div>
         </div>
       </CardFooter>
     </Card>

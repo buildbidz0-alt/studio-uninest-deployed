@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog, MessageSquare } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
@@ -11,9 +11,10 @@ import { Separator } from '../ui/separator';
 const navItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/feed', label: 'Social Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest'] },
+  { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
+  { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'vendor', 'admin'] },
   { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student', 'guest'] },
+  { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student', 'guest', 'admin'] },
   { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, roles: ['vendor'] },
 ];
