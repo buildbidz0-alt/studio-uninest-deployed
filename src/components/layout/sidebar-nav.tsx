@@ -3,7 +3,7 @@
 
 import { usePathname } from 'next/navigation';
 import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy } from 'lucide-react';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 
@@ -25,6 +25,7 @@ const bottomNavItems = [
 export function SidebarNav() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { setOpenMobile } = useSidebar();
 
   const filteredNavItems = navItems.filter(item => {
     if (!item.admin) return true;
@@ -36,13 +37,18 @@ export function SidebarNav() {
     return user?.email === 'admin@uninest.com';
   });
 
+  const handleLinkClick = () => {
+    setOpenMobile(false);
+  }
+
   return (
     <SidebarMenu>
       {filteredNavItems.map((item) => (
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton
             asChild
-            isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
+            isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/')}
+            onClick={handleLinkClick}
           >
             <Link href={item.href}>
               <item.icon className="size-4" />
@@ -59,6 +65,7 @@ export function SidebarNav() {
             <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
+                onClick={handleLinkClick}
             >
                 <Link href={item.href}>
                 <item.icon className="size-4" />
