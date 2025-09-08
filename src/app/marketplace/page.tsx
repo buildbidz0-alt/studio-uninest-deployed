@@ -1,3 +1,4 @@
+
 import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,64 +10,7 @@ export const metadata: Metadata = {
   description: 'Buy and sell textbooks and other second-hand goods.',
 };
 
-const products = [
-  {
-    id: 1,
-    name: 'Advanced Engineering Mathematics',
-    price: 89.99,
-    imageUrl: 'https://picsum.photos/seed/p1/400/300',
-    aiHint: 'textbook cover'
-  },
-  {
-    id: 2,
-    name: 'Organic Chemistry, 8th Edition',
-    price: 120.50,
-    imageUrl: 'https://picsum.photos/seed/p2/400/300',
-    aiHint: 'science book'
-  },
-  {
-    id: 3,
-    name: 'The Art of Computer Programming',
-    price: 75.00,
-    imageUrl: 'https://picsum.photos/seed/p3/400/300',
-    aiHint: 'coding textbook'
-  },
-  {
-    id: 4,
-    name: 'Principles of Economics',
-    price: 45.99,
-    imageUrl: 'https://picsum.photos/seed/p4/400/300',
-    aiHint: 'economics book'
-  },
-  {
-    id: 5,
-    name: 'Graphic Design School: The Principles',
-    price: 35.00,
-    imageUrl: 'https://picsum.photos/seed/p5/400/300',
-    aiHint: 'design book'
-  },
-  {
-    id: 6,
-    name: 'Used Scientific Calculator',
-    price: 25.00,
-    imageUrl: 'https://picsum.photos/seed/p6/400/300',
-    aiHint: 'calculator device'
-  },
-    {
-    id: 7,
-    name: 'Lab Coat (Medium)',
-    price: 15.00,
-    imageUrl: 'https://picsum.photos/seed/p7/400/300',
-    aiHint: 'lab coat'
-  },
-  {
-    id: 8,
-    name: 'Complete Set of Highlighters',
-    price: 8.99,
-    imageUrl: 'https://picsum.photos/seed/p8/400/300',
-    aiHint: 'stationery items'
-  },
-];
+const products: any[] = [];
 
 export default function MarketplacePage() {
   return (
@@ -88,11 +32,18 @@ export default function MarketplacePage() {
          <Button>Add Listing</Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {products.length > 0 ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center text-muted-foreground py-16">
+          <h2 className="text-xl font-semibold">Marketplace is empty</h2>
+          <p>Check back later or be the first to add a listing!</p>
+        </div>
+      )}
     </div>
   );
 }
