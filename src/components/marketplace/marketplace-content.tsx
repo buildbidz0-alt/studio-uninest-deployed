@@ -10,7 +10,6 @@ import { useAuth } from '@/hooks/use-auth';
 import type { Product } from '@/components/marketplace/product-card';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { useState, useEffect } from 'react';
 
 // TODO: Fetch products from your API instead of using this mock data
 const allProducts: Product[] = [];
