@@ -2,12 +2,12 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  "apiKey": "STUDIO_FIREBASE_API_KEY",
-  "authDomain": "STUDIO_FIREBASE_AUTH_DOMAIN",
-  "projectId": "STUDIO_FIREBASE_PROJECT_ID",
-  "storageBucket": "STUDIO_FIREBASE_STORAGE_BUCKET",
-  "messagingSenderId": "STUDIO_FIREBASE_MESSAGING_SENDER_ID",
-  "appId": "STUDIO_FIREBASE_APP_ID"
+  "apiKey": "YOUR_ACTUAL_API_KEY",
+  "authDomain": "YOUR_ACTUAL_AUTH_DOMAIN",
+  "projectId": "YOUR_ACTUAL_PROJECT_ID",
+  "storageBucket": "YOUR_ACTUAL_STORAGE_BUCKET",
+  "messagingSenderId": "YOUR_ACTUAL_MESSAGING_SENDER_ID",
+  "appId": "YOUR_ACTUAL_APP_ID"
 };
 
 // Initialize Firebase
