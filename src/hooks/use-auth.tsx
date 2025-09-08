@@ -35,8 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
       
       if (currentUser) {
-        const userRole = currentUser.user_metadata?.role || 'student';
-        setRole(userRole);
+        // Temp logic for demo: assign 'admin' role to a specific email
+        if (currentUser.email === 'admin@uninest.com') {
+          setRole('admin');
+        } else {
+          const userRole = currentUser.user_metadata?.role || 'student';
+          setRole(userRole);
+        }
       } else {
         setRole('guest');
       }
