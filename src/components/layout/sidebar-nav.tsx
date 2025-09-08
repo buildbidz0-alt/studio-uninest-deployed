@@ -2,10 +2,11 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { Separator } from '../ui/separator';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest'] },
@@ -18,8 +19,8 @@ const navItems = [
 ];
 
 const bottomNavItems = [
-    { href: '/settings', label: 'Settings', icon: Settings, roles: ['student', 'vendor'] },
-    { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest'] },
+    { href: '/settings', label: 'Settings', icon: Settings, roles: ['student', 'vendor', 'admin'] },
+    { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
 ]
 
 export function SidebarNav() {
@@ -54,6 +55,24 @@ export function SidebarNav() {
       ))}
 
         <div className='flex-grow' />
+
+        {role === 'admin' && (
+             <SidebarMenuItem>
+                <Separator className='my-2' />
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin')}
+                    onClick={handleLinkClick}
+                >
+                    <Link href="/admin/dashboard">
+                    <UserCog className="size-4" />
+                    <span>Admin Panel</span>
+                    </Link>
+                </SidebarMenuButton>
+             </SidebarMenuItem>
+        )}
+        
+        <Separator className='my-2' />
 
         {filteredBottomNavItems.map((item) => (
             <SidebarMenuItem key={item.href}>

@@ -7,7 +7,7 @@ import { auth } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 
 // In a real app, you'd fetch this from a database (e.g., Firestore)
-type UserRole = 'student' | 'vendor' | 'admin';
+type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 interface AuthContextType {
   user: User | null;
@@ -18,12 +18,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Adjusted public routes
-const publicRoutes = ['/login', '/signup', '/password-reset', '/', '/about', '/terms', '/marketplace', '/workspace'];
+const publicRoutes = ['/login', '/signup', '/password-reset', '/', '/about', '/terms'];
+const studentGuestRoutes = ['/marketplace', '/workspace', '/feed', '/notes', '/donate'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<UserRole>('student'); // Default role
+  const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -34,14 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       if (user) {
         // --- MOCK ROLE DETERMINATION ---
-        // In a real app, you would fetch the user's role from your database here.
-        // For example, from a 'users' collection in Firestore.
         if (user.email === 'admin@uninest.com') {
-          setRole('vendor'); // Using 'vendor' role to show vendor dashboard
-        } else {
+          setRole('admin');
+        } else if (user.email && user.email.includes('vendor')) {
+            setRole('vendor');
+        }
+        else {
           setRole('student');
         }
         // --- END MOCK ---
+      } else {
+        setRole('guest');
       }
       setLoading(false);
     });
@@ -51,21 +54,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-
-    const isPublic = publicRoutes.some(publicPath => 
-      pathname === publicPath || (publicPath !== '/' && pathname.startsWith(publicPath))
-    );
     
-    // If it's not a public route and the user is not logged in, redirect to login
-    if (!isPublic && !user) {
+    // Allow access to admin routes if role is admin
+    if (pathname.startsWith('/admin')) {
+      if (role !== 'admin') {
+        router.push('/');
+      }
+      return;
+    }
+
+    const isPublic = publicRoutes.includes(pathname) || 
+                     studentGuestRoutes.some(route => pathname.startsWith(route));
+    
+    if (!isPublic && role === 'guest') {
       router.push('/login');
     }
 
-  }, [user, loading, pathname, router]);
+  }, [user, loading, pathname, router, role]);
 
   const signOut = async () => {
     await firebaseSignOut(auth);
-    setRole('student'); // Reset role on sign out
+    setRole('guest');
     router.push('/login');
   };
 

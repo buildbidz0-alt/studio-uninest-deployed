@@ -1,0 +1,37 @@
+
+'use client';
+
+import { usePathname } from 'next/navigation';
+import { LayoutDashboard, Users, ShoppingCart, CreditCard, ScrollText, LogOut } from 'lucide-react';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import Link from 'next/link';
+
+const navItems = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/listings', label: 'Listings', icon: ShoppingCart },
+  { href: '/admin/payments', label: 'Payments', icon: CreditCard },
+  { href: '/admin/logs', label: 'Audit Logs', icon: ScrollText },
+];
+
+export function AdminSidebarNav() {
+  const pathname = usePathname();
+
+  return (
+    <SidebarMenu>
+      {navItems.map((item) => (
+        <SidebarMenuItem key={item.href}>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname.startsWith(item.href)}
+          >
+            <Link href={item.href}>
+              <item.icon className="size-4" />
+              <span>{item.label}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
+}
