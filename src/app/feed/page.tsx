@@ -25,7 +25,7 @@ export default function FeedPage() {
       avatarUrl: 'https://picsum.photos/id/237/40/40',
       content,
       likes: 0,
-      comments: 0,
+      comments: [],
       timestamp: 'Just now',
     };
     setPosts([newPost, ...posts]);
@@ -37,6 +37,21 @@ export default function FeedPage() {
 
   const editPost = (id: number, newContent: string) => {
     setPosts(posts.map(p => p.id === id ? { ...p, content: newContent } : p));
+  };
+
+  const addComment = (postId: number, commentContent: string) => {
+    const newComment = {
+      id: Date.now(),
+      author: 'Guest User',
+      handle: 'guest',
+      avatarUrl: 'https://picsum.photos/id/237/40/40',
+      content: commentContent,
+    };
+    setPosts(posts.map(p => 
+      p.id === postId 
+        ? { ...p, comments: [newComment, ...p.comments] } 
+        : p
+    ));
   };
 
   return (
@@ -52,6 +67,7 @@ export default function FeedPage() {
                 post={post} 
                 onDelete={deletePost}
                 onEdit={editPost}
+                onComment={addComment}
               />
             ))
           ) : (

@@ -24,6 +24,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Textarea } from '../ui/textarea';
+import { Separator } from '../ui/separator';
+
+type Comment = {
+  id: number;
+  author: string;
+  handle: string;
+  avatarUrl: string;
+  content: string;
+};
 
 export type Post = {
   id: number;
@@ -32,7 +41,7 @@ export type Post = {
   avatarUrl: string;
   content: string;
   likes: number;
-  comments: number;
+  comments: Comment[];
   timestamp: string;
 };
 
@@ -40,29 +49,33 @@ type PostCardProps = {
   post: Post;
   onDelete: (id: number) => void;
   onEdit: (id: number, newContent: string) => void;
+  onComment: (postId: number, commentContent: string) => void;
 };
 
-export default function PostCard({ post, onDelete, onEdit }: PostCardProps) {
+export default function PostCard({ post, onDelete, onEdit, onComment }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
-  const [commentCount, setCommentCount] = useState(post.comments);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(post.content);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
 
   const handleLike = () => {
     setIsLiked(!isLiked);
     setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
   };
 
-  const handleComment = () => {
-    // For now, we'll just increment the comment count.
-    setCommentCount(commentCount + 1);
-  };
-
   const handleSaveEdit = () => {
     onEdit(post.id, editedContent);
     setIsEditing(false);
   };
+
+  const handleAddComment = () => {
+    if (newComment.trim()) {
+      onComment(post.id, newComment);
+      setNewComment('');
+    }
+  }
 
   return (
     <Card className="shadow-sm transition-shadow hover:shadow-md">
@@ -132,25 +145,64 @@ export default function PostCard({ post, onDelete, onEdit }: PostCardProps) {
         )}
       </CardContent>
       {!isEditing && (
-        <CardFooter className="flex items-center justify-start gap-4 p-4 pt-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center gap-2 text-muted-foreground"
-            onClick={handleLike}
-          >
-            <Heart className={`size-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-            <span>{likeCount}</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center gap-2 text-muted-foreground"
-            onClick={handleComment}
-          >
-            <MessageCircle className="size-4" />
-            <span>{commentCount}</span>
-          </Button>
+        <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2">
+            <div className='flex items-center justify-start gap-4'>
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center gap-2 text-muted-foreground"
+                    onClick={handleLike}
+                >
+                    <Heart className={`size-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                    <span>{likeCount}</span>
+                </Button>
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center gap-2 text-muted-foreground"
+                    onClick={() => setShowComments(!showComments)}
+                >
+                    <MessageCircle className="size-4" />
+                    <span>{post.comments.length}</span>
+                </Button>
+            </div>
+            {showComments && (
+                <div className='w-full pt-4 space-y-4'>
+                    <Separator />
+                     <div className="flex items-start gap-2">
+                        <Avatar className="size-8">
+                            <AvatarImage src="https://picsum.photos/id/237/40/40" alt="Your avatar" />
+                            <AvatarFallback>U</AvatarFallback>
+                        </Avatar>
+                        <div className="w-full space-y-2">
+                             <Textarea
+                                placeholder="Write a comment..."
+                                className="min-h-[60px] w-full resize-none"
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                            />
+                            <div className="flex justify-end">
+                                <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>Reply</Button>
+                            </div>
+                        </div>
+                    </div>
+                    {post.comments.map(comment => (
+                        <div key={comment.id} className="flex items-start gap-2">
+                             <Avatar className="size-8">
+                                <AvatarImage src={comment.avatarUrl} alt={`${comment.author}'s avatar`} data-ai-hint="person face"/>
+                                <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 rounded-lg bg-muted px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                    <p className="font-semibold text-sm">{comment.author}</p>
+                                    <p className="text-xs text-muted-foreground">@{comment.handle}</p>
+                                </div>
+                                <p className="text-sm">{comment.content}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </CardFooter>
       )}
     </Card>
