@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -29,55 +29,58 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { Checkbox } from "@/components/ui/checkbox"
+
+const vendorCategories = ["library", "food mess", "cybercafe", "hostels"] as const;
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   confirmPassword: z.string(),
-  role: z.enum(["student", "library", "food mess", "cybercafe", "hostels"], {
+  userType: z.enum(["student", "vendor"], {
     required_error: "You need to select a role.",
   }),
+  vendorCategories: z.array(z.string()).optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+}).refine(data => {
+    if (data.userType === 'vendor') {
+      return data.vendorCategories && data.vendorCategories.length > 0;
+    }
+    return true;
+}, {
+    message: "Please select at least one vendor category.",
+    path: ["vendorCategories"],
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'student' | 'vendor' | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
       password: '',
       confirmPassword: '',
+      vendorCategories: [],
     },
   });
 
-  function handleRoleSelection(role: 'student' | 'vendor') {
-    setSelectedRole(role);
-    if (role === 'student') {
-        form.setValue('role', 'student');
-    } else {
-        form.setValue('role', 'library'); // Default vendor role
-    }
-  }
+  const userType = form.watch('userType');
 
-  function handleVendorCategorySelection(category: "library" | "food mess" | "cybercafe" | "hostels") {
-    form.setValue('role', category);
-  }
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormValues) {
     setIsLoading(true);
+    const role = values.userType === 'student' ? 'student' : values.vendorCategories;
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      console.log('User created with role:', values.role);
+      console.log('User created with role(s):', role);
 
       router.push('/');
     } catch (error: any) {
@@ -100,46 +103,84 @@ export default function SignupForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-             <div className="space-y-3">
-                <FormLabel>I am a...</FormLabel>
-                <div className="grid grid-cols-2 gap-2">
-                    <Button
-                    type="button"
-                    variant={selectedRole === 'student' ? 'default' : 'outline'}
-                    onClick={() => handleRoleSelection('student')}
-                    >
-                    Student
-                    </Button>
-                    <Button
-                    type="button"
-                    variant={selectedRole === 'vendor' ? 'default' : 'outline'}
-                    onClick={() => handleRoleSelection('vendor')}
-                    >
-                    Vendor
-                    </Button>
-                </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="userType"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>I am a...</FormLabel>
+                   <FormControl>
+                     <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={field.value === 'student' ? 'default' : 'outline'}
+                          onClick={() => field.onChange('student')}
+                        >
+                          Student
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={field.value === 'vendor' ? 'default' : 'outline'}
+                          onClick={() => field.onChange('vendor')}
+                        >
+                          Vendor
+                        </Button>
+                    </div>
+                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {selectedRole === 'vendor' && (
-                <FormField
+            {userType === 'vendor' && (
+              <FormField
                 control={form.control}
-                name="role"
-                render={({ field }) => (
-                    <FormItem className="space-y-3">
-                        <Separator />
-                        <FormLabel>Select Vendor Category</FormLabel>
-                        <FormControl>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button type="button" variant={field.value === 'library' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('library')}>Library</Button>
-                                <Button type="button" variant={field.value === 'food mess' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('food mess')}>Food Mess</Button>
-                                <Button type="button" variant={field.value === 'cybercafe' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('cybercafe')}>Cybercafe</Button>
-                                <Button type="button" variant={field.value === 'hostels' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('hostels')}>Hostels</Button>
-                            </div>
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
+                name="vendorCategories"
+                render={() => (
+                  <FormItem>
+                     <Separator />
+                    <div className="mb-4">
+                      <FormLabel className="text-base">Vendor Categories</FormLabel>
+                    </div>
+                    <div className="space-y-2">
+                    {vendorCategories.map((item) => (
+                      <FormField
+                        key={item}
+                        control={form.control}
+                        name="vendorCategories"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={item}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...(field.value || []), item])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== item
+                                          )
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal capitalize">
+                                {item}
+                              </FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                />
+              />
             )}
              <FormField
               control={form.control}
@@ -180,7 +221,7 @@ export default function SignupForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading || !selectedRole}>
+            <Button type="submit" className="w-full" disabled={isLoading || !userType}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign Up
             </Button>
