@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function MarketplacePage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense>
       <MarketplaceContent />
     </Suspense>
   )
