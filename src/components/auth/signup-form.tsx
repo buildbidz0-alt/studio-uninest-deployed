@@ -142,7 +142,7 @@ export default function SignupForm() {
                     <div className="mb-4">
                       <FormLabel className="text-base">Vendor Categories</FormLabel>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
                     {vendorCategories.map((item) => (
                       <FormField
                         key={item}
