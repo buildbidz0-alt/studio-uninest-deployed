@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -29,12 +30,13 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   confirmPassword: z.string(),
-  role: z.enum(["student", "vendor"], {
+  role: z.enum(["student", "library", "food mess", "cybercafe", "hostels"], {
     required_error: "You need to select a role.",
   }),
 }).refine(data => data.password === data.confirmPassword, {
@@ -44,6 +46,7 @@ const formSchema = z.object({
 
 export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'student' | 'vendor' | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -56,14 +59,24 @@ export default function SignupForm() {
     },
   });
 
+  function handleRoleSelection(role: 'student' | 'vendor') {
+    setSelectedRole(role);
+    if (role === 'student') {
+        form.setValue('role', 'student');
+    } else {
+        form.setValue('role', 'library'); // Default vendor role
+    }
+  }
+
+  function handleVendorCategorySelection(category: "library" | "food mess" | "cybercafe" | "hostels") {
+    form.setValue('role', category);
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      // Note: In a real app, you'd save the 'role' to a database (like Firestore)
-      // associated with the user's ID (userCredential.user.uid).
-      // For this prototype, the role is only handled on the client-side.
       console.log('User created with role:', values.role);
 
       router.push('/');
@@ -87,35 +100,48 @@ export default function SignupForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>I am a...</FormLabel>
-                   <FormControl>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant={field.value === 'student' ? 'default' : 'outline'}
-                          onClick={() => field.onChange('student')}
-                        >
-                          Student
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={field.value === 'vendor' ? 'default' : 'outline'}
-                          onClick={() => field.onChange('vendor')}
-                        >
-                          Vendor
-                        </Button>
-                      </div>
-                    </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
+             <div className="space-y-3">
+                <FormLabel>I am a...</FormLabel>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button
+                    type="button"
+                    variant={selectedRole === 'student' ? 'default' : 'outline'}
+                    onClick={() => handleRoleSelection('student')}
+                    >
+                    Student
+                    </Button>
+                    <Button
+                    type="button"
+                    variant={selectedRole === 'vendor' ? 'default' : 'outline'}
+                    onClick={() => handleRoleSelection('vendor')}
+                    >
+                    Vendor
+                    </Button>
+                </div>
+            </div>
+
+            {selectedRole === 'vendor' && (
+                <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <Separator />
+                        <FormLabel>Select Vendor Category</FormLabel>
+                        <FormControl>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button type="button" variant={field.value === 'library' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('library')}>Library</Button>
+                                <Button type="button" variant={field.value === 'food mess' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('food mess')}>Food Mess</Button>
+                                <Button type="button" variant={field.value === 'cybercafe' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('cybercafe')}>Cybercafe</Button>
+                                <Button type="button" variant={field.value === 'hostels' ? 'default' : 'outline'} onClick={() => handleVendorCategorySelection('hostels')}>Hostels</Button>
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+                />
+            )}
+             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
@@ -154,7 +180,7 @@ export default function SignupForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !selectedRole}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign Up
             </Button>
