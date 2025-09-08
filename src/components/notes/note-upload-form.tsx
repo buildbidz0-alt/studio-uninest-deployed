@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';
@@ -9,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { UploadCloud, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useRef } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
 const initialState = {
   message: null,
@@ -37,6 +40,7 @@ function SubmitButton() {
 export default function NoteUploadForm() {
   const [state, formAction] = useFormState(uploadAndTagNote, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (state.message === 'success') {
@@ -52,25 +56,33 @@ export default function NoteUploadForm() {
         <CardDescription>Our AI will automatically tag your document to make it easily searchable.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction} className="space-y-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="noteFile">Note Document</Label>
-            <Input id="noteFile" name="noteFile" type="file" required />
-          </div>
-          <SubmitButton />
-        </form>
-        {state.message === 'error' && (
-          <p className="mt-4 text-sm text-destructive">Could not process file. Please try a different document.</p>
-        )}
-        {state.tags && state.tags.length > 0 && (
-          <div className="mt-4">
-            <h3 className="font-semibold">Suggested Tags:</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {state.tags.map((tag: string) => (
-                <Badge key={tag} variant="secondary">{tag}</Badge>
-              ))}
-            </div>
-          </div>
+        {user ? (
+          <>
+            <form ref={formRef} action={formAction} className="space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="noteFile">Note Document</Label>
+                <Input id="noteFile" name="noteFile" type="file" required />
+              </div>
+              <SubmitButton />
+            </form>
+            {state.message === 'error' && (
+              <p className="mt-4 text-sm text-destructive">Could not process file. Please try a different document.</p>
+            )}
+            {state.tags && state.tags.length > 0 && (
+              <div className="mt-4">
+                <h3 className="font-semibold">Suggested Tags:</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {state.tags.map((tag: string) => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-muted-foreground">
+            <Link href="/login" className="text-primary font-semibold hover:underline">Log in</Link> or <Link href="/signup" className="text-primary font-semibold hover:underline">sign up</Link> to upload and share your notes.
+          </p>
         )}
       </CardContent>
     </Card>

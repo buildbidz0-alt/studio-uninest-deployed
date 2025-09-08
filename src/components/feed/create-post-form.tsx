@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -5,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
 type CreatePostFormProps = {
   onPost: (content: string) => void;
@@ -12,6 +15,7 @@ type CreatePostFormProps = {
 
 export default function CreatePostForm({ onPost }: CreatePostFormProps) {
   const [content, setContent] = useState('');
+  const { user } = useAuth();
 
   const handleSubmit = () => {
     if (content.trim()) {
@@ -20,13 +24,25 @@ export default function CreatePostForm({ onPost }: CreatePostFormProps) {
     }
   };
 
+  if (!user) {
+    return (
+      <Card className="shadow-sm">
+        <CardContent className="p-4 text-center text-muted-foreground">
+          <p>
+            <Link href="/login" className="text-primary font-semibold hover:underline">Log in</Link> or <Link href="/signup" className="text-primary font-semibold hover:underline">sign up</Link> to create a post.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="shadow-sm">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Avatar>
-            <AvatarImage src="https://picsum.photos/id/237/40/40" alt="Your avatar" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={user.photoURL || 'https://picsum.photos/id/237/40/40'} alt="Your avatar" />
+            <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="w-full space-y-2">
             <Textarea

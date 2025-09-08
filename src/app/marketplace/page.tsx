@@ -1,18 +1,16 @@
 
+'use client';
+
 import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ListFilter } from 'lucide-react';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Marketplace | Uninest',
-  description: 'Buy and sell textbooks and other second-hand goods.',
-};
+import { useAuth } from '@/hooks/use-auth';
 
 const products: any[] = [];
 
 export default function MarketplacePage() {
+  const { user } = useAuth();
   return (
     <div className="space-y-8">
       <div>
@@ -29,7 +27,7 @@ export default function MarketplacePage() {
           <ListFilter className="size-4" />
           Filters
         </Button>
-         <Button>Add Listing</Button>
+         <Button disabled={!user}>Add Listing</Button>
       </div>
 
       {products.length > 0 ? (
