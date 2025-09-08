@@ -27,53 +27,39 @@ import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import { Label } from '../ui/label';
+import { formatDistanceToNow } from 'date-fns';
+import { PostWithAuthor } from './feed-content';
 
 type Comment = {
   id: number;
-  author: string;
-  handle: string;
-  avatarUrl: string;
   content: string;
-};
-
-export type Post = {
-  id: number;
-  author: string;
-  handle: string;
-  avatarUrl: string;
-  content: string;
-  likes: number;
-  comments: Comment[];
-  timestamp: string;
+  profiles: {
+    full_name: string;
+    avatar_url: string;
+    handle: string;
+  }
 };
 
 type PostCardProps = {
-  post: Post;
+  post: PostWithAuthor;
   onDelete: (id: number) => void;
   onEdit: (id: number, newContent: string) => void;
   onComment: (postId: number, commentContent: string) => void;
-  onLike: (postId: number, newLikeCount: number) => void;
+  onLike: (postId: number, isLiked: boolean) => void;
 };
 
 export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: PostCardProps) {
   const { user, role } = useAuth();
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes);
   const [editedContent, setEditedContent] = useState(post.content);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
 
-  const isAuthor = user?.email?.split('@')[0] === post.handle;
+  const isAuthor = user?.id === post.user_id;
   const isAdmin = role === 'admin';
   const canEditOrDelete = isAuthor || isAdmin;
 
   const handleLike = () => {
-    if (!user) return;
-    const newIsLiked = !isLiked;
-    const newLikeCount = newIsLiked ? likeCount + 1 : likeCount - 1;
-    setIsLiked(newIsLiked);
-    setLikeCount(newLikeCount);
-    onLike(post.id, newLikeCount);
+    onLike(post.id, post.isLiked);
   };
 
   const handleSaveEdit = () => {
@@ -89,25 +75,28 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
 
   const getFormattedTimestamp = () => {
     try {
-      const date = new Date(post.timestamp);
-      return date.toLocaleString();
+      return formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
     } catch (e) {
-      return post.timestamp;
+      return post.created_at;
     }
   }
+
+  const authorName = post.profiles?.full_name || 'Anonymous User';
+  const authorHandle = post.profiles?.handle || 'anonymous';
+  const authorAvatar = post.profiles?.avatar_url || 'https://picsum.photos/seed/anon/40/40';
 
   return (
     <Card className="shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="flex flex-row items-start gap-4 p-4">
         <Avatar>
-          <AvatarImage src={post.avatarUrl} alt={`${post.author}'s avatar`} data-ai-hint="person face" />
-          <AvatarFallback>{post.author.charAt(0)}</AvatarFallback>
+          <AvatarImage src={authorAvatar} alt={`${authorName}'s avatar`} data-ai-hint="person face" />
+          <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold">{post.author}</p>
-              <p className="text-sm text-muted-foreground">@{post.handle}</p>
+              <p className="font-semibold">{authorName}</p>
+              <p className="text-sm text-muted-foreground">@{authorHandle}</p>
             </div>
              <p className="text-sm text-muted-foreground">{getFormattedTimestamp()}</p>
           </div>
@@ -133,7 +122,6 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {/* This is the dialog for editing a post */}
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Edit Post</AlertDialogTitle>
@@ -170,8 +158,8 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
                   onClick={handleLike}
                   disabled={!user}
               >
-                  <Heart className={`size-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                  <span>{likeCount}</span>
+                  <Heart className={`size-4 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                  <span>{post.likes?.count || 0}</span>
               </Button>
               <Button 
                   variant="ghost" 
@@ -209,16 +197,16 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
                        <a href="/login" className="text-primary font-semibold hover:underline">Log in</a> to join the conversation.
                     </p>
                   )}
-                  {post.comments.map(comment => (
+                  {post.comments.map((comment: Comment) => (
                       <div key={comment.id} className="flex items-start gap-2">
                            <Avatar className="size-8">
-                              <AvatarImage src={comment.avatarUrl} alt={`${comment.author}'s avatar`} data-ai-hint="person face"/>
-                              <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
+                              <AvatarImage src={comment.profiles.avatar_url} alt={`${comment.profiles.full_name}'s avatar`} data-ai-hint="person face"/>
+                              <AvatarFallback>{comment.profiles.full_name.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 rounded-lg bg-muted px-3 py-2">
                               <div className="flex items-center gap-2">
-                                  <p className="font-semibold text-sm">{comment.author}</p>
-                                  <p className="text-xs text-muted-foreground">@{comment.handle}</p>
+                                  <p className="font-semibold text-sm">{comment.profiles.full_name}</p>
+                                  <p className="text-xs text-muted-foreground">@{comment.profiles.handle}</p>
                               </div>
                               <p className="text-sm">{comment.content}</p>
                           </div>
@@ -230,3 +218,6 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
     </Card>
   );
 }
+
+// Remove the separate Post type as it's now replaced by PostWithAuthor
+export type {};
