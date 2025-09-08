@@ -3,7 +3,7 @@ import PostCard from '@/components/feed/post-card';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Social Feed | Student Hub',
+  title: 'Social Feed | Uninest',
   description: 'Connect with your peers and share updates.',
 };
 

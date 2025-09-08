@@ -5,7 +5,7 @@ import { Search, ListFilter } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Marketplace | Student Hub',
+  title: 'Marketplace | Uninest',
   description: 'Buy and sell textbooks and other second-hand goods.',
 };
 

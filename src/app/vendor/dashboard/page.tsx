@@ -5,7 +5,7 @@ import { DollarSign, ShoppingCart, BookOpen } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Vendor Dashboard | Student Hub',
+  title: 'Vendor Dashboard | Uninest',
   description: 'Manage your listings, orders, and payouts.',
 };
 

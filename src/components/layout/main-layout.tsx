@@ -26,7 +26,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             <Logo className="size-8 text-primary" />
-            <h1 className="text-xl font-semibold">Student Hub</h1>
+            <h1 className="text-xl font-semibold">Uninest</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>

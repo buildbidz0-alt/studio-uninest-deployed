@@ -2,8 +2,8 @@ import PasswordResetForm from '@/components/auth/password-reset-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Password Reset | Student Hub',
-    description: 'Reset your Student Hub account password.',
+    title: 'Password Reset | Uninest',
+    description: 'Reset your Uninest account password.',
 };
 
 export default function PasswordResetPage() {

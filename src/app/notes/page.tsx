@@ -5,7 +5,7 @@ import NoteCard from '@/components/notes/note-card';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Notes Hub | Student Hub',
+  title: 'Notes Hub | Uninest',
   description: 'Upload, share, and find study notes.',
 };
 

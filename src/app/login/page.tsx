@@ -2,8 +2,8 @@ import LoginForm from '@/components/auth/login-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Login | Student Hub',
-    description: 'Login to your Student Hub account.',
+    title: 'Login | Uninest',
+    description: 'Login to your Uninest account.',
 };
 
 export default function LoginPage() {

@@ -56,7 +56,7 @@ export default function SignupForm() {
     setIsLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/feed');
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
