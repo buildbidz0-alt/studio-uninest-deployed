@@ -13,8 +13,7 @@ import type { Metadata } from 'next';
 //   description: 'Connect with your peers and share updates.',
 // };
 
-
-export default function FeedPage() {
+function FeedContent() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -109,3 +108,14 @@ export default function FeedPage() {
     </div>
   );
 }
+
+const FeedPage = () => {
+  return <FeedContent />;
+}
+
+export const metadata: Metadata = {
+  title: 'Student Social Feed – Connect, Post, Like, and Comment',
+  description: 'Join the conversation on the UniNest student social feed. Connect with peers, share updates, and stay engaged with your campus community.',
+};
+
+export default FeedPage;

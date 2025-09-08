@@ -5,7 +5,12 @@ import { Briefcase, BookOpen, Users, GraduationCap, PenTool, LayoutDashboard } f
 import { Logo } from '@/components/icons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { Metadata } from 'next';
 
+export const metadata: Metadata = {
+  title: 'UniNest – Connect & Simplify Campus Life',
+  description: 'The All-in-One Platform for Students & Libraries. Unlock your full potential with our suite of academic tools, a vibrant marketplace, and powerful collaboration features designed for the modern student.',
+};
 
 export default function HomePage() {
   return (

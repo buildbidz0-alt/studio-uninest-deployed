@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Briefcase, Building, Calendar, IndianRupee } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Internships | UniNest Workspace',
-  description: 'Find and apply for internships from top companies.',
+  title: 'Find Internships & Apply Easily',
+  description: 'Browse and apply for internships from top companies. Gain real-world experience and kickstart your career with UniNest.',
 };
 
 // Mock data - replace with API call

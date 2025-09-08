@@ -1,7 +1,7 @@
 
+
 'use client';
 
-import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -10,11 +10,7 @@ import { Heart, Trophy, Loader2 } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-
-// export const metadata: Metadata = {
-//   title: 'Donate | UniNest',
-//   description: 'Support UniNest and help keep the platform running for students everywhere.',
-// };
+import type { Metadata } from 'next';
 
 // Placeholder data - replace with API calls
 const raisedAmount = 3500;
@@ -27,8 +23,7 @@ const topDonors = [
   { name: 'Anonymous', amount: 250, avatar: '' },
 ];
 
-
-export default function DonatePage() {
+function DonateContent() {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -165,4 +160,8 @@ export default function DonatePage() {
         </section>
     </div>
   );
+}
+
+export default function DonatePage() {
+    return <DonateContent />
 }

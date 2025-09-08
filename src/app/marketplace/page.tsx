@@ -11,6 +11,7 @@ import type { Product } from '@/components/marketplace/product-card';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 
 const allProducts: Product[] = [
   {
@@ -139,6 +140,10 @@ function MarketplaceContent() {
   );
 }
 
+export const metadata: Metadata = {
+  title: 'Marketplace – Buy & Sell Textbooks, Hostel Needs, & More',
+  description: 'Explore the UniNest marketplace to buy and sell textbooks, hostel needs, food mess subscriptions, clothes, and other products from fellow students.',
+};
 
 export default function MarketplacePage() {
   return (
