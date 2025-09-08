@@ -162,11 +162,6 @@ function DonateContent() {
   );
 }
 
-export const metadata: Metadata = {
-  title: 'Support UniNest – Help Us Reach Our Monthly Goal',
-  description: 'UniNest runs on community support. Our monthly server cost is ₹10,000. Every rupee counts. Donate now to help keep the platform running for students.',
-};
-
 export default function DonatePage() {
     return <DonateContent />
 }
