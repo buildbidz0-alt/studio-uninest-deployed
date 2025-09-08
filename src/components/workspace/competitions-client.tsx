@@ -8,26 +8,66 @@ import { Trophy, Calendar, IndianRupee, Loader2 } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
-// TODO: Fetch competitions from your API
-const competitions: any[] = [];
+type Competition = {
+    id: number;
+    title: string;
+    description: string;
+    prize: number;
+    deadline: string;
+    entry_fee: number;
+};
 
 export default function CompetitionsClient() {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const [loading, setLoading] = useState(true);
   const [applyingCompetitionId, setApplyingCompetitionId] = useState<number | null>(null);
+  const supabase = createClient();
 
-  const handleApply = async (competition: any) => {
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('competitions')
+            .select('*')
+            .order('deadline', { ascending: true });
+
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch competitions.' });
+            console.error(error);
+        } else {
+            setCompetitions(data);
+        }
+        setLoading(false);
+    };
+    fetchCompetitions();
+  }, [supabase, toast]);
+
+
+  const handleApply = async (competition: Competition) => {
     if (!user) {
         toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to apply for competitions.' });
         return;
     }
 
-    if (competition.entryFee <= 0) {
-        // TODO: Handle free application logic (call your backend to register the user)
-        toast({ title: 'Application Successful!', description: `You have successfully applied for ${competition.title}.` });
+    if (competition.entry_fee <= 0) {
+        // Handle free application logic
+        setApplyingCompetitionId(competition.id);
+        const { error } = await supabase.from('competition_entries').insert({
+            competition_id: competition.id,
+            user_id: user.id,
+        });
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not process your free application.' });
+        } else {
+            toast({ title: 'Application Successful!', description: `You have successfully applied for ${competition.title}.` });
+        }
+        setApplyingCompetitionId(null);
         return;
     }
     
@@ -37,7 +77,7 @@ export default function CompetitionsClient() {
         const response = await fetch('/api/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: competition.entryFee * 100, currency: 'INR' }),
+            body: JSON.stringify({ amount: competition.entry_fee * 100, currency: 'INR' }),
         });
 
         if (!response.ok) {
@@ -54,11 +94,16 @@ export default function CompetitionsClient() {
           description: `Payment for ${competition.title}`,
           order_id: order.id,
           handler: async function (response: any) {
-            // TODO: Call your backend to verify payment and register user for the competition
-            toast({
-              title: 'Payment Successful!',
-              description: `You are now registered for ${competition.title}.`,
+            const { error } = await supabase.from('competition_entries').insert({
+                competition_id: competition.id,
+                user_id: user.id,
+                razorpay_payment_id: response.razorpay_payment_id,
             });
+             if (error) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Payment received, but failed to save your application. Please contact support.' });
+            } else {
+                toast({ title: 'Payment Successful!', description: `You are now registered for ${competition.title}.` });
+            }
           },
           prefill: {
             name: user.user_metadata?.full_name || '',
@@ -86,6 +131,14 @@ export default function CompetitionsClient() {
         setApplyingCompetitionId(null);
     }
   };
+
+  if (loading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="size-8 animate-spin" />
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -115,16 +168,16 @@ export default function CompetitionsClient() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <IndianRupee className="size-4" />
-                    <span>Entry Fee: {comp.entryFee > 0 ? <span className="font-semibold text-foreground">₹{comp.entryFee}</span> : <Badge variant="secondary">Free</Badge>}</span>
+                    <span>Entry Fee: {comp.entry_fee > 0 ? <span className="font-semibold text-foreground">₹{comp.entry_fee}</span> : <Badge variant="secondary">Free</Badge>}</span>
                 </div>
                 </CardContent>
                 <CardFooter>
                 <Button 
                     className="w-full" 
                     onClick={() => handleApply(comp)} 
-                    disabled={(!isLoaded && comp.entryFee > 0) || applyingCompetitionId === comp.id}
+                    disabled={(!isLoaded && comp.entry_fee > 0) || applyingCompetitionId === comp.id}
                 >
-                    {(isLoaded || comp.entryFee === 0) && applyingCompetitionId !== comp.id ? 'Apply Now' : <Loader2 className="animate-spin"/>}
+                    {applyingCompetitionId === comp.id ? <Loader2 className="animate-spin"/> : 'Apply Now'}
                 </Button>
                 </CardFooter>
             </Card>
@@ -139,3 +192,5 @@ export default function CompetitionsClient() {
     </div>
   );
 }
+
+    

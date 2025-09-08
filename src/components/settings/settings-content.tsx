@@ -24,19 +24,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, User as UserIcon } from 'lucide-react';
-import { useState, type ChangeEvent } from 'react';
+import { useState, type ChangeEvent, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { createClient } from '@/lib/supabase/client';
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
   email: z.string().email(),
+  handle: z.string().min(3, { message: 'Handle must be at least 3 characters.' }),
   contactNumber: z.string().optional(),
   bio: z.string().max(200, 'Bio must not exceed 200 characters.').optional(),
 });
 
 const passwordFormSchema = z.object({
-  currentPassword: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   newPassword: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   confirmPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmPassword, {
@@ -46,74 +47,102 @@ const passwordFormSchema = z.object({
 
 
 export default function SettingsContent() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const supabase = createClient();
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      fullName: user?.user_metadata?.full_name || '',
-      email: user?.email || '',
-      contactNumber: user?.user_metadata?.contact_number || '',
-      bio: user?.user_metadata?.bio || '',
+      fullName: '',
+      email: '',
+      handle: '',
+      contactNumber: '',
+      bio: '',
     },
   });
 
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
-      currentPassword: '',
       newPassword: '',
       confirmPassword: '',
     },
   });
 
-  async function onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
-    setIsProfileLoading(true);
-    // TODO: Implement profile update logic.
-    // This function should make a PUT request to your backend API endpoint (e.g., /user/profile).
-    // Example:
-    /*
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${YOUR_JWT_TOKEN}` // Get token from Supabase session
-        },
-        body: JSON.stringify(values),
-      });
-
-      if (!response.ok) throw new Error('Failed to update profile');
-      toast({ title: 'Profile Updated', description: 'Your profile has been updated successfully.' });
-
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not update profile.' });
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        fullName: user.user_metadata?.full_name || '',
+        email: user.email || '',
+        handle: user.user_metadata?.handle || '',
+        contactNumber: user.user_metadata?.contact_number || '',
+        bio: user.user_metadata?.bio || '',
+      })
     }
-    */
-    console.log(values);
-    toast({ title: 'Profile Updated', description: 'Your profile has been updated successfully.' });
+  }, [user, profileForm])
+
+  async function onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
+    if (!user) return;
+    setIsProfileLoading(true);
+
+    const { data: authData, error: authError } = await supabase.auth.updateUser({
+        data: {
+            full_name: values.fullName,
+            handle: values.handle,
+            contact_number: values.contactNumber,
+            bio: values.bio,
+        }
+    });
+
+    if (authError) {
+        toast({ variant: 'destructive', title: 'Error', description: authError.message });
+        setIsProfileLoading(false);
+        return;
+    }
+    
+    // Also update the public profiles table
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+            full_name: values.fullName,
+            handle: values.handle,
+         })
+        .eq('id', user.id);
+
+    if (profileError) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update public profile.' });
+    } else {
+      toast({ title: 'Profile Updated', description: 'Your profile has been updated successfully.' });
+      // This will trigger a re-render in useAuth hook and update the UI
+      window.location.reload();
+    }
     setIsProfileLoading(false);
   }
 
   async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
     setIsPasswordLoading(true);
-    // TODO: Implement password change logic using Supabase.
-    console.log(values);
-    toast({ title: 'Password Updated', description: 'Your password has been changed successfully.' });
-    passwordForm.reset();
+    const { error } = await supabase.auth.updateUser({
+      password: values.newPassword,
+    });
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } else {
+      toast({ title: 'Password Updated', description: 'Your password has been changed successfully.' });
+      passwordForm.reset();
+    }
     setIsPasswordLoading(false);
   }
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type and size
       const allowedTypes = ['image/jpeg', 'image/png'];
       const maxSize = 2 * 1024 * 1024; // 2MB
 
@@ -132,43 +161,60 @@ export default function SettingsContent() {
   };
 
   const handlePhotoUpload = async () => {
-    if (!selectedFile) {
+    if (!selectedFile || !user) {
         toast({ variant: 'destructive', title: 'No file selected', description: 'Please select a photo to upload.' });
         return;
     }
     setIsPhotoLoading(true);
-    // TODO: Implement photo upload logic.
-    // This function should make a POST request with FormData to your backend API (e.g., /user/profile/photo).
-    /*
-    const formData = new FormData();
-    formData.append('photo', selectedFile);
 
-    try {
-      const response = await fetch('/api/user/profile/photo', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${YOUR_JWT_TOKEN}` // Get token from Supabase session
-        },
-        body: formData,
-      });
+    const filePath = `${user.id}/${Date.now()}`;
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, selectedFile);
+    
+    if (uploadError) {
+      toast({ variant: 'destructive', title: 'Upload Error', description: uploadError.message });
+      setIsPhotoLoading(false);
+      return;
+    }
 
-      if (!response.ok) throw new Error('Failed to upload photo');
-      
-      const data = await response.json();
-      // Optionally update user context or refetch user data to display new avatar
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    const { error: userUpdateError } = await supabase.auth.updateUser({
+      data: { avatar_url: publicUrl }
+    });
+
+     if (userUpdateError) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update profile picture in auth.' });
+      setIsPhotoLoading(false);
+      return;
+    }
+    
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', user.id);
+    
+     if (profileError) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update public profile picture.' });
+    } else {
       toast({ title: 'Photo Uploaded', description: 'Your profile picture has been updated.' });
       setPreviewUrl(null);
       setSelectedFile(null);
-
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not upload photo.' });
+      window.location.reload();
     }
-    */
-    console.log('Uploading file:', selectedFile.name);
-    toast({ title: 'Photo Uploaded', description: 'Your profile picture has been updated.' });
     setIsPhotoLoading(false);
   }
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    return <div>Please log in to view your settings.</div>
+  }
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -215,6 +261,19 @@ export default function SettingsContent() {
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Your name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={profileForm.control}
+                name="handle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="your_unique_handle" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -278,19 +337,6 @@ export default function SettingsContent() {
             <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
               <FormField
                   control={passwordForm.control}
-                  name="currentPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Current Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              <FormField
-                  control={passwordForm.control}
                   name="newPassword"
                   render={({ field }) => (
                     <FormItem>
@@ -326,3 +372,5 @@ export default function SettingsContent() {
     </div>
   );
 }
+
+    
