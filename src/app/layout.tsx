@@ -3,6 +3,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 import MainLayout from '@/components/layout/main-layout';
+import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
   title: 'Student Hub',
@@ -24,9 +25,11 @@ export default function RootLayout({
       <body className={cn(
         "min-h-screen bg-background font-body antialiased"
       )}>
-        <MainLayout>
-          {children}
-        </MainLayout>
+        <AuthProvider>
+          <MainLayout>
+            {children}
+          </MainLayout>
+        </AuthProvider>
         <Toaster />
       </body>
     </html>

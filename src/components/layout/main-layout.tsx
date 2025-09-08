@@ -1,3 +1,5 @@
+'use client';
+
 import React, { type ReactNode } from 'react';
 import {
   SidebarProvider,
@@ -12,9 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNav } from './sidebar-nav';
 import { Logo } from '@/components/icons';
-import { Bell, Settings } from 'lucide-react';
+import { Bell, LogOut, Settings } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
+  const { user, signOut } = useAuth();
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -28,19 +33,33 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           <SidebarNav />
         </SidebarContent>
         <SidebarFooter>
-          <div className="flex items-center gap-3">
-            <Avatar className="size-8">
-              <AvatarImage src="https://picsum.photos/id/237/40/40" alt="User avatar" />
-              <AvatarFallback>SH</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col text-sm">
-              <span className="font-semibold">Admin User</span>
-              <span className="text-muted-foreground">admin@unihub.com</span>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <Avatar className="size-8">
+                <AvatarImage src={user.photoURL || 'https://picsum.photos/id/237/40/40'} alt="User avatar" />
+                <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col text-sm">
+                <span className="font-semibold">{user.displayName || 'User'}</span>
+                <span className="text-muted-foreground">{user.email}</span>
+              </div>
+              <Button variant="ghost" size="icon" className="ml-auto" onClick={signOut}>
+                <LogOut className="size-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto">
-              <Settings className="size-4" />
-            </Button>
-          </div>
+          ) : (
+             <div className="flex items-center gap-3">
+                <Avatar className="size-8">
+                  <AvatarFallback>G</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col text-sm">
+                  <span className="font-semibold">Guest</span>
+                  <a href="/login" className="text-sm text-primary hover:underline">
+                    Login to get started
+                  </a>
+                </div>
+              </div>
+          )}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
