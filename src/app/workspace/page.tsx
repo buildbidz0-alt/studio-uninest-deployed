@@ -1,18 +1,21 @@
 
+'use client';
+
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Briefcase, Trophy, PlusCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
-export const metadata: Metadata = {
-  title: 'Workspace | UniNest',
-  description: 'Unlock your potential with competitions and internships on UniNest.',
-};
+// export const metadata: Metadata = {
+//   title: 'Workspace | UniNest',
+//   description: 'Unlock your potential with competitions and internships on UniNest.',
+// };
 
 export default function WorkspacePage() {
-  // Mock admin status - replace with real auth check
-  const isAdmin = false; 
+  const { role } = useAuth();
+  const isAdmin = role === 'admin' || role === 'vendor'; // Assuming vendors can also be admins for now
 
   return (
     <div className="space-y-12">

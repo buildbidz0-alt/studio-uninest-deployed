@@ -8,34 +8,29 @@ import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 
 const navItems = [
-  { href: '/', label: 'Home', icon: Home, admin: false },
-  { href: '/feed', label: 'Social Feed', icon: Newspaper, admin: false },
-  { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, admin: false },
-  { href: '/notes', label: 'Notes Hub', icon: FileText, admin: false },
-  { href: '/workspace', label: 'Workspace', icon: Briefcase, admin: false },
-  { href: '/donate', label: 'Donate', icon: Heart, admin: false },
-  { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, admin: true },
+  { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest'] },
+  { href: '/feed', label: 'Social Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest'] },
+  { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student'] },
+  { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest'] },
+  { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student'] },
+  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest'] },
+  { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, roles: ['vendor'] },
 ];
 
 const bottomNavItems = [
-    { href: '/settings', label: 'Settings', icon: Settings, admin: false },
-    { href: '/about', label: 'About Us', icon: Info, admin: false },
+    { href: '/settings', label: 'Settings', icon: Settings, roles: ['student', 'vendor'] },
+    { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest'] },
 ]
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { setOpenMobile } = useSidebar();
 
-  const filteredNavItems = navItems.filter(item => {
-    if (!item.admin) return true;
-    return user?.email === 'admin@uninest.com';
-  });
+  const userRole = user ? role : 'guest';
 
-  const filteredBottomNavItems = bottomNavItems.filter(item => {
-    if (!item.admin) return true;
-    return user?.email === 'admin@uninest.com';
-  });
+  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
+  const filteredBottomNavItems = bottomNavItems.filter(item => item.roles.includes(userRole));
 
   const handleLinkClick = () => {
     setOpenMobile(false);
