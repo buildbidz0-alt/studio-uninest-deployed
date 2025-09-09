@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function WorkspaceClient() {
   const { role } = useAuth();
-  const isAdmin = role === 'admin' || role === 'vendor'; // Assuming vendors can also be admins for now
+  const isAdmin = role === 'admin';
 
   return (
     <div className="space-y-12">
@@ -41,9 +41,11 @@ export default function WorkspaceClient() {
                     </CardDescription>
                 </div>
                  {isAdmin && (
-                    <Button size="sm" variant="outline">
-                        <PlusCircle className="mr-2 size-4"/>
-                        Add New
+                    <Button size="sm" variant="outline" asChild>
+                        <Link href="/admin/competitions/new">
+                            <PlusCircle className="mr-2 size-4"/>
+                            Add New
+                        </Link>
                     </Button>
                  )}
             </div>
@@ -68,9 +70,11 @@ export default function WorkspaceClient() {
                     </CardDescription>
                 </div>
                 {isAdmin && (
-                    <Button size="sm" variant="outline">
-                        <PlusCircle className="mr-2 size-4"/>
-                        Add New
+                    <Button size="sm" variant="outline" asChild>
+                        <Link href="/admin/internships/new">
+                            <PlusCircle className="mr-2 size-4"/>
+                            Add New
+                        </Link>
                     </Button>
                  )}
             </div>
