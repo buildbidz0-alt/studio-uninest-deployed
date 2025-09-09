@@ -5,15 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X } from 'lucide-react';
+import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import type { Product } from '@/components/marketplace/product-card';
+import type { Product } from '@/lib/types';
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
+import { useEffect, useState, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-
-// TODO: Fetch products from your API instead of using this mock data
-const allProducts: Product[] = [];
 
 const categories = [
   { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services', color: 'from-sky-100 to-sky-200 dark:from-sky-900/50 dark:to-sky-800/50' },
@@ -27,12 +26,57 @@ const categories = [
 export default function MarketplaceContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const selectedCategory = searchParams.get('category');
+  const supabase = createClient();
+  const { toast } = useToast();
   
-  // In a real app, this filtering would be done by your backend API
-  const filteredProducts = selectedCategory
-    ? allProducts.filter(p => p.category === selectedCategory)
-    : allProducts;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const selectedCategory = searchParams.get('category');
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          seller:seller_id (
+            full_name
+          )
+        `);
+
+      if (selectedCategory) {
+        query = query.eq('category', selectedCategory);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching products:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch product listings.',
+        });
+      } else {
+        setProducts(data as Product[]);
+      }
+      setLoading(false);
+    };
+
+    fetchProducts();
+  }, [selectedCategory, supabase, toast]);
+
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery) return products;
+    return products.filter(product => 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [products, searchQuery]);
+
 
   return (
     <div className="space-y-12">
@@ -45,15 +89,16 @@ export default function MarketplaceContent() {
 
       <section>
          <h2 className="text-2xl font-bold tracking-tight mb-6">Categories</h2>
-         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {categories.map((category) => (
                 <Link href={category.href} key={category.name}>
                     <div className={cn(
-                      "group relative flex flex-col items-center justify-center p-3 h-28 rounded-lg border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
-                      category.color
+                      "group relative flex flex-col items-center justify-center p-2 h-24 rounded-lg border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
+                      category.color,
+                      selectedCategory === category.name ? "ring-2 ring-primary ring-offset-2" : ""
                     )}>
-                        <category.icon className="size-6 mb-2 text-primary/80 transition-transform group-hover:scale-110"/>
-                        <span className="font-semibold text-sm text-primary/90">{category.name}</span>
+                        <category.icon className="size-5 mb-1.5 text-primary/80 transition-transform group-hover:scale-110"/>
+                        <span className="font-semibold text-xs text-primary/90">{category.name}</span>
                     </div>
                 </Link>
             ))}
@@ -66,7 +111,12 @@ export default function MarketplaceContent() {
             <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search listings..." className="pl-10 w-full md:w-64" />
+                    <Input 
+                      placeholder="Search listings..." 
+                      className="pl-10 w-full md:w-64" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
                 <Button variant="outline" className="gap-2">
                     <ListFilter className="size-4" />
@@ -79,11 +129,16 @@ export default function MarketplaceContent() {
                     </Link>
                   </Button>
                 )}
-                <Button disabled={!user}>+ Add Listing</Button>
+                <Button asChild disabled={!user}>
+                  <Link href="/marketplace/new">+ Add Listing</Link>
+                </Button>
             </div>
         </div>
-
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />

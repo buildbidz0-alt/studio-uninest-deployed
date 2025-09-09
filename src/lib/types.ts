@@ -28,3 +28,16 @@ export type Message = {
   user_id: string;
   profile: Profile | null;
 };
+
+export type Product = {
+  id: number;
+  name: string;
+  price: number;
+  image_url: string;
+  category: string;
+  seller_id: string;
+  description: string;
+  seller: {
+    full_name: string;
+  } | null;
+};

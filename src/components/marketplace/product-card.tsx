@@ -6,17 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-
-export type Product = {
-  id: number;
-  name: string;
-  price: number;
-  imageUrl: string;
-  aiHint: string;
-  category: string;
-  seller: string;
-  description: string;
-};
+import type { Product } from '@/lib/types';
 
 type ProductCardProps = {
   product: Product;
@@ -27,15 +17,19 @@ export default function ProductCard({ product }: ProductCardProps) {
   // TODO: Replace this with actual logic based on user's purchase history from your backend
   const hasPurchased = false; 
 
+  const sellerName = typeof product.seller === 'object' && product.seller !== null 
+    ? product.seller.full_name 
+    : 'Anonymous';
+
   return (
     <Card className="overflow-hidden shadow-sm transition-shadow hover:shadow-lg flex flex-col">
       <CardHeader className="p-0">
         <div className="relative aspect-video">
           <Image
-            src={product.imageUrl}
+            src={product.image_url || 'https://picsum.photos/seed/product/400/225'}
             alt={product.name}
             fill
-            data-ai-hint={product.aiHint}
+            data-ai-hint="product image"
             className="object-cover"
           />
         </div>
@@ -44,7 +38,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <Badge variant="secondary" className="mb-2">{product.category}</Badge>
         <CardTitle className="text-lg font-semibold leading-snug mb-2 h-12 overflow-hidden">{product.name}</CardTitle>
         <p className="text-sm text-muted-foreground mb-4 h-10 overflow-hidden">{product.description}</p>
-        <p className="text-sm">Sold by <span className="font-medium text-primary">{product.seller}</span></p>
+        <p className="text-sm">Sold by <span className="font-medium text-primary">{sellerName}</span></p>
       </CardContent>
       <CardFooter className="p-4 pt-0 mt-auto">
         <div className="flex items-center justify-between w-full gap-2">
