@@ -42,7 +42,7 @@ export default function MarketplaceContent() {
         .from('products')
         .select(`
           *,
-          seller:seller_id (
+          profiles:seller_id (
             full_name
           )
         `);
@@ -61,7 +61,12 @@ export default function MarketplaceContent() {
           description: 'Could not fetch product listings.',
         });
       } else {
-        setProducts(data as Product[]);
+        // Map the data to match the expected Product type structure
+        const mappedData = data.map(p => ({
+          ...p,
+          seller: p.profiles
+        }));
+        setProducts(mappedData as Product[]);
       }
       setLoading(false);
     };

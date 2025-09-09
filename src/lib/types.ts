@@ -40,4 +40,8 @@ export type Product = {
   seller: {
     full_name: string;
   } | null;
+  // This field is for the raw query result
+  profiles?: {
+    full_name: string;
+  } | null;
 };
