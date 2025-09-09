@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog, MessageSquare } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog, MessageSquare, Package } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
@@ -16,7 +16,11 @@ const navItems = [
   { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student', 'guest', 'admin'] },
   { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/vendor/dashboard', label: 'Vendor Dashboard', icon: LayoutDashboard, roles: ['vendor'] },
+];
+
+const vendorNavItems = [
+  { href: '/vendor/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['vendor'] },
+  { href: '/vendor/products', label: 'My Products', icon: Package, roles: ['vendor'] },
 ];
 
 const bottomNavItems = [
@@ -32,6 +36,7 @@ export function SidebarNav() {
   const userRole = user ? role : 'guest';
 
   const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
+  const filteredVendorNavItems = vendorNavItems.filter(item => item.roles.includes(userRole));
   const filteredBottomNavItems = bottomNavItems.filter(item => item.roles.includes(userRole));
 
   const handleLinkClick = () => {
@@ -54,6 +59,23 @@ export function SidebarNav() {
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
+
+        {filteredVendorNavItems.length > 0 && <Separator className='my-2' />}
+        
+        {filteredVendorNavItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                onClick={handleLinkClick}
+            >
+                <Link href={item.href}>
+                <item.icon className="size-4" />
+                <span>{item.label}</span>
+                </Link>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+        ))}
 
         <div className='flex-grow' />
 

@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import Image from 'next/image';
 
 const categories = ["Library Services", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
 
@@ -25,22 +25,36 @@ const formSchema = z.object({
   description: z.string().min(10, 'Please provide a more detailed description.'),
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
   category: z.string({ required_error: "Please select a category." }),
-  image: z.instanceof(File).refine(file => file.size > 0, "Product image is required."),
+  image: z.any().optional(), // Allow optional image for edit mode
 });
 
-export default function ProductForm() {
+type ProductFormProps = {
+  product?: {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    image_url: string | null;
+  }
+}
+
+export default function ProductForm({ product }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
   const { user } = useAuth();
 
+  const isEditMode = !!product;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      price: 0,
+      name: product?.name || '',
+      description: product?.description || '',
+      price: product?.price || 0,
+      category: product?.category || '',
     },
   });
 
@@ -64,14 +78,15 @@ export default function ProductForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to create a listing.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
         return;
     }
     
     setIsLoading(true);
     
-    let imageUrl: string | null = null;
-    if (values.image) {
+    let imageUrl = product?.image_url || null;
+    
+    if (values.image && values.image instanceof File) {
         imageUrl = await uploadFile(values.image);
         if (!imageUrl) {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload image.' });
@@ -80,21 +95,41 @@ export default function ProductForm() {
         }
     }
 
-    const { error } = await supabase.from('products').insert({
-      name: values.name,
-      description: values.description,
-      price: values.price,
-      category: values.category,
-      seller_id: user.id,
-      image_url: imageUrl,
-    });
+    if (isEditMode) {
+        const { error } = await supabase.from('products')
+            .update({
+                name: values.name,
+                description: values.description,
+                price: values.price,
+                category: values.category,
+                image_url: imageUrl,
+            })
+            .eq('id', product.id);
 
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error updating product', description: error.message });
+        } else {
+            toast({ title: 'Success!', description: 'Your product has been updated.' });
+            router.push('/vendor/products');
+            router.refresh();
+        }
     } else {
-      toast({ title: 'Success!', description: 'Your product has been listed.' });
-      router.push('/marketplace');
-      router.refresh();
+        const { error } = await supabase.from('products').insert({
+            name: values.name,
+            description: values.description,
+            price: values.price,
+            category: values.category,
+            seller_id: user.id,
+            image_url: imageUrl,
+        });
+
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error creating product', description: error.message });
+        } else {
+            toast({ title: 'Success!', description: 'Your product has been listed.' });
+            router.push('/vendor/products');
+            router.refresh();
+        }
     }
     
     setIsLoading(false);
@@ -103,8 +138,8 @@ export default function ProductForm() {
   return (
     <Card>
         <CardHeader>
-            <CardTitle>Product Details</CardTitle>
-            <CardDescription>All fields are required.</CardDescription>
+            <CardTitle>{isEditMode ? 'Edit Product' : 'Product Details'}</CardTitle>
+            <CardDescription>{isEditMode ? 'Update the details below.' : 'All fields are required.'}</CardDescription>
         </CardHeader>
         <CardContent>
             <Form {...form}>
@@ -135,11 +170,20 @@ export default function ProductForm() {
                         )} />
                     </div>
                      <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
-                        <FormItem><FormLabel>Product Image</FormLabel><FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
+                        <FormItem>
+                            <FormLabel>Product Image</FormLabel>
+                            {isEditMode && product.image_url && (
+                                <div className="mb-4">
+                                    <Image src={product.image_url} alt="Current product image" width={100} height={100} className="rounded-md" />
+                                </div>
+                            )}
+                            <FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
                      )} />
                     <Button type="submit" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Listing
+                        {isEditMode ? 'Save Changes' : 'Create Listing'}
                     </Button>
                 </form>
             </Form>

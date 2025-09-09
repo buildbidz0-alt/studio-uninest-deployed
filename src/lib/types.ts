@@ -31,9 +31,10 @@ export type Message = {
 
 export type Product = {
   id: number;
+  created_at: string;
   name: string;
   price: number;
-  image_url: string;
+  image_url: string | null;
   category: string;
   seller_id: string;
   description: string;
