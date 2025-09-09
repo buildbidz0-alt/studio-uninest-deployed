@@ -10,17 +10,18 @@ import { useAuth } from '@/hooks/use-auth';
 import type { Product } from '@/components/marketplace/product-card';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 // TODO: Fetch products from your API instead of using this mock data
 const allProducts: Product[] = [];
 
 const categories = [
-  { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services' },
-  { name: 'Food Mess', icon: Utensils, href: '/marketplace?category=Food+Mess' },
-  { name: 'Cyber Café', icon: Laptop, href: '/marketplace?category=Cyber+Café' },
-  { name: 'Books', icon: Book, href: '/marketplace?category=Books' },
-  { name: 'Hostels', icon: Bed, href: '/marketplace?category=Hostels' },
-  { name: 'Other Products', icon: Package, href: '/marketplace?category=Other+Products' },
+  { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services', color: 'from-sky-100 to-sky-200 dark:from-sky-900/50 dark:to-sky-800/50' },
+  { name: 'Food Mess', icon: Utensils, href: '/marketplace?category=Food+Mess', color: 'from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-800/50' },
+  { name: 'Cyber Café', icon: Laptop, href: '/marketplace?category=Cyber+Café', color: 'from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50' },
+  { name: 'Books', icon: Book, href: '/marketplace?category=Books', color: 'from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50' },
+  { name: 'Hostels', icon: Bed, href: '/marketplace?category=Hostels', color: 'from-rose-100 to-rose-200 dark:from-rose-900/50 dark:to-rose-800/50' },
+  { name: 'Other Products', icon: Package, href: '/marketplace?category=Other+Products', color: 'from-slate-100 to-slate-200 dark:from-slate-700/50 dark:to-slate-600/50' },
 ];
 
 export default function MarketplaceContent() {
@@ -47,10 +48,13 @@ export default function MarketplaceContent() {
          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((category) => (
                 <Link href={category.href} key={category.name}>
-                    <Card className="p-4 flex flex-col items-center justify-center aspect-square text-center transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:shadow-lg">
-                        <category.icon className="size-8 mb-2"/>
-                        <span className="font-semibold text-sm">{category.name}</span>
-                    </Card>
+                    <div className={cn(
+                      "group relative flex flex-col items-center justify-center p-4 aspect-square rounded-lg border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
+                      category.color
+                    )}>
+                        <category.icon className="size-8 mb-2 text-primary/80 transition-transform group-hover:scale-110"/>
+                        <span className="font-semibold text-sm text-primary/90">{category.name}</span>
+                    </div>
                 </Link>
             ))}
          </div>
