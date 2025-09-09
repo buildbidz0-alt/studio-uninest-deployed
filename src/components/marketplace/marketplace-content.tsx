@@ -49,10 +49,10 @@ export default function MarketplaceContent() {
             {categories.map((category) => (
                 <Link href={category.href} key={category.name}>
                     <div className={cn(
-                      "group relative flex flex-col items-center justify-center p-4 aspect-square rounded-lg border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
+                      "group relative flex flex-col items-center justify-center p-3 h-28 rounded-lg border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
                       category.color
                     )}>
-                        <category.icon className="size-8 mb-2 text-primary/80 transition-transform group-hover:scale-110"/>
+                        <category.icon className="size-6 mb-2 text-primary/80 transition-transform group-hover:scale-110"/>
                         <span className="font-semibold text-sm text-primary/90">{category.name}</span>
                     </div>
                 </Link>
