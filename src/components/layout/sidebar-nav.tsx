@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog, MessageSquare, Package } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog, MessageSquare, Package, Armchair } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'vendor', 'admin'] },
   { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student', 'guest', 'admin'] },
+  { href: '/booking', label: 'Seat Booking', icon: Armchair, roles: ['student', 'guest', 'admin'] },
   { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
 
