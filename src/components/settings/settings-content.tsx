@@ -236,7 +236,7 @@ export default function SettingsContent() {
 
     const filePath = `${user.id}/banner-${Date.now()}`;
     const { error: uploadError } = await supabase.storage
-      .from('banners')
+      .from('products') // Using 'products' bucket for banners as well, can be changed
       .upload(filePath, selectedBannerFile);
     
     if (uploadError) {
@@ -246,7 +246,7 @@ export default function SettingsContent() {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('banners')
+      .from('products')
       .getPublicUrl(filePath);
 
     const { error: userUpdateError } = await supabase.auth.updateUser({
