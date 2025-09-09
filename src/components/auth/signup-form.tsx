@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 const vendorCategories = ["library", "food mess", "cybercafe", "hostels"] as const;
 
 const formSchema = z.object({
+  fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   confirmPassword: z.string(),
@@ -65,6 +66,7 @@ export default function SignupForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      fullName: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -78,29 +80,52 @@ export default function SignupForm() {
     setIsLoading(true);
     
     const role = values.userType;
-    const { data, error } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
         data: {
           role: role,
+          full_name: values.fullName,
           vendor_categories: role === 'vendor' ? values.vendorCategories : undefined
         }
       }
     });
 
-    if (error) {
+    if (signUpError) {
        toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description: error.message,
+        description: signUpError.message,
       });
-    } else if (data.user) {
-        toast({
-            title: 'Success!',
-            description: 'Check your email for a verification link.',
-        });
-        router.push('/login');
+      setIsLoading(false);
+      return;
+    }
+
+    if (signUpData.user) {
+        // Explicitly create a profile record
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({ 
+                id: signUpData.user.id,
+                full_name: values.fullName,
+                role: role,
+                handle: `user${signUpData.user.id.substring(0, 8)}`,
+             });
+
+        if (profileError) {
+            toast({
+                variant: 'destructive',
+                title: 'Sign Up Incomplete',
+                description: `Your account was created, but we failed to create your profile. Please contact support. Error: ${profileError.message}`,
+            });
+        } else {
+            toast({
+                title: 'Success!',
+                description: 'Check your email for a verification link.',
+            });
+            router.push('/login');
+        }
     }
     
     setIsLoading(false);
@@ -194,6 +219,19 @@ export default function SignupForm() {
                 )}
               />
             )}
+             <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your full name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
              <FormField
               control={form.control}
               name="email"
