@@ -28,6 +28,7 @@ import { useState, type ChangeEvent, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
@@ -35,6 +36,7 @@ const profileFormSchema = z.object({
   handle: z.string().min(3, { message: 'Handle must be at least 3 characters.' }),
   contactNumber: z.string().optional(),
   bio: z.string().max(200, 'Bio must not exceed 200 characters.').optional(),
+  openingHours: z.string().max(200, 'Opening hours must not exceed 200 characters.').optional(),
 });
 
 const passwordFormSchema = z.object({
@@ -47,13 +49,18 @@ const passwordFormSchema = z.object({
 
 
 export default function SettingsContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
   const { toast } = useToast();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
+  const [isBannerLoading, setIsBannerLoading] = useState(false);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null);
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(null);
+
   const supabase = createClient();
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -64,6 +71,7 @@ export default function SettingsContent() {
       handle: '',
       contactNumber: '',
       bio: '',
+      openingHours: '',
     },
   });
 
@@ -83,7 +91,11 @@ export default function SettingsContent() {
         handle: user.user_metadata?.handle || '',
         contactNumber: user.user_metadata?.contact_number || '',
         bio: user.user_metadata?.bio || '',
+        openingHours: user.user_metadata?.opening_hours || '',
       })
+      if (user.user_metadata?.banner_url) {
+        setBannerPreviewUrl(user.user_metadata.banner_url);
+      }
     }
   }, [user, profileForm])
 
@@ -91,14 +103,15 @@ export default function SettingsContent() {
     if (!user) return;
     setIsProfileLoading(true);
 
-    const { data: authData, error: authError } = await supabase.auth.updateUser({
-        data: {
-            full_name: values.fullName,
-            handle: values.handle,
-            contact_number: values.contactNumber,
-            bio: values.bio,
-        }
-    });
+    const userData = {
+        full_name: values.fullName,
+        handle: values.handle,
+        contact_number: values.contactNumber,
+        bio: values.bio,
+        opening_hours: role === 'vendor' ? values.openingHours : undefined,
+    };
+
+    const { data: authData, error: authError } = await supabase.auth.updateUser({ data: userData });
 
     if (authError) {
         toast({ variant: 'destructive', title: 'Error', description: authError.message });
@@ -112,6 +125,7 @@ export default function SettingsContent() {
         .update({ 
             full_name: values.fullName,
             handle: values.handle,
+            opening_hours: role === 'vendor' ? values.openingHours : undefined,
          })
         .eq('id', user.id);
 
@@ -140,23 +154,28 @@ export default function SettingsContent() {
     setIsPasswordLoading(false);
   }
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     const file = event.target.files?.[0];
     if (file) {
       const allowedTypes = ['image/jpeg', 'image/png'];
-      const maxSize = 2 * 1024 * 1024; // 2MB
+      const maxSize = 4 * 1024 * 1024; // 4MB
 
       if (!allowedTypes.includes(file.type)) {
         toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please select a JPG or PNG image.' });
         return;
       }
       if (file.size > maxSize) {
-        toast({ variant: 'destructive', title: 'File Too Large', description: 'Please select an image smaller than 2MB.' });
+        toast({ variant: 'destructive', title: 'File Too Large', description: `Please select an image smaller than ${maxSize / 1024 / 1024}MB.` });
         return;
       }
       
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      if (type === 'avatar') {
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      } else {
+        setSelectedBannerFile(file);
+        setBannerPreviewUrl(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -208,6 +227,54 @@ export default function SettingsContent() {
     setIsPhotoLoading(false);
   }
 
+  const handleBannerUpload = async () => {
+    if (!selectedBannerFile || !user) {
+        toast({ variant: 'destructive', title: 'No file selected', description: 'Please select a banner to upload.' });
+        return;
+    }
+    setIsBannerLoading(true);
+
+    const filePath = `${user.id}/banner-${Date.now()}`;
+    const { error: uploadError } = await supabase.storage
+      .from('banners')
+      .upload(filePath, selectedBannerFile);
+    
+    if (uploadError) {
+      toast({ variant: 'destructive', title: 'Upload Error', description: uploadError.message });
+      setIsBannerLoading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('banners')
+      .getPublicUrl(filePath);
+
+    const { error: userUpdateError } = await supabase.auth.updateUser({
+      data: { banner_url: publicUrl }
+    });
+
+     if (userUpdateError) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update banner in auth.' });
+      setIsBannerLoading(false);
+      return;
+    }
+    
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ banner_url: publicUrl })
+      .eq('id', user.id);
+    
+     if (profileError) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update public profile banner.' });
+    } else {
+      toast({ title: 'Banner Uploaded', description: 'Your profile banner has been updated.' });
+      setBannerPreviewUrl(null);
+      setSelectedBannerFile(null);
+      window.location.reload();
+    }
+    setIsBannerLoading(false);
+  }
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -225,7 +292,7 @@ export default function SettingsContent() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Profile Picture</CardTitle>
+          <CardTitle>{role === 'vendor' ? 'Shop Logo' : 'Profile Picture'}</CardTitle>
           <CardDescription>Update your avatar. This will be visible to other users.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row items-center gap-6">
@@ -236,7 +303,7 @@ export default function SettingsContent() {
                 </AvatarFallback>
             </Avatar>
             <div className="grid w-full max-w-sm items-center gap-2">
-                <Input id="picture" type="file" onChange={handleFileChange} accept="image/png, image/jpeg" />
+                <Input id="picture" type="file" onChange={(e) => handleFileChange(e, 'avatar')} accept="image/png, image/jpeg" />
                 <Button onClick={handlePhotoUpload} disabled={isPhotoLoading || !selectedFile}>
                     {isPhotoLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Upload Photo
@@ -244,6 +311,29 @@ export default function SettingsContent() {
             </div>
         </CardContent>
       </Card>
+      
+      {role === 'vendor' && (
+        <Card>
+            <CardHeader>
+            <CardTitle>Shop Banner</CardTitle>
+            <CardDescription>Upload a banner image for your shop profile page.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {bannerPreviewUrl && (
+                    <div className="relative w-full aspect-[16/9] rounded-md overflow-hidden">
+                        <Image src={bannerPreviewUrl} alt="Banner preview" layout="fill" objectFit="cover"/>
+                    </div>
+                )}
+                <div className="grid w-full max-w-sm items-center gap-2">
+                    <Input id="banner" type="file" onChange={(e) => handleFileChange(e, 'banner')} accept="image/png, image/jpeg" />
+                    <Button onClick={handleBannerUpload} disabled={isBannerLoading || !selectedBannerFile}>
+                        {isBannerLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Upload Banner
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -318,6 +408,21 @@ export default function SettingsContent() {
                   </FormItem>
                 )}
               />
+              {role === 'vendor' && (
+                <FormField
+                    control={profileForm.control}
+                    name="openingHours"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Opening Hours</FormLabel>
+                        <FormControl>
+                        <Textarea placeholder="e.g., Mon-Fri: 9am-5pm, Sat: 10am-2pm" className="resize-none" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+              )}
               <Button type="submit" disabled={isProfileLoading}>
                 {isProfileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
@@ -372,5 +477,3 @@ export default function SettingsContent() {
     </div>
   );
 }
-
-    
