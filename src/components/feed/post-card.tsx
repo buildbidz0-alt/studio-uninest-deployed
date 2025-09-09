@@ -159,7 +159,7 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
                   disabled={!user}
               >
                   <Heart className={`size-4 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                  <span>{post.likes?.count || 0}</span>
+                  <span>{post.likes?.length || 0}</span>
               </Button>
               <Button 
                   variant="ghost" 

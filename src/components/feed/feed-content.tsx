@@ -15,7 +15,7 @@ export type PostWithAuthor = {
   content: string;
   created_at: string;
   user_id: string;
-  likes: { count: number };
+  likes: { count: number }[];
   comments: any[]; // Define a proper comment type later
   profiles: {
     full_name: string;
@@ -42,7 +42,7 @@ export default function FeedContent() {
         content,
         created_at,
         user_id,
-        profiles ( full_name, avatar_url, handle ),
+        profiles:user_id ( full_name, avatar_url, handle ),
         likes ( count ),
         comments ( id, content, profiles (full_name, avatar_url, handle) )
       `)
@@ -96,7 +96,7 @@ export default function FeedContent() {
         content,
         created_at,
         user_id,
-        profiles ( full_name, avatar_url, handle ),
+        profiles:user_id ( full_name, avatar_url, handle ),
         likes ( count ),
         comments ( id, content, profiles (full_name, avatar_url, handle) )
       `)
@@ -105,7 +105,7 @@ export default function FeedContent() {
     if (error) {
       toast({ variant: 'destructive', title: 'Error creating post', description: error.message });
     } else if (newPost) {
-      setPosts([ { ...newPost, isLiked: false }, ...posts]);
+      setPosts([ { ...newPost, isLiked: false, likes: [] }, ...posts]);
       toast({ title: 'Post created successfully!' });
     }
   };
@@ -168,7 +168,7 @@ export default function FeedContent() {
          if (error) {
             toast({ variant: 'destructive', title: 'Error', description: "Could not unlike the post." });
         } else {
-            setPosts(posts.map(p => p.id === postId ? { ...p, isLiked: false, likes: { count: (p.likes?.count || 1) - 1 } } : p));
+            setPosts(posts.map(p => p.id === postId ? { ...p, isLiked: false, likes: p.likes.slice(1) } : p));
         }
     } else {
         // Like the post
@@ -176,7 +176,7 @@ export default function FeedContent() {
         if (error) {
             toast({ variant: 'destructive', title: 'Error', description: "Could not like the post." });
         } else {
-            setPosts(posts.map(p => p.id === postId ? { ...p, isLiked: true, likes: { count: (p.likes?.count || 0) + 1 } } : p));
+            setPosts(posts.map(p => p.id === postId ? { ...p, isLiked: true, likes: [...p.likes, {count: 1}] } : p));
         }
     }
   }
@@ -213,4 +213,3 @@ export default function FeedContent() {
     </div>
   );
 }
-
