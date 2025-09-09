@@ -12,60 +12,64 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { Loader2 } from "lucide-react"
 
-// TODO: Fetch data from API call to /admin/analytics/listings/counts
-const chartData: any[] = []
+type ListingsByCategoryChartProps = {
+  data: { name: string; value: number; fill: string }[];
+  loading: boolean;
+};
 
 const chartConfig = {
-  count: {
+  value: {
     label: "Listings",
-  },
-  books: {
-    label: "Books",
-    color: "hsl(var(--chart-1))",
-  },
-  hostels: {
-    label: "Hostels",
-    color: "hsl(var(--chart-2))",
-  },
-  food: {
-    label: "Food Mess",
-    color: "hsl(var(--chart-3))",
-  },
-  cyber: {
-    label: "Cyber Café",
-    color: "hsl(var(--chart-4))",
-  },
-  other: {
-    label: "Other",
-    color: "hsl(var(--chart-5))",
   },
 } satisfies ChartConfig
 
-export default function ListingsByCategoryChart() {
+export default function ListingsByCategoryChart({ data, loading }: ListingsByCategoryChartProps) {
+
+  const chartData = data.map(item => ({
+    ...item,
+    // Add a color property to each item for the legend
+    color: item.fill,
+  }));
+
+  // Dynamically create chartConfig for labels and colors
+  const dynamicChartConfig: ChartConfig = data.reduce((acc, item) => {
+    acc[item.name] = { label: item.name, color: item.fill };
+    return acc;
+  }, {} as ChartConfig);
+  
+
   return (
     <ChartCard 
         title="Listings by Category"
         description="Distribution of active marketplace listings."
         className="flex flex-col h-full"
     >
-        {chartData.length > 0 ? (
+        {loading ? (
+           <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <Loader2 className="animate-spin" />
+            </div>
+        ) : data.length > 0 ? (
             <ChartContainer
-                config={chartConfig}
+                config={dynamicChartConfig}
                 className="mx-auto aspect-square max-h-[300px]"
             >
                 <PieChart>
                     <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
+                        cursor={false}
+                        content={<ChartTooltipContent hideLabel />}
                     />
                     <Pie
-                        data={chartData}
+                        data={data}
                         dataKey="value"
                         nameKey="name"
                         innerRadius={60}
                         strokeWidth={5}
                     >
+                      {data.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
                     </Pie>
                     <ChartLegend
                         content={<ChartLegendContent nameKey="name" />}

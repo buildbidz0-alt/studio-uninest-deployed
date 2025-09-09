@@ -10,6 +10,7 @@ import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function DonateContent() {
   const { openCheckout, isLoaded } = useRazorpay();
@@ -17,16 +18,50 @@ export default function DonateContent() {
   const { user } = useAuth();
   const [isDonating, setIsDonating] = useState(false);
   const [raisedAmount, setRaisedAmount] = useState(0);
-  const [goalAmount, setGoalAmount] = useState(0);
+  const [goalAmount, setGoalAmount] = useState(50000); // Example, could come from admin setting
   const [topDonors, setTopDonors] = useState<any[]>([]);
+  const supabase = createClient();
 
   useEffect(() => {
-    // TODO: Fetch raised amount, goal, and top donors from your API
-    // e.g., fetch('/api/donations/stats').then(...)
-    setRaisedAmount(0);
-    setGoalAmount(10000); // Example, should come from API
-    setTopDonors([]);
-  }, []);
+    const fetchData = async () => {
+        // Fetch raised amount
+        const { data: donations, error: donationsError } = await supabase
+            .from('donations')
+            .select('amount');
+        if (donations) {
+            const total = donations.reduce((sum, d) => sum + d.amount, 0);
+            setRaisedAmount(total);
+        }
+
+        // Fetch top donors
+        const { data: topDonorsData, error: topDonorsError } = await supabase
+            .from('donations')
+            .select('amount, profiles(full_name, avatar_url, email)')
+            .order('amount', { ascending: false })
+            .limit(5);
+
+        if (topDonorsData) {
+            // This is a simplified aggregation
+            const aggregatedDonors = topDonorsData.reduce((acc: any[], current) => {
+                if (!current.profiles) return acc;
+                const existing = acc.find(d => d.email === current.profiles!.email);
+                if (existing) {
+                    existing.amount += current.amount;
+                } else {
+                    acc.push({
+                        name: current.profiles.full_name,
+                        email: current.profiles.email,
+                        avatar: current.profiles.avatar_url,
+                        amount: current.amount
+                    });
+                }
+                return acc;
+            }, []).sort((a,b) => b.amount - a.amount).slice(0, 3);
+            setTopDonors(aggregatedDonors);
+        }
+    }
+    fetchData();
+  }, [supabase]);
 
   const progressPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
   
@@ -53,11 +88,28 @@ export default function DonateContent() {
         description: 'Support student innovation!',
         order_id: order.id,
         handler: async function (response: any) {
-            toast({
-              title: '🎉 Thank you for your support!',
-              description: 'Your donation helps keep UniNest running.',
+            // Save donation to the database
+            const { error } = await supabase.from('donations').insert({
+                user_id: user?.id,
+                amount: amount,
+                currency: 'INR',
+                razorpay_payment_id: response.razorpay_payment_id
             });
-            // TODO: Call your backend to verify the payment and update donation stats
+
+            if (error) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Payment Succeeded, Record Failed',
+                    description: 'Your donation was processed, but we failed to record it. Please contact support.',
+                });
+            } else {
+                toast({
+                title: '🎉 Thank you for your support!',
+                description: 'Your donation helps keep UniNest running.',
+                });
+                // Optimistically update UI
+                setRaisedAmount(prev => prev + amount);
+            }
         },
         prefill: {
           name: user?.user_metadata?.full_name || '',
@@ -141,7 +193,7 @@ export default function DonateContent() {
                     </Avatar>
                     <div>
                       <p className="font-semibold">{donor.name || 'Anonymous'}</p>
-                      <p className="text-sm text-muted-foreground">Donated ₹{donor.amount}</p>
+                      <p className="text-sm text-muted-foreground">Donated ₹{donor.amount.toLocaleString()}</p>
                     </div>
                   </div>
                   <div className="font-bold text-lg text-primary">#{index + 1}</div>

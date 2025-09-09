@@ -3,18 +3,25 @@
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import ChartCard from '../chart-card';
+import { Loader2 } from 'lucide-react';
 
-// TODO: Fetch data from your API, e.g. /admin/analytics/revenue/monthly
-const data: any[] = [];
+type MonthlyRevenueChartProps = {
+    data: { name: string, revenue: number }[];
+    loading: boolean;
+}
 
-export default function MonthlyRevenueChart() {
+export default function MonthlyRevenueChart({ data, loading }: MonthlyRevenueChartProps) {
   return (
     <ChartCard 
         title="Monthly Revenue" 
-        description={data.length > 0 ? "Showing revenue for the last 7 months." : "No revenue data available for the last 7 months."}
+        description={loading ? "Loading data..." : data.length > 0 ? "Showing revenue for the last 12 months." : "No revenue data available."}
         contentClassName="pl-2"
     >
-        {data.length > 0 ? (
+        {loading ? (
+            <div className="flex h-[300px] w-full items-center justify-center text-muted-foreground">
+                <Loader2 className="animate-spin" />
+            </div>
+        ): data.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
