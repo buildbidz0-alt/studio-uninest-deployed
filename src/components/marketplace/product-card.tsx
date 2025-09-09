@@ -44,16 +44,16 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-between w-full gap-2">
             <p className="text-xl font-bold text-primary">₹{product.price.toLocaleString()}</p>
             <div className='flex gap-2'>
-              {hasPurchased && (
-                  <Button variant="outline" size="icon" asChild>
+              {user && user.id !== product.seller_id && (
+                  <Button variant="outline" size="sm" asChild>
                     {/* TODO: This should link to the specific chat room with the vendor */}
                     <Link href="/chat">
-                      <MessageSquare className="size-4"/>
-                      <span className="sr-only">Chat with vendor</span>
+                      <MessageSquare className="size-4 mr-2"/>
+                      Chat
                     </Link>
                   </Button>
               )}
-              <Button disabled={!user}>Buy Now</Button>
+              <Button disabled={!user || user.id === product.seller_id}>Buy Now</Button>
             </div>
         </div>
       </CardFooter>

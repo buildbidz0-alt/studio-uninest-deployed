@@ -39,9 +39,10 @@ export async function POST(request: Request) {
       receipt: `receipt_order_${new Date().getTime()}`,
     };
     
-    console.log('Creating Razorpay order with options:', options);
+    // Avoid logging the entire order object which might contain sensitive details in some contexts.
+    // console.log('Creating Razorpay order with options for amount:', options.amount);
     const order = await razorpay.orders.create(options);
-    console.log('Razorpay order created successfully:', order);
+    // console.log('Razorpay order created successfully with ID:', order.id);
 
     return NextResponse.json(order, { status: 200 });
     
