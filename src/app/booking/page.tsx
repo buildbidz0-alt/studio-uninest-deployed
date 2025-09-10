@@ -1,10 +1,5 @@
 import type { Metadata } from 'next';
-import dynamic from 'next/dynamic';
-
-const SeatSelectionClient = dynamic(
-  () => import('@/components/booking/seat-selection-client'),
-  { ssr: false }
-);
+import SeatSelectionClient from '@/components/booking/seat-selection-client';
 
 export const metadata: Metadata = {
   title: 'Book a Seat | UniNest',
