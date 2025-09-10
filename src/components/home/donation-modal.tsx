@@ -16,8 +16,9 @@ import { Button } from '@/components/ui/button';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { Heart, Loader2 } from 'lucide-react';
+import { Heart, Loader2, IndianRupee } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '../ui/input';
 
 type DonationModalProps = {
   isOpen: boolean;
@@ -31,13 +32,15 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
   const { toast } = useToast();
   const { user } = useAuth();
   const [isDonating, setIsDonating] = useState(false);
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(100);
+  const [donationAmount, setDonationAmount] = useState('100');
 
   const handleDonate = async () => {
-    if (!selectedAmount) {
+    const amount = parseInt(donationAmount, 10);
+    if (isNaN(amount) || amount <= 0) {
         toast({
             variant: 'destructive',
-            title: 'Please select an amount',
+            title: 'Invalid Amount',
+            description: 'Please enter a valid amount to donate.',
         });
         return;
     }
@@ -52,7 +55,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
       const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: selectedAmount * 100, currency: 'INR' }),
+        body: JSON.stringify({ amount: amount * 100, currency: 'INR' }),
       });
       
       const order = await response.json();
@@ -123,30 +126,42 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
             </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-3 py-4">
-            {suggestedAmounts.map(amount => (
-                <Button 
-                    key={amount} 
-                    variant="outline"
-                    className={cn(
-                        "py-6 text-lg font-bold transition-all",
-                        selectedAmount === amount && "bg-accent text-accent-foreground border-accent"
-                    )}
-                    onClick={() => setSelectedAmount(amount)}
-                >
-                    ₹{amount}
-                </Button>
-            ))}
+        <div className="space-y-4 py-4">
+            <div className="grid grid-cols-3 gap-3">
+                {suggestedAmounts.map(amount => (
+                    <Button 
+                        key={amount} 
+                        variant="outline"
+                        className={cn(
+                            "py-6 text-lg font-bold transition-all",
+                            donationAmount === amount.toString() && "bg-accent text-accent-foreground border-accent"
+                        )}
+                        onClick={() => setDonationAmount(amount.toString())}
+                    >
+                        ₹{amount}
+                    </Button>
+                ))}
+            </div>
+            <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                    type="number"
+                    placeholder="Custom amount"
+                    className="pl-8 text-center"
+                    value={donationAmount}
+                    onChange={(e) => setDonationAmount(e.target.value)}
+                />
+            </div>
         </div>
 
         <DialogFooter className="flex-col gap-2">
-            <Button size="lg" className="w-full text-lg py-6" onClick={handleDonate} disabled={!isLoaded || isDonating}>
+            <Button size="lg" className="w-full text-lg py-6" onClick={handleDonate} disabled={!isLoaded || isDonating || !donationAmount}>
                 {isDonating ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
                     <Heart className="mr-2 size-5" />
                 )}
-                {isDonating ? 'Processing...' : `Donate ₹${selectedAmount || 0}`}
+                {isDonating ? 'Processing...' : `Donate ₹${donationAmount || 0}`}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
                 You can also donate later from the <Link href="/donate" className="underline font-semibold" onClick={() => onOpenChange(false)}>Donate</Link> page.

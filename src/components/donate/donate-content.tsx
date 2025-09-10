@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Trophy, Loader2 } from 'lucide-react';
+import { Heart, Trophy, Loader2, IndianRupee } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { Input } from '../ui/input';
 
 export default function DonateContent() {
   const { openCheckout, isLoaded } = useRazorpay();
@@ -20,6 +21,7 @@ export default function DonateContent() {
   const [raisedAmount, setRaisedAmount] = useState(0);
   const [goalAmount, setGoalAmount] = useState(50000); // Example, could come from admin setting
   const [topDonors, setTopDonors] = useState<any[]>([]);
+  const [donationAmount, setDonationAmount] = useState('100');
   const supabase = createClient();
 
   useEffect(() => {
@@ -65,7 +67,16 @@ export default function DonateContent() {
 
   const progressPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
   
-  const handleDonate = async (amount: number) => {
+  const handleDonate = async () => {
+    const amount = parseInt(donationAmount, 10);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Amount',
+        description: 'Please enter a valid donation amount.',
+      });
+      return;
+    }
     setIsDonating(true);
     try {
       const response = await fetch('/api/create-order', {
@@ -162,14 +173,26 @@ export default function DonateContent() {
                 <span className="text-muted-foreground">Goal: ₹{goalAmount.toLocaleString()}</span>
               </div>
             </div>
-             <div className="grid grid-cols-3 gap-2">
-                <Button variant="outline" onClick={() => handleDonate(50)}>₹50</Button>
-                <Button variant="outline" onClick={() => handleDonate(100)}>₹100</Button>
-                <Button variant="outline" onClick={() => handleDonate(250)}>₹250</Button>
-             </div>
-            <Button size="lg" className="w-full text-lg" onClick={() => handleDonate(500)} disabled={!isLoaded || isDonating}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2">
+                  <Button variant="outline" onClick={() => setDonationAmount('50')}>₹50</Button>
+                  <Button variant="outline" onClick={() => setDonationAmount('100')}>₹100</Button>
+                  <Button variant="outline" onClick={() => setDonationAmount('250')}>₹250</Button>
+              </div>
+              <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                    type="number"
+                    placeholder="Or enter a custom amount"
+                    className="pl-8 text-center text-lg font-semibold"
+                    value={donationAmount}
+                    onChange={(e) => setDonationAmount(e.target.value)}
+                />
+              </div>
+            </div>
+            <Button size="lg" className="w-full text-lg" onClick={handleDonate} disabled={!isLoaded || isDonating || !donationAmount}>
                 {isLoaded ? <Heart className="mr-2 size-5" /> : <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isDonating ? 'Processing...' : 'Donate Now'}
+                {isDonating ? 'Processing...' : `Donate ₹${donationAmount || 0}`}
             </Button>
           </CardContent>
         </Card>
