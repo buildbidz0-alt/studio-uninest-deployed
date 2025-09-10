@@ -100,7 +100,7 @@ export default function CompetitionsClient() {
                 razorpay_payment_id: response.razorpay_payment_id,
             });
              if (error) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Payment received, but failed to save your application. Please contact support.' });
+                toast({ variant: 'destructive', title: 'Error Saving Application', description: 'Payment received, but failed to save your application. Please contact support.' });
             } else {
                 toast({ title: 'Payment Successful!', description: `You are now registered for ${competition.title}.` });
             }

@@ -110,7 +110,7 @@ export default function DonateContent() {
             if (error) {
                  toast({
                     variant: 'destructive',
-                    title: 'Payment Succeeded, Record Failed',
+                    title: 'Error Saving Donation',
                     description: 'Your donation was processed, but we failed to record it. Please contact support.',
                 });
             } else {
