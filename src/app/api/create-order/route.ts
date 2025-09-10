@@ -13,8 +13,10 @@ export async function POST(request: Request) {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keyId || !keySecret) {
-    console.error('Razorpay environment variables are not set.');
-    return NextResponse.json({ error: 'Server configuration error: Missing Razorpay credentials.' }, { status: 500 });
+    console.error('!!! CRITICAL: Razorpay environment variables are not set on the server.');
+    console.error('!!! NEXT_PUBLIC_RAZORPAY_KEY_ID found:', !!keyId);
+    console.error('!!! RAZORPAY_KEY_SECRET found:', !!keySecret);
+    return NextResponse.json({ error: 'Server configuration error: Missing Razorpay credentials. Please check server logs.' }, { status: 500 });
   }
 
   try {
@@ -39,10 +41,7 @@ export async function POST(request: Request) {
       receipt: `receipt_order_${new Date().getTime()}`,
     };
     
-    // Avoid logging the entire order object which might contain sensitive details in some contexts.
-    // console.log('Creating Razorpay order with options for amount:', options.amount);
     const order = await razorpay.orders.create(options);
-    // console.log('Razorpay order created successfully with ID:', order.id);
 
     return NextResponse.json(order, { status: 200 });
     
