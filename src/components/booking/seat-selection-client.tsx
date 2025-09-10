@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Armchair, Screen } from 'lucide-react';
+import { Armchair, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -67,7 +67,7 @@ export default function SeatSelectionClient() {
                         {/* Screen */}
                         <div className="flex items-center justify-center w-full">
                             <div className="w-2/3 h-2 bg-slate-300 rounded-t-md flex items-center justify-center text-xs text-slate-500">
-                                <Screen className="size-4 mr-2" />
+                                <Monitor className="size-4 mr-2" />
                                 Front Desk / Screen
                             </div>
                         </div>
