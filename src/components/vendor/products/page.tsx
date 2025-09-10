@@ -28,6 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 
@@ -70,7 +71,7 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
   };
 
   return (
-    <AlertDialog>
+    <>
       <div className="space-y-8">
         <PageHeader title="My Products" description="Manage your marketplace listings.">
           <Button asChild>
@@ -126,12 +127,8 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
                               className="text-destructive"
                               onSelect={() => setProductToDelete(product)}
                             >
-                              <AlertDialogTrigger asChild>
-                                <button className="w-full text-left flex items-center">
-                                    <Trash2 className="mr-2" />
-                                    Delete
-                                </button>
-                              </AlertDialogTrigger>
+                                <Trash2 className="mr-2" />
+                                Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -145,21 +142,23 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
         </Card>
       </div>
 
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the product
-            "{productToDelete?.name}" from your listings.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setProductToDelete(null)}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? 'Deleting...' : 'Continue'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <AlertDialog open={!!productToDelete} onOpenChange={() => setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product
+              "{productToDelete?.name}" from your listings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Continue'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

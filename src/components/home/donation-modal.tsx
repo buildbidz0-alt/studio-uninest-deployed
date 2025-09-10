@@ -9,6 +9,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useRazorpay } from '@/hooks/use-razorpay';
@@ -110,34 +112,34 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md text-center overflow-hidden p-0">
-        <div className="p-8 space-y-6">
-            <DialogHeader>
-                <div className="mx-auto bg-primary text-primary-foreground rounded-full p-3 w-fit mb-4">
-                    <Heart className="size-8" />
-                </div>
-                <DialogTitle className="text-3xl font-bold">Support UniNest</DialogTitle>
-                <DialogDescription>
-                    Our platform is free for all students. Your donation helps cover server costs and keeps the community thriving.
-                </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid grid-cols-3 gap-3">
-                {suggestedAmounts.map(amount => (
-                    <Button 
-                        key={amount} 
-                        variant="outline"
-                        className={cn(
-                            "py-6 text-lg font-bold transition-all",
-                            selectedAmount === amount && "bg-accent text-accent-foreground border-accent"
-                        )}
-                        onClick={() => setSelectedAmount(amount)}
-                    >
-                        ₹{amount}
-                    </Button>
-                ))}
+      <DialogContent className="sm:max-w-md text-center">
+        <DialogHeader>
+            <div className="mx-auto bg-primary text-primary-foreground rounded-full p-3 w-fit mb-4">
+                <Heart className="size-8" />
             </div>
+            <DialogTitle className="text-3xl font-bold">Support UniNest</DialogTitle>
+            <DialogDescription>
+                Our platform is free for all students. Your donation helps cover server costs and keeps the community thriving.
+            </DialogDescription>
+        </DialogHeader>
 
+        <div className="grid grid-cols-3 gap-3 py-4">
+            {suggestedAmounts.map(amount => (
+                <Button 
+                    key={amount} 
+                    variant="outline"
+                    className={cn(
+                        "py-6 text-lg font-bold transition-all",
+                        selectedAmount === amount && "bg-accent text-accent-foreground border-accent"
+                    )}
+                    onClick={() => setSelectedAmount(amount)}
+                >
+                    ₹{amount}
+                </Button>
+            ))}
+        </div>
+
+        <DialogFooter className="flex-col gap-2">
             <Button size="lg" className="w-full text-lg py-6" onClick={handleDonate} disabled={!isLoaded || isDonating}>
                 {isDonating ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -146,10 +148,10 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
                 )}
                 {isDonating ? 'Processing...' : `Donate ₹${selectedAmount || 0}`}
             </Button>
-        </div>
-        <div className="bg-muted px-4 py-2 text-center text-sm text-muted-foreground">
-            <p>You can close this modal and donate later from the <Link href="/donate" className="underline font-semibold">Donate</Link> page.</p>
-        </div>
+            <p className="text-center text-sm text-muted-foreground">
+                You can also donate later from the <Link href="/donate" className="underline font-semibold" onClick={() => onOpenChange(false)}>Donate</Link> page.
+            </p>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

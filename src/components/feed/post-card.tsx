@@ -29,6 +29,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { Label } from '../ui/label';
 import { formatDistanceToNow } from 'date-fns';
 import { PostWithAuthor } from './feed-content';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 type Comment = {
   id: number;
@@ -53,6 +62,8 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
   const [editedContent, setEditedContent] = useState(post.content);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const isAuthor = user?.id === post.user_id;
   const isAdmin = role === 'admin';
@@ -64,7 +75,14 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
 
   const handleSaveEdit = () => {
     onEdit(post.id, editedContent);
+    setShowEditDialog(false);
   };
+  
+  const handleDeleteConfirm = () => {
+    onDelete(post.id);
+    setShowDeleteDialog(false);
+  }
+
 
   const handleAddComment = () => {
     if (newComment.trim()) {
@@ -102,7 +120,7 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
           </div>
         </div>
         {canEditOrDelete && (
-          <AlertDialog>
+          <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="-mr-2 -mt-2 h-8 w-8">
@@ -110,40 +128,62 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
                     <Edit className="mr-2 size-4" />
                     Edit
                   </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <DropdownMenuItem className="text-destructive" onClick={() => onDelete(post.id)}>
+                <DropdownMenuItem className="text-destructive" onSelect={() => setShowDeleteDialog(true)}>
                   <Trash2 className="mr-2 size-4" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Edit Post</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Make changes to your post. Click save when you're done.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-post" className="sr-only">Edit Post</Label>
-                <Textarea 
-                  id="edit-post"
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="min-h-[120px]"
-                />
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleSaveEdit}>Save</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Post</DialogTitle>
+                  <DialogDescription>
+                    Make changes to your post. Click save when you're done.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-post" className="sr-only">Edit Post</Label>
+                  <Textarea 
+                    id="edit-post"
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleSaveEdit}>Save</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            {/* Delete Alert Dialog */}
+             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your post.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
         )}
       </CardHeader>
       <CardContent className="px-4 pb-2 pt-0">
