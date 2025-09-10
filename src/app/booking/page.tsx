@@ -1,4 +1,3 @@
-'use client';
 
 import type { Metadata } from 'next';
 import SeatSelectionClient from '@/components/booking/seat-selection-client';
