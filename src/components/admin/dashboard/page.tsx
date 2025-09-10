@@ -18,11 +18,24 @@ const chartColors = [
     "hsl(var(--chart-5))"
 ];
 
+type Donation = {
+  amount: number;
+  created_at: string;
+}
+
+type CompetitionEntry = {
+  competitions: {
+    entry_fee: number;
+  } | null;
+  created_at: string;
+}
+
 export default function AdminDashboardContent() {
   const [stats, setStats] = useState({ revenue: 0, donations: 0, users: 0, listings: 0 });
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [donationsData, setDonationsData] = useState<Donation[] | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -32,11 +45,13 @@ export default function AdminDashboardContent() {
       // Fetch stats
       const { data: usersData } = await supabase.from('profiles').select('id', { count: 'exact' });
       const { data: listingsData } = await supabase.from('products').select('id', { count: 'exact' });
-      const { data: donationsData } = await supabase.from('donations').select('amount');
-      const { data: competitionEntries } = await supabase.from('competition_entries').select('competitions(entry_fee)');
+      const { data: fetchedDonationsData } = await supabase.from('donations').select('amount, created_at');
+      const { data: competitionEntries } = await supabase.from('competition_entries').select('competitions(entry_fee), created_at');
 
-      const totalDonations = donationsData?.reduce((sum, d) => sum + d.amount, 0) || 0;
-      const totalCompetitionFees = competitionEntries?.reduce((sum, e) => sum + (e.competitions?.entry_fee || 0), 0) || 0;
+      setDonationsData(fetchedDonationsData as Donation[] | null);
+
+      const totalDonations = fetchedDonationsData?.reduce((sum, d) => sum + d.amount, 0) || 0;
+      const totalCompetitionFees = (competitionEntries as CompetitionEntry[] | null)?.reduce((sum, e) => sum + (e.competitions?.entry_fee || 0), 0) || 0;
       
       setStats({
         users: usersData?.length || 0,
@@ -47,9 +62,9 @@ export default function AdminDashboardContent() {
 
       // Fetch chart data
       // Monthly Revenue (last 12 months)
-      const allTransactions = [
-        ...(donationsData || []).map(d => ({ amount: d.amount, created_at: d.created_at })),
-        ...(competitionEntries || []).map(c => ({ amount: c.competitions?.entry_fee || 0, created_at: c.created_at }))
+      const allTransactions: {amount: number, created_at: string}[] = [
+        ...(fetchedDonationsData || []).map(d => ({ amount: d.amount, created_at: d.created_at })),
+        ...(competitionEntries || []).map((c: CompetitionEntry) => ({ amount: c.competitions?.entry_fee || 0, created_at: c.created_at }))
       ].filter(t => t.amount > 0);
 
       const monthlyRevenue: { [key: string]: number } = {};
