@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "src/app/api/create-order/route.ts": {
+      "maxDuration": 15
+    }
+  }
+}
