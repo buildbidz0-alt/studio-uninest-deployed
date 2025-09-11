@@ -1,15 +1,18 @@
 
-import { createBrowserClient } from '@supabase/ssr'
+'use client';
 
-// NOTE: This file is no longer the primary way to create a client.
-// The client is now initialized directly in the AuthProvider to ensure
-// environment variables are loaded correctly on the client side.
-// This file is kept for potential server-side utility functions if needed in the future,
-// but should be used with caution.
+import { createBrowserClient } from '@supabase/ssr';
 
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase URL or anonymous key is not defined.');
+  }
+  
+  return createBrowserClient(
+    supabaseUrl,
+    supabaseAnonKey
+  );
 }
