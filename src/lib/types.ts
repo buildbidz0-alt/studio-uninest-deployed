@@ -6,6 +6,8 @@ export type Profile = {
   full_name: string | null;
   avatar_url: string | null;
   handle: string | null;
+  followers?: { count: number }[];
+  following?: { count: number }[];
 };
 
 export type Room = {
@@ -84,3 +86,33 @@ export type OrderItem = {
         image_url: string | null;
     }
 }
+
+export type Notification = {
+    id: number;
+    created_at: string;
+    user_id: string;
+    sender_id: string;
+    type: 'new_follower' | 'new_post';
+    post_id: number | null;
+    is_read: boolean;
+    sender: {
+        full_name: string;
+        avatar_url: string;
+    } | null;
+}
+
+export type PostWithAuthor = {
+  id: number;
+  content: string;
+  created_at: string;
+  user_id: string;
+  likes: { count: number }[];
+  comments: any[]; 
+  profiles: {
+    full_name: string;
+    avatar_url: string;
+    handle: string;
+  } | null;
+  isLiked: boolean;
+  isFollowed: boolean;
+};

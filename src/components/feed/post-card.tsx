@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import { Heart, MessageCircle, MoreHorizontal, Trash2, Edit, UserPlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +36,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import type { User } from '@supabase/supabase-js';
+import Link from 'next/link';
 
 export type PostWithAuthor = {
   id: number;
@@ -50,6 +51,7 @@ export type PostWithAuthor = {
     handle: string;
   } | null;
   isLiked: boolean;
+  isFollowed: boolean;
 };
 
 
@@ -69,15 +71,18 @@ type PostCardProps = {
   onEdit: (id: number, newContent: string) => void;
   onComment: (postId: number, commentContent: string) => void;
   onLike: (postId: number, isLiked: boolean) => void;
+  onFollow: (userId: string, isFollowed: boolean) => Promise<boolean>;
   currentUser: User | null;
 };
 
-export default function PostCard({ post, onDelete, onEdit, onComment, onLike, currentUser: user }: PostCardProps) {
+export default function PostCard({ post, onDelete, onEdit, onComment, onLike, onFollow, currentUser: user }: PostCardProps) {
   const [editedContent, setEditedContent] = useState(post.content);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isFollowed, setIsFollowed] = useState(post.isFollowed);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   const role = user?.user_metadata?.role;
   const isAuthor = user?.id === post.user_id;
@@ -87,6 +92,16 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike, cu
   const handleLike = () => {
     onLike(post.id, post.isLiked);
   };
+
+  const handleFollow = async () => {
+    if (isAuthor || !user) return;
+    setIsFollowLoading(true);
+    const success = await onFollow(post.user_id, isFollowed);
+    if (success) {
+      setIsFollowed(!isFollowed);
+    }
+    setIsFollowLoading(false);
+  }
 
   const handleSaveEdit = () => {
     onEdit(post.id, editedContent);
@@ -120,16 +135,30 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike, cu
 
   return (
     <Card className="shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="flex flex-row items-start gap-4 p-4">
-        <Avatar>
-          <AvatarImage src={authorAvatar} alt={`${authorName}'s avatar`} data-ai-hint="person face" />
-          <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
-        </Avatar>
+       <CardHeader className="flex flex-row items-start gap-4 p-4">
+        <Link href={`/profile/${authorHandle}`}>
+          <Avatar>
+            <AvatarImage src={authorAvatar} alt={`${authorName}'s avatar`} data-ai-hint="person face" />
+            <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
+          </Avatar>
+        </Link>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold">{authorName}</p>
-              <p className="text-sm text-muted-foreground">@{authorHandle}</p>
+            <div className="flex items-center gap-2">
+               <Link href={`/profile/${authorHandle}`} className="hover:underline">
+                  <div>
+                    <p className="font-semibold">{authorName}</p>
+                    <p className="text-sm text-muted-foreground">@{authorHandle}</p>
+                  </div>
+              </Link>
+              {!isAuthor && user && (
+                 <>
+                  <span className="text-muted-foreground">&middot;</span>
+                  <Button variant="link" size="sm" className="p-0 h-auto" onClick={handleFollow} disabled={isFollowLoading}>
+                      {isFollowed ? "Following" : "Follow"}
+                  </Button>
+                 </>
+              )}
             </div>
              <p className="text-sm text-muted-foreground">{getFormattedTimestamp()}</p>
           </div>
@@ -249,7 +278,7 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike, cu
                     </div>
                   ) : (
                      <p className="text-sm text-muted-foreground text-center">
-                       <a href="/login" className="text-primary font-semibold hover:underline">Log in</a> to join the conversation.
+                       <Link href="/login" className="text-primary font-semibold hover:underline">Log in</Link> to join the conversation.
                     </p>
                   )}
                   {post.comments.map((comment: Comment) => (

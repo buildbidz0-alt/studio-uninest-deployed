@@ -15,11 +15,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNav, MobileBottomNav } from './sidebar-nav';
 import { Logo } from '@/components/icons';
-import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, LayoutGrid } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import NotificationsDropdown from './notifications-dropdown';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -47,18 +47,21 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           {user ? (
-            <Link href="/profile">
-              <div className="flex items-center gap-3">
-                <Avatar className="size-9">
-                  <AvatarImage src={user.user_metadata?.avatar_url || ''} alt="User avatar" />
-                  <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col text-sm overflow-hidden">
-                  <span className="font-semibold truncate">{user.user_metadata?.full_name || 'User'}</span>
-                  <span className="text-muted-foreground truncate">{user.email}</span>
-                </div>
-              </div>
-            </Link>
+            <div className="flex items-center justify-between">
+                <Link href="/profile" className="flex-1 overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="size-9">
+                      <AvatarImage src={user.user_metadata?.avatar_url || ''} alt="User avatar" />
+                      <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col text-sm overflow-hidden">
+                      <span className="font-semibold truncate">{user.user_metadata?.full_name || 'User'}</span>
+                      <span className="text-muted-foreground truncate">{user.email}</span>
+                    </div>
+                  </div>
+                </Link>
+                <NotificationsDropdown />
+            </div>
           ) : (
              <div className="flex items-center gap-3">
                 <Avatar className="size-9">

@@ -19,7 +19,7 @@ export default function FeedContent() {
   const fetchPosts = useCallback(async () => {
     if (!supabase) return;
     setLoading(true);
-    // Fetch posts with author info, likes count, and comments
+
     const { data: postsData, error } = await supabase
       .from('posts')
       .select(`
@@ -46,20 +46,33 @@ export default function FeedContent() {
             .from('likes')
             .select('post_id')
             .eq('user_id', user.id);
+        
+        const { data: followedUsers } = await supabase
+            .from('followers')
+            .select('following_id')
+            .eq('follower_id', user.id);
 
-        if (likedPosts) {
-            const likedPostIds = new Set(likedPosts.map(p => p.post_id));
-            finalPosts = finalPosts.map(p => ({
-                ...p,
-                isLiked: likedPostIds.has(p.id),
-                comments: p.comments.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
-            }));
-        } else {
-            finalPosts = finalPosts.map(p => ({ ...p, isLiked: false }));
-        }
+        const likedPostIds = new Set(likedPosts?.map(p => p.post_id));
+        const followedUserIds = new Set(followedUsers?.map(f => f.following_id));
+
+        finalPosts = finalPosts.map(p => ({
+            ...p,
+            isLiked: likedPostIds.has(p.id),
+            isFollowed: followedUserIds.has(p.user_id),
+            comments: p.comments.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+        }));
+
+        // Prioritize posts from followed users
+        finalPosts.sort((a, b) => {
+            const aFollowed = followedUserIds.has(a.user_id);
+            const bFollowed = followedUserIds.has(b.user_id);
+            if (aFollowed && !bFollowed) return -1;
+            if (!aFollowed && bFollowed) return 1;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
 
     } else {
-        finalPosts = finalPosts.map(p => ({ ...p, isLiked: false }));
+        finalPosts = finalPosts.map(p => ({ ...p, isLiked: false, isFollowed: false }));
     }
     
     setPosts(finalPosts);
@@ -96,9 +109,11 @@ export default function FeedContent() {
         likes: [],
         comments: [],
         isLiked: false,
+        isFollowed: false, // You follow yourself implicitly, but not needed for button
       };
       setPosts([ newPost, ...posts]);
       toast({ title: 'Post created successfully!' });
+      // In a real app, you'd trigger a notification for followers here, likely via a DB function.
     }
   };
 
@@ -175,6 +190,30 @@ export default function FeedContent() {
     }
   }
 
+  const handleFollow = async (userIdToFollow: string, isCurrentlyFollowed: boolean): Promise<boolean> => {
+      if (!user || !supabase) {
+        toast({ variant: 'destructive', title: 'You must be logged in to follow users.' });
+        return false;
+      }
+      
+      if (isCurrentlyFollowed) {
+          const { error } = await supabase.from('followers').delete().match({ follower_id: user.id, following_id: userIdToFollow });
+          if (error) {
+              toast({ variant: 'destructive', title: 'Error', description: "Could not unfollow user." });
+              return false;
+          }
+      } else {
+          const { error } = await supabase.from('followers').insert({ follower_id: user.id, following_id: userIdToFollow });
+           if (error) {
+              toast({ variant: 'destructive', title: 'Error', description: "Could not follow user." });
+              return false;
+          }
+      }
+      // Update the followed state for all posts by this user in the feed
+      setPosts(posts.map(p => p.user_id === userIdToFollow ? { ...p, isFollowed: !isCurrentlyFollowed } : p));
+      return true;
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
       <div className="lg:col-span-2 space-y-8">
@@ -194,6 +233,7 @@ export default function FeedContent() {
                 onEdit={editPost}
                 onComment={addComment}
                 onLike={updateLikes}
+                onFollow={handleFollow}
                 currentUser={user}
               />
             ))
