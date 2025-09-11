@@ -13,6 +13,7 @@ import { Input } from '../ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
+import { useRouter } from 'next/navigation';
 
 const impactCards = [
     { title: "Shared Notes", description: "Keep the knowledge flowing with free access to notes.", icon: BookOpen },
@@ -32,6 +33,7 @@ type Donor = {
     name: string | null;
     avatar: string | null;
     amount: number;
+    email: string | null; // Add email to uniquely identify donors
 }
 
 type DonateContentProps = {
@@ -41,6 +43,7 @@ type DonateContentProps = {
 }
 
 export default function DonateContent({ initialDonors, initialGoal, initialRaised }: DonateContentProps) {
+  const router = useRouter();
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user, supabase } = useAuth();
@@ -51,9 +54,47 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
   const [donationAmount, setDonationAmount] = useState('100');
 
   useEffect(() => {
-    // Supabase real-time subscription for donations can be added here
-    // to keep the leaderboard live without polling.
-  }, []);
+    if (!supabase) return;
+    
+    const channel = supabase
+      .channel('public:donations')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'donations' }, async (payload) => {
+          const newDonation = payload.new as { user_id: string; amount: number; };
+
+          // Fetch profile for the new donation
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url, email')
+            .eq('id', newDonation.user_id)
+            .single();
+
+          setRaisedAmount(prev => prev + newDonation.amount);
+
+          const newDonorInfo = {
+              name: profileData?.full_name || 'Anonymous',
+              avatar: profileData?.avatar_url,
+              amount: newDonation.amount,
+              email: profileData?.email,
+          };
+
+          setDonors(prevDonors => {
+              const existingDonorIndex = prevDonors.findIndex(d => d.email === newDonorInfo.email);
+              let updatedDonors;
+              if (existingDonorIndex > -1) {
+                  updatedDonors = [...prevDonors];
+                  updatedDonors[existingDonorIndex].amount += newDonation.amount;
+              } else {
+                  updatedDonors = [...prevDonors, newDonorInfo];
+              }
+              return updatedDonors.sort((a,b) => b.amount - a.amount);
+          });
+      })
+      .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    }
+  }, [supabase]);
 
   const progressPercentage = goalAmount > 0 ? Math.min((raisedAmount / goalAmount) * 100, 100) : 0;
   
@@ -96,15 +137,8 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
             if (error) {
                  toast({ variant: 'destructive', title: 'Error Saving Donation', description: 'Your donation was processed, but we failed to record it. Please contact support.'});
             } else {
-                toast({ title: `🔥 Thanks, ${user?.user_metadata?.full_name}! You’re officially a Campus Hero!`, description: 'Your donation helps keep UniNest running.'});
-                // Optimistically update UI
-                setRaisedAmount(prev => prev + amount);
-                const existingDonor = donors.find(d => d.name === user.user_metadata?.full_name);
-                if (existingDonor) {
-                    setDonors(donors.map(d => d.name === user.user_metadata?.full_name ? {...d, amount: d.amount + amount} : d).sort((a,b) => b.amount - a.amount));
-                } else {
-                    setDonors([...donors, { name: user.user_metadata?.full_name, avatar: user.user_metadata?.avatar_url, amount }].sort((a,b) => b.amount - a.amount));
-                }
+                // Redirect to the thank-you page with donation details
+                router.push(`/donate/thank-you?amount=${amount}`);
             }
         },
         prefill: { name: user?.user_metadata?.full_name || '', email: user?.email || '' },
@@ -213,7 +247,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
             </CardHeader>
             <CardContent className="space-y-6">
                 {topDonors.length > 0 ? topDonors.map((donor, index) => (
-                    <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-primary/10 border-2 border-primary/20">
+                    <div key={donor.email || index} className="flex items-center gap-4 p-3 rounded-lg bg-primary/10 border-2 border-primary/20">
                        <span className={cn("text-3xl font-bold w-8 text-center", medalColors[index])}>
                          {['🥇', '🥈', '🥉'][index]}
                        </span>
@@ -236,7 +270,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
                   <ScrollArea className="h-64">
                     <div className="space-y-4 pr-4">
                         {otherDonors.map((donor, index) => (
-                             <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                             <div key={donor.email || index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="size-9">
                                         {donor.avatar && <AvatarImage src={donor.avatar} alt={donor.name || 'Anonymous'} data-ai-hint="person face" />}

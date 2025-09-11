@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ type TopDonor = {
 const suggestedAmounts = [50, 100, 250];
 
 export default function DonationModal({ isOpen, onOpenChange }: DonationModalProps) {
+  const router = useRouter();
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user, supabase } = useAuth();
@@ -41,18 +43,27 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
   useEffect(() => {
     if (isOpen && supabase) {
         const fetchTopDonor = async () => {
-            const { data: topDonorsData } = await supabase
-                .from('donations')
-                .select('amount, profiles(full_name)')
-                .order('amount', { ascending: false })
-                .limit(1);
+             const { data: donations } = await supabase.from('donations').select('amount, profiles(full_name, email)');
 
-            if (topDonorsData && topDonorsData.length > 0) {
-                const top = topDonorsData[0];
-                setTopDonor({
-                    name: top.profiles?.full_name || 'Anonymous',
-                    amount: top.amount,
-                });
+            if (!donations || donations.length === 0) return;
+
+            const aggregatedDonors = donations.reduce((acc: any[], current) => {
+                if (!current.profiles) return acc;
+                const existing = acc.find(d => d.email === current.profiles!.email);
+                if (existing) {
+                    existing.amount += current.amount;
+                } else {
+                    acc.push({
+                        name: current.profiles.full_name,
+                        email: current.profiles.email,
+                        amount: current.amount
+                    });
+                }
+                return acc;
+            }, []).sort((a: any, b: any) => b.amount - a.amount);
+            
+            if (aggregatedDonors.length > 0) {
+              setTopDonor(aggregatedDonors[0]);
             }
         };
         fetchTopDonor();
@@ -104,7 +115,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
             if (error) {
                  toast({ variant: 'destructive', title: 'Donation record failed', description: 'Your payment was successful but we couldn\'t record it. Please contact support.' });
             } else {
-                toast({ title: '🔥 Thanks, ' + (user?.user_metadata?.full_name || 'Campus Hero') + '! You’re making a difference!',});
+                router.push(`/donate/thank-you?amount=${amount}`);
             }
             onOpenChange(false);
         },
