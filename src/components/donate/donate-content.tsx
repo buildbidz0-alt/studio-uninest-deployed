@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,11 +15,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const impactCards = [
-    { title: "Shared Notes", description: "Keep the knowledge flowing with free access to notes.", icon: BookOpen },
-    { title: "Marketplace", description: "Enable students to buy and sell without platform fees.", icon: ShoppingBag },
-    { title: "Library Booking", description: "Ensure seamless access to campus study spaces.", icon: Armchair },
+    { title: "Shared Notes", description: "Keep the knowledge flowing with free access to notes.", icon: BookOpen, href: "/notes" },
+    { title: "Marketplace", description: "Enable students to buy and sell without platform fees.", icon: ShoppingBag, href: "/marketplace" },
+    { title: "Library Booking", description: "Ensure seamless access to campus study spaces.", icon: Armchair, href: "/booking" },
 ];
 
 const donationTiers = [
@@ -174,13 +176,15 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
       <section>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {impactCards.map(card => (
-                 <Card key={card.title} className="text-center p-6 shadow-lg hover:shadow-2xl transition-shadow hover:-translate-y-2">
-                     <div className="mx-auto bg-primary/10 text-primary size-16 rounded-full flex items-center justify-center mb-4">
-                        <card.icon className="size-8" />
-                     </div>
-                     <h3 className="text-xl font-headline font-bold">{card.title}</h3>
-                     <p className="text-muted-foreground">{card.description}</p>
-                 </Card>
+                 <Link href={card.href} key={card.title}>
+                    <Card className="text-center p-6 shadow-lg hover:shadow-2xl transition-shadow hover:-translate-y-2 h-full">
+                        <div className="mx-auto bg-primary/10 text-primary size-16 rounded-full flex items-center justify-center mb-4">
+                            <card.icon className="size-8" />
+                        </div>
+                        <h3 className="text-xl font-headline font-bold">{card.title}</h3>
+                        <p className="text-muted-foreground">{card.description}</p>
+                    </Card>
+                 </Link>
               ))}
           </div>
       </section>
