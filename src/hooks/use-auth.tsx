@@ -32,8 +32,14 @@ export function AuthProvider({ children, supabaseUrl, supabaseAnonKey }: AuthPro
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Only create the client if the URL and Key are provided and valid
-    if (supabaseUrl && supabaseAnonKey) {
+    // Only create the client if the URL and Key are provided and are not the placeholder values
+    const isSupabaseConfigured = 
+      supabaseUrl && 
+      supabaseAnonKey &&
+      supabaseUrl !== 'YOUR_SUPABASE_URL_HERE' &&
+      supabaseAnonKey !== 'YOUR_SUPABASE_ANON_KEY_HERE';
+
+    if (isSupabaseConfigured) {
       const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
       setSupabase(client);
 
@@ -58,8 +64,8 @@ export function AuthProvider({ children, supabaseUrl, supabaseAnonKey }: AuthPro
         subscription?.unsubscribe();
       };
     } else {
-      // If credentials are not provided, stop loading and show the app in a logged-out state.
-      console.error('Supabase URL and/or Anon Key are not defined. Please check your .env.local file.');
+      // If credentials are not provided or are placeholders, stop loading and show the app in a logged-out state.
+      console.warn('Supabase credentials are not configured or are using placeholder values. Please check your .env.local file.');
       setLoading(false);
       setUser(null);
       setSupabase(undefined);
