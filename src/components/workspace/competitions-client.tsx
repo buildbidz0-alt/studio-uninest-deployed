@@ -80,7 +80,8 @@ export default function CompetitionsClient() {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to create order');
+            const orderError = await response.json();
+            throw new Error(orderError.error || 'Failed to create order');
         }
         
         const order = await response.json();
@@ -124,7 +125,7 @@ export default function CompetitionsClient() {
         toast({
             variant: 'destructive',
             title: 'Application Failed',
-            description: 'Could not connect to the payment gateway. Please try again later.',
+            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway. Please try again later.',
         });
     } finally {
         setApplyingCompetitionId(null);

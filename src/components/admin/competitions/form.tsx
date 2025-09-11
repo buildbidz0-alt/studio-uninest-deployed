@@ -139,7 +139,7 @@ export default function CompetitionForm() {
                             <FormItem><FormLabel>Banner Image</FormLabel><FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
                          )} />
                          <FormField control={form.control} name="details_pdf" render={({ field: { onChange, value, ...rest } }) => (
-                            <FormItem><FormLabel>Details PDF</FormLabel><FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0路上])} {...rest} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Details PDF</FormLabel><FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
                          )} />
                     </div>
                     <Button type="submit" disabled={isLoading}>
