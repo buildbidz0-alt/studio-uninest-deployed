@@ -3,17 +3,17 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/use-auth';
 import { MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import type { Product } from '@/lib/types';
+import type { User } from '@supabase/supabase-js';
 
 type ProductCardProps = {
   product: Product;
+  user: User | null;
 };
 
-export default function ProductCard({ product }: ProductCardProps) {
-  const { user } = useAuth();
+export default function ProductCard({ product, user }: ProductCardProps) {
   // TODO: Replace this with actual logic based on user's purchase history from your backend
   const hasPurchased = false; 
 

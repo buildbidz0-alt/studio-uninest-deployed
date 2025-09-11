@@ -6,9 +6,9 @@ import StatsCard from '@/components/admin/stats-card';
 import MonthlyRevenueChart from '@/components/admin/charts/monthly-revenue-chart';
 import ListingsByCategoryChart from '@/components/admin/charts/listings-by-category-chart';
 import TopDonorsTable from '@/components/admin/top-donors-table';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/use-auth';
 import { useEffect, useState } from 'react';
-import { subMonths, startOfMonth, format, getMonth, getYear } from 'date-fns';
+import { subMonths, format } from 'date-fns';
 
 const chartColors = [
     "hsl(var(--chart-1))",
@@ -31,12 +31,12 @@ type CompetitionEntry = {
 }
 
 export default function AdminDashboardContent() {
+  const { supabase } = useAuth();
   const [stats, setStats] = useState({ revenue: 0, donations: 0, users: 0, listings: 0 });
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [donationsData, setDonationsData] = useState<Donation[] | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {

@@ -8,21 +8,19 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Heart, Trophy, Loader2, IndianRupee } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { Input } from '../ui/input';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function DonateContent() {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const [isDonating, setIsDonating] = useState(false);
   const [raisedAmount, setRaisedAmount] = useState(0);
   const [goalAmount, setGoalAmount] = useState(50000); // Example, could come from admin setting
   const [topDonors, setTopDonors] = useState<any[]>([]);
   const [donationAmount, setDonationAmount] = useState('100');
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,6 +66,10 @@ export default function DonateContent() {
   const progressPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
   
   const handleDonate = async () => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to donate.' });
+      return;
+    }
     const amount = parseInt(donationAmount, 10);
     if (isNaN(amount) || amount <= 0) {
       toast({

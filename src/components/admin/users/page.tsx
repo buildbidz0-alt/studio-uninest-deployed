@@ -7,9 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from 'date-fns';
+import { useAuth } from "@/hooks/use-auth";
 
 type UserProfile = {
     id: string;
@@ -24,7 +24,7 @@ type UserProfile = {
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
+    const { supabase } = useAuth();
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -37,7 +37,6 @@ export default function AdminUsersPage() {
                 console.error("Error fetching users:", error);
             } else {
                 // We need to get the email from the auth.users table
-                const userIds = data.map(p => p.id);
                 const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
                 
                 if (authError) {
@@ -129,5 +128,3 @@ export default function AdminUsersPage() {
         </div>
     )
 }
-
-    

@@ -24,10 +24,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
-import { useAuth } from '@/hooks/use-auth';
 import { Label } from '../ui/label';
 import { formatDistanceToNow } from 'date-fns';
-import { PostWithAuthor } from './feed-content';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +35,23 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import type { User } from '@supabase/supabase-js';
+
+export type PostWithAuthor = {
+  id: number;
+  content: string;
+  created_at: string;
+  user_id: string;
+  likes: { count: number }[];
+  comments: any[]; // Define a proper comment type later
+  profiles: {
+    full_name: string;
+    avatar_url: string;
+    handle: string;
+  } | null;
+  isLiked: boolean;
+};
+
 
 type Comment = {
   id: number;
@@ -54,16 +69,17 @@ type PostCardProps = {
   onEdit: (id: number, newContent: string) => void;
   onComment: (postId: number, commentContent: string) => void;
   onLike: (postId: number, isLiked: boolean) => void;
+  currentUser: User | null;
 };
 
-export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: PostCardProps) {
-  const { user, role } = useAuth();
+export default function PostCard({ post, onDelete, onEdit, onComment, onLike, currentUser: user }: PostCardProps) {
   const [editedContent, setEditedContent] = useState(post.content);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  const role = user?.user_metadata?.role;
   const isAuthor = user?.id === post.user_id;
   const isAdmin = role === 'admin';
   const canEditOrDelete = isAuthor || isAdmin;
@@ -257,6 +273,3 @@ export default function PostCard({ post, onDelete, onEdit, onComment, onLike }: 
     </Card>
   );
 }
-
-// Remove the separate Post type as it's now replaced by PostWithAuthor
-export type {};

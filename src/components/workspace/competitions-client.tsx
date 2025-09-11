@@ -7,9 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Trophy, Calendar, IndianRupee, Loader2 } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/use-auth';
 
 type Competition = {
     id: number;
@@ -23,11 +22,10 @@ type Competition = {
 export default function CompetitionsClient() {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [applyingCompetitionId, setApplyingCompetitionId] = useState<number | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchCompetitions = async () => {
@@ -192,5 +190,3 @@ export default function CompetitionsClient() {
     </div>
   );
 }
-
-    

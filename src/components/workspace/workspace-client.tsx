@@ -8,7 +8,8 @@ import { Briefcase, Trophy, PlusCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function WorkspaceClient() {
-  const { role } = useAuth();
+  const { user } = useAuth();
+  const role = user?.user_metadata?.role;
   const isAdmin = role === 'admin';
 
   return (

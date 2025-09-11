@@ -16,7 +16,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AdminSidebarNav } from '@/components/admin/admin-sidebar-nav';
 import { Logo } from '@/components/icons';
 import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,11 +26,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, signOut, role, loading } = useAuth();
   const router = useRouter();
-
+  
   useEffect(() => {
     if (!loading) {
       if (role !== 'admin') {

@@ -6,13 +6,12 @@ import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
 import type { Product } from '@/lib/types';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
 
 const categories = [
   { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services', color: 'from-sky-100 to-sky-200 dark:from-sky-900/50 dark:to-sky-800/50' },
@@ -24,9 +23,8 @@ const categories = [
 ];
 
 export default function MarketplaceContent() {
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const searchParams = useSearchParams();
-  const supabase = createClient();
   const { toast } = useToast();
   
   const [products, setProducts] = useState<Product[]>([]);
@@ -146,7 +144,7 @@ export default function MarketplaceContent() {
         ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} user={user} />
             ))}
           </div>
         ) : (

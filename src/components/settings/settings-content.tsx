@@ -4,7 +4,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,8 +26,8 @@ import { Loader2, User as UserIcon } from 'lucide-react';
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
@@ -49,8 +48,8 @@ const passwordFormSchema = z.object({
 
 
 export default function SettingsContent() {
-  const { user, loading, role } = useAuth();
   const { toast } = useToast();
+  const { user, loading, supabase } = useAuth();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
@@ -61,7 +60,7 @@ export default function SettingsContent() {
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null);
   const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const role = user?.user_metadata?.role;
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -321,7 +320,7 @@ export default function SettingsContent() {
             <CardContent className="space-y-4">
                 {bannerPreviewUrl && (
                     <div className="relative w-full aspect-[16/9] rounded-md overflow-hidden">
-                        <Image src={bannerPreviewUrl} alt="Banner preview" layout="fill" objectFit="cover"/>
+                        <Image src={bannerPreviewUrl} alt="Banner preview" fill objectFit="cover"/>
                     </div>
                 )}
                 <div className="grid w-full max-w-sm items-center gap-2">

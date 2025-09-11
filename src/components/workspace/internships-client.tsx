@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, Building, Calendar, IndianRupee, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 type Internship = {
     id: number;
@@ -26,7 +26,7 @@ type Internship = {
 export default function InternshipsClient() {
   const [internships, setInternships] = useState<Internship[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const { supabase } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function InternshipsClient() {
                 <CardHeader>
                 {internship.image_url && (
                     <div className="relative h-40 mb-4 rounded-md overflow-hidden">
-                        <Image src={internship.image_url} alt={internship.company} layout="fill" objectFit="cover" />
+                        <Image src={internship.image_url} alt={internship.company} fill objectFit="cover" />
                     </div>
                 )}
                 <CardTitle className="flex items-center gap-2">

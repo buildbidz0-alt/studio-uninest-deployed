@@ -4,9 +4,9 @@
 import { usePathname } from 'next/navigation';
 import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog, MessageSquare, Package, Armchair } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
+import type { User } from '@supabase/supabase-js';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
@@ -29,16 +29,23 @@ const bottomNavItems = [
     { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
 ]
 
-export function SidebarNav() {
+type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
+
+function getRole(user: User | null): UserRole {
+    if (!user) return 'guest';
+    // This logic can be expanded based on your app's needs
+    return user.user_metadata?.role || 'student';
+}
+
+export function SidebarNav({ user }: { user: User | null }) {
   const pathname = usePathname();
-  const { user, role } = useAuth();
   const { setOpenMobile } = useSidebar();
+  
+  const role = getRole(user);
 
-  const userRole = user ? role : 'guest';
-
-  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
-  const filteredVendorNavItems = vendorNavItems.filter(item => item.roles.includes(userRole));
-  const filteredBottomNavItems = bottomNavItems.filter(item => item.roles.includes(userRole));
+  const filteredNavItems = navItems.filter(item => item.roles.includes(role));
+  const filteredVendorNavItems = vendorNavItems.filter(item => item.roles.includes(role));
+  const filteredBottomNavItems = bottomNavItems.filter(item => item.roles.includes(role));
 
   const handleLinkClick = () => {
     setOpenMobile(false);

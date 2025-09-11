@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 type CreatePostFormProps = {
   onPost: (content: string) => void;
@@ -41,7 +41,7 @@ export default function CreatePostForm({ onPost }: CreatePostFormProps) {
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Avatar>
-            <AvatarImage src={user.photoURL || 'https://picsum.photos/id/237/40/40'} alt="Your avatar" />
+            <AvatarImage src={user.user_metadata?.avatar_url || 'https://picsum.photos/id/237/40/40'} alt="Your avatar" />
             <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="w-full space-y-2">

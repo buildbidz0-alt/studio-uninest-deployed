@@ -1,17 +1,29 @@
-import type { Metadata } from 'next';
 
+'use client';
+
+import type { Metadata } from 'next';
+import { useState, useEffect } from 'react';
+
+// Metadata is still used for the static export
 export const metadata: Metadata = {
   title: 'Terms & Conditions | UniNest',
   description: 'Review the terms and conditions for using the UniNest platform.',
 };
 
 export default function TermsPage() {
+  const [lastUpdated, setLastUpdated] = useState('');
+
+  useEffect(() => {
+    // This code now runs only on the client, after hydration
+    setLastUpdated(new Date().toLocaleDateString());
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="space-y-12">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Terms & Conditions</h1>
-          <p className="mt-4 text-lg text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
+          {lastUpdated && <p className="mt-4 text-lg text-muted-foreground">Last updated: {lastUpdated}</p>}
         </div>
 
         <div className="prose prose-lg max-w-none text-muted-foreground space-y-8">

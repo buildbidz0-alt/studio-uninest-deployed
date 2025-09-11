@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import PageHeader from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 type VendorProductsContentProps = {
   initialProducts: Product[];
@@ -40,7 +40,7 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
   const [isDeleting, setIsDeleting] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const { supabase } = useAuth();
   const { toast } = useToast();
 
   const handleDelete = async () => {

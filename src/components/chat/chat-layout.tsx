@@ -7,10 +7,9 @@ import ChatMessages from './chat-messages';
 import type { Room, Message } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/hooks/use-auth';
-import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 type ChatLayoutProps = {
   initialRooms: Room[];
@@ -21,10 +20,9 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const { user, supabase } = useAuth();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
   const { toast } = useToast();
-  const supabase = createClient();
 
   // Compute room names and avatars
   useEffect(() => {
@@ -132,6 +130,7 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
               messages={messages}
               onSendMessage={handleSendMessage}
               loading={loadingMessages}
+              currentUser={user}
             />
           </div>
         ) : (
@@ -152,6 +151,7 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
           messages={messages}
           onSendMessage={handleSendMessage}
           loading={loadingMessages}
+          currentUser={user}
         />
       </div>
     </Card>

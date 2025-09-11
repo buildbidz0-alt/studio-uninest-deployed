@@ -9,18 +9,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Paperclip, Send, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Room, Message } from '@/lib/types';
-import { useAuth } from '@/hooks/use-auth';
+import type { User } from '@supabase/supabase-js';
 
 type ChatMessagesProps = {
   room: Room | null;
   messages: Message[];
   onSendMessage: (text: string) => void;
   loading: boolean;
+  currentUser: User | null;
 };
 
-export default function ChatMessages({ room, messages, onSendMessage, loading }: ChatMessagesProps) {
+export default function ChatMessages({ room, messages, onSendMessage, loading, currentUser: user }: ChatMessagesProps) {
   const [newMessage, setNewMessage] = useState('');
-  const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

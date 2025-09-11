@@ -16,7 +16,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNav } from './sidebar-nav';
 import { Logo } from '@/components/icons';
 import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
@@ -43,7 +43,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarNav />
+          <SidebarNav user={user} />
         </SidebarContent>
         <SidebarFooter>
           {user ? (

@@ -1,89 +1,101 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { type User } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter, usePathname } from 'next/navigation';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
+import type { User, SupabaseClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
-interface AuthContextType {
+type AuthContextType = {
+  supabase: SupabaseClient;
   user: User | null;
-  loading: boolean;
   role: UserRole;
-  signOut: () => void;
-}
+  loading: boolean;
+  signOut: () => Promise<void>;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const publicRoutes = ['/login', '/signup', '/password-reset', '/', '/about', '/terms'];
-const studentGuestRoutes = ['/marketplace', '/workspace', '/feed', '/notes', '/donate'];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+
+  // Initialize state with null/loading values
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
-  const supabase = createClient();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setLoading(true);
+    // Client-side only initialization
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Supabase credentials are not defined. Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your .env file.");
+      setLoading(false);
+      return;
+    }
+
+    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    setSupabase(client);
+
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      
-      if (currentUser) {
-        // Temp logic for demo: assign 'admin' role to a specific email
-        if (currentUser.email === 'admin@uninest.com') {
-          setRole('admin');
-        } else {
-          const userRole = currentUser.user_metadata?.role || 'student';
-          setRole(userRole);
-        }
-      } else {
-        setRole('guest');
-      }
+      setRole(currentUser?.user_metadata?.role || 'student');
       setLoading(false);
     });
+
+    // Also fetch initial user
+    const getInitialUser = async () => {
+        const { data: { session } } = await client.auth.getSession();
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        if (currentUser) {
+            setRole(currentUser.user_metadata?.role || 'student');
+        } else {
+            setRole('guest');
+        }
+        setLoading(false);
+    }
+    getInitialUser();
+
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase]);
-
-  useEffect(() => {
-    if (loading) return;
-
-    if (pathname.startsWith('/admin')) {
-      if (role !== 'admin') {
-        router.push('/');
-      }
-      return;
-    }
-
-    const isPublic = publicRoutes.includes(pathname) || 
-                     studentGuestRoutes.some(route => pathname.startsWith(route));
-
-    if (!isPublic && role === 'guest') {
-      router.push('/login');
-    }
-  }, [user, loading, pathname, router, role]);
+  }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setRole('guest');
-    router.push('/login');
+    if (supabase) {
+      await supabase.auth.signOut();
+      setUser(null);
+      setRole('guest');
+      router.push('/login');
+      router.refresh();
+    }
   };
 
-  const value = { user, loading, role, signOut };
+  const value = {
+    supabase: supabase as SupabaseClient,
+    user,
+    role,
+    loading,
+    signOut,
+  };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  // Render a loading state or nothing until the client is ready
+  if (loading || !supabase) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    );
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

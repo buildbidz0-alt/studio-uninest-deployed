@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import StatsCard from '@/components/vendor/stats-card';
 import SalesChart from '@/components/vendor/sales-chart';
 import RecentOrdersTable from '@/components/vendor/recent-orders-table';
@@ -10,12 +9,11 @@ import { DollarSign, ShoppingCart, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function VendorDashboardContent() {
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const [stats, setStats] = useState({ revenue: 0, orders: 0, productsSold: 0 });
   const [salesData, setSalesData] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     if (!user) return;
@@ -94,5 +92,3 @@ export default function VendorDashboardContent() {
     </div>
   );
 }
-
-    

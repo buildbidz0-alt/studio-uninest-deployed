@@ -5,32 +5,15 @@ import { useState, useEffect, useCallback } from 'react';
 import CreatePostForm from '@/components/feed/create-post-form';
 import PostCard from '@/components/feed/post-card';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { createClient } from '@/lib/supabase/client';
-
-// We need to define the full Post type including profile data
-export type PostWithAuthor = {
-  id: number;
-  content: string;
-  created_at: string;
-  user_id: string;
-  likes: { count: number }[];
-  comments: any[]; // Define a proper comment type later
-  profiles: {
-    full_name: string;
-    avatar_url: string;
-    handle: string;
-  } | null;
-  isLiked: boolean;
-};
+import { useAuth } from '@/hooks/use-auth';
+import type { PostWithAuthor } from './post-card';
 
 export default function FeedContent() {
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const { toast } = useToast();
-  const supabase = createClient();
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -44,7 +27,7 @@ export default function FeedContent() {
         user_id,
         profiles:user_id ( full_name, avatar_url, handle ),
         likes ( count ),
-        comments ( id, content, profiles (full_name, avatar_url, handle) )
+        comments ( id, content, created_at, profiles (full_name, avatar_url, handle) )
       `)
       .order('created_at', { ascending: false });
 
@@ -54,6 +37,8 @@ export default function FeedContent() {
       return;
     }
 
+    let finalPosts = (postsData as any[]) || [];
+
     if (user) {
         const { data: likedPosts, error: likedError } = await supabase
             .from('likes')
@@ -62,19 +47,20 @@ export default function FeedContent() {
 
         if (likedPosts) {
             const likedPostIds = new Set(likedPosts.map(p => p.post_id));
-            const postsWithLikes = postsData.map(p => ({
+            finalPosts = finalPosts.map(p => ({
                 ...p,
                 isLiked: likedPostIds.has(p.id),
+                comments: p.comments.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
             }));
-            setPosts(postsWithLikes);
         } else {
-            setPosts(postsData.map(p => ({ ...p, isLiked: false })));
+            finalPosts = finalPosts.map(p => ({ ...p, isLiked: false }));
         }
 
     } else {
-        setPosts(postsData.map(p => ({ ...p, isLiked: false })));
+        finalPosts = finalPosts.map(p => ({ ...p, isLiked: false }));
     }
     
+    setPosts(finalPosts);
     setLoading(false);
   }, [supabase, toast, user]);
 
@@ -88,7 +74,7 @@ export default function FeedContent() {
       return;
     }
 
-    const { data: newPost, error } = await supabase
+    const { data: newPostData, error } = await supabase
       .from('posts')
       .insert({ content, user_id: user.id })
       .select(`
@@ -96,16 +82,20 @@ export default function FeedContent() {
         content,
         created_at,
         user_id,
-        profiles:user_id ( full_name, avatar_url, handle ),
-        likes ( count ),
-        comments ( id, content, profiles (full_name, avatar_url, handle) )
+        profiles:user_id ( full_name, avatar_url, handle )
       `)
       .single();
 
     if (error) {
       toast({ variant: 'destructive', title: 'Error creating post', description: error.message });
-    } else if (newPost) {
-      setPosts([ { ...newPost, isLiked: false, likes: [] }, ...posts]);
+    } else if (newPostData) {
+      const newPost: PostWithAuthor = {
+        ...newPostData,
+        likes: [],
+        comments: [],
+        isLiked: false,
+      };
+      setPosts([ newPost, ...posts]);
       toast({ title: 'Post created successfully!' });
     }
   };
@@ -200,6 +190,7 @@ export default function FeedContent() {
                 onEdit={editPost}
                 onComment={addComment}
                 onLike={updateLikes}
+                currentUser={user}
               />
             ))
           ) : (
