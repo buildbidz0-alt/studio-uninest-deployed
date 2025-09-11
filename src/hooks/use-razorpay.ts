@@ -13,6 +13,7 @@ declare global {
 export function useRazorpay() {
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
+  const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -34,6 +35,16 @@ export function useRazorpay() {
   }, [toast]);
 
   const openCheckout = (options: any) => {
+    if (!razorpayKey) {
+       console.error("Razorpay Key ID is not defined. Please check your environment variables.");
+       toast({
+        variant: 'destructive',
+        title: 'Configuration Error',
+        description: 'Payment gateway is not configured correctly.',
+      });
+      return;
+    }
+      
     if (!isLoaded) {
       toast({
         variant: 'destructive',
@@ -43,7 +54,7 @@ export function useRazorpay() {
       return;
     }
 
-    const rzp = new window.Razorpay(options);
+    const rzp = new window.Razorpay({ ...options, key: razorpayKey });
     rzp.open();
   };
 
