@@ -180,7 +180,7 @@ export function MobileBottomNav() {
       { href: '/', label: 'Home', icon: Home },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag },
       { href: '/social', label: 'Social', icon: Users },
-      { href: '/workspace', label: 'Space', icon: LayoutGrid },
+      { href: '/workspace', label: 'Work', icon: LayoutGrid },
       { href: '/profile', label: 'Profile', icon: 'avatar' },
   ];
 
