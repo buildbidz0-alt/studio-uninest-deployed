@@ -5,14 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2, Plus } from 'lucide-react';
+import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2, Plus, MessageSquare } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useRazorpay } from '@/hooks/use-razorpay';
+import { useRouter } from 'next/navigation';
 
 const categories = [
   { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services', color: 'from-sky-100 to-sky-200 dark:from-sky-900/50 dark:to-sky-800/50' },
@@ -26,6 +27,7 @@ const categories = [
 export default function MarketplaceContent() {
   const { user, supabase } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { toast } = useToast();
   const { openCheckout, isLoaded } = useRazorpay();
   
@@ -83,7 +85,7 @@ export default function MarketplaceContent() {
     );
   }, [products, searchQuery]);
 
-  const handleBuyNow = async (product: Product) => {
+  const handleBuyNow = useCallback(async (product: Product) => {
     if (!user || !supabase) {
         toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to purchase items.' });
         return;
@@ -164,7 +166,29 @@ export default function MarketplaceContent() {
     } finally {
         setPurchasingProductId(null);
     }
-  }
+  }, [user, supabase, toast, openCheckout]);
+
+  const handleChat = useCallback(async (sellerId: string) => {
+    if (!user || !supabase) {
+        toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
+        return;
+    }
+    
+    // Check if a chat room already exists
+    const { data: existingRoom, error: fetchError } = await supabase.rpc('get_or_create_chat_room', {
+        p_user_id1: user.id,
+        p_user_id2: sellerId
+    });
+
+    if (fetchError || !existingRoom) {
+        console.error('Error getting or creating chat room:', fetchError);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
+        return;
+    }
+    
+    router.push('/chat');
+
+  }, [user, supabase, toast, router]);
 
   return (
     <div className="space-y-12">
@@ -190,12 +214,12 @@ export default function MarketplaceContent() {
             {categories.map((category) => (
                 <Link href={category.href} key={category.name}>
                     <div className={cn(
-                      "group relative flex flex-col items-center justify-center p-2 h-24 rounded-lg border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
+                      "group relative flex flex-col items-center justify-center p-2 h-24 rounded-2xl border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
                       category.color,
-                      selectedCategory === category.name ? "ring-2 ring-primary ring-offset-2" : ""
+                      selectedCategory === category.name ? "ring-2 ring-primary ring-offset-2" : "border-transparent"
                     )}>
-                        <category.icon className="size-5 mb-1.5 text-primary/80 transition-transform group-hover:scale-110"/>
-                        <span className="font-semibold text-xs text-primary/90">{category.name}</span>
+                        <category.icon className="size-6 mb-1.5 text-primary/80 transition-transform group-hover:scale-110"/>
+                        <span className="font-bold font-headline text-sm text-primary/90">{category.name}</span>
                     </div>
                 </Link>
             ))}
@@ -239,14 +263,15 @@ export default function MarketplaceContent() {
                 key={product.id}
                 product={product}
                 user={user}
-                onBuyNow={() => handleBuyNow(product)}
+                onBuyNow={handleBuyNow}
+                onChat={handleChat}
                 isBuying={purchasingProductId === product.id}
                 isRazorpayLoaded={isLoaded}
               />
             ))}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground py-16">
+          <div className="text-center text-muted-foreground py-16 bg-card rounded-2xl">
             <h2 className="text-xl font-semibold">No listings found</h2>
             <p>{selectedCategory ? `There are no products in the "${selectedCategory}" category yet.` : 'No products have been listed on the marketplace yet.'} Check back later!</p>
           </div>

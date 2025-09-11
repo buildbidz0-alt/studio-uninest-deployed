@@ -89,7 +89,7 @@ export default function ChatMessages({ room, messages, onSendMessage, loading, c
                 <div
                   className={cn(
                     'max-w-xs rounded-lg p-3 md:max-w-md',
-                    isSentByMe ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    isSentByMe ? 'primary-gradient text-primary-foreground' : 'bg-muted'
                   )}
                 >
                   <p className="text-sm">{message.content}</p>

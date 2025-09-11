@@ -24,31 +24,15 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
-  // Compute room names and avatars
   useEffect(() => {
-    if (!user) return;
-    const computeRoomDetails = (room: Room) => {
-      const otherParticipant = room.participants.find(p => p.profile.id !== user.id);
-      return {
-        ...room,
-        name: otherParticipant?.profile.full_name || 'Chat',
-        avatar: otherParticipant?.profile.avatar_url || `https://picsum.photos/seed/${room.id}/40`,
-      };
-    };
-    setRooms(initialRooms.map(computeRoomDetails));
-    
-    if (initialRooms.length > 0) {
-        const firstRoom = computeRoomDetails(initialRooms[0]);
-        if (!isMobile) {
-            handleSelectRoom(firstRoom);
-        }
+    if (!isMobile && initialRooms.length > 0 && !selectedRoom) {
+      handleSelectRoom(initialRooms[0]);
     }
-
-  }, [initialRooms, user, isMobile]);
+  }, [initialRooms, isMobile, selectedRoom, handleSelectRoom]);
 
   // Real-time message subscription
   useEffect(() => {
-    if (!selectedRoom) return;
+    if (!selectedRoom || !supabase) return;
 
     const channel = supabase
       .channel(`chat_room_${selectedRoom.id}`)
@@ -57,15 +41,17 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
         { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${selectedRoom.id}` },
         async (payload) => {
           const newMessage = payload.new as Message;
-          // Fetch profile for the new message
-          const { data: profileData, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', newMessage.user_id)
-            .single();
-          
-          if (!error) {
-              newMessage.profile = profileData;
+          // Fetch profile for the new message if it doesn't exist
+          if (!newMessage.profile) {
+              const { data: profileData, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', newMessage.user_id)
+                .single();
+              
+              if (!error) {
+                  newMessage.profile = profileData;
+              }
           }
 
           setMessages((prevMessages) => [...prevMessages, newMessage]);
@@ -80,6 +66,7 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   
 
   const handleSelectRoom = useCallback(async (room: Room) => {
+    if (!supabase) return;
     setSelectedRoom(room);
     setLoadingMessages(true);
     setMessages([]);
@@ -100,7 +87,7 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   }, [supabase, toast]);
 
   const handleSendMessage = async (content: string) => {
-    if (!selectedRoom || !user) return;
+    if (!selectedRoom || !user || !supabase) return;
 
     const { error } = await supabase
       .from('chat_messages')

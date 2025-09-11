@@ -41,7 +41,15 @@ export default async function ChatPage() {
     return <div>Error loading chats.</div>;
   }
 
-  const initialRooms = rooms?.map(r => r.room).filter(Boolean) || [];
+  const initialRooms = rooms?.map(r => r.room).filter(Boolean).map(room => {
+    if (!room) return null;
+    const otherParticipant = room.participants.find(p => p.profile.id !== user.id);
+    return {
+      ...room,
+      name: otherParticipant?.profile.full_name || 'Chat',
+      avatar: otherParticipant?.profile.avatar_url || `https://picsum.photos/seed/${room.id}/40`,
+    };
+  }).filter(Boolean);
 
-  return <ChatLayout initialRooms={initialRooms} />;
+  return <ChatLayout initialRooms={initialRooms as any[]} />;
 }

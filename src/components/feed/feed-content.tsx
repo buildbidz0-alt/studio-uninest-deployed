@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import type { PostWithAuthor } from './post-card';
+import TrendingSidebar from './trending-sidebar';
 
 export default function FeedContent() {
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
@@ -16,6 +17,7 @@ export default function FeedContent() {
   const { toast } = useToast();
 
   const fetchPosts = useCallback(async () => {
+    if (!supabase) return;
     setLoading(true);
     // Fetch posts with author info, likes count, and comments
     const { data: postsData, error } = await supabase
@@ -40,7 +42,7 @@ export default function FeedContent() {
     let finalPosts = (postsData as any[]) || [];
 
     if (user) {
-        const { data: likedPosts, error: likedError } = await supabase
+        const { data: likedPosts } = await supabase
             .from('likes')
             .select('post_id')
             .eq('user_id', user.id);
@@ -69,7 +71,7 @@ export default function FeedContent() {
   }, [fetchPosts]);
 
   const addPost = async (content: string) => {
-    if (!user) {
+    if (!user || !supabase) {
       toast({ variant: 'destructive', title: 'You must be logged in to post.' });
       return;
     }
@@ -101,6 +103,7 @@ export default function FeedContent() {
   };
 
   const deletePost = async (id: number) => {
+    if (!supabase) return;
     const { error } = await supabase.from('posts').delete().eq('id', id);
 
     if (error) {
@@ -112,6 +115,7 @@ export default function FeedContent() {
   };
 
   const editPost = async (id: number, newContent: string) => {
+    if (!supabase) return;
     const { data: updatedPost, error } = await supabase
         .from('posts')
         .update({ content: newContent })
@@ -128,7 +132,7 @@ export default function FeedContent() {
   };
 
   const addComment = async (postId: number, commentContent: string) => {
-    if (!user) {
+    if (!user || !supabase) {
       toast({ variant: 'destructive', title: 'You must be logged in to comment.' });
       return;
     }
@@ -147,7 +151,7 @@ export default function FeedContent() {
   };
   
   const updateLikes = async (postId: number, isLiked: boolean) => {
-     if (!user) {
+     if (!user || !supabase) {
         toast({ variant: 'destructive', title: 'You must be logged in to like posts.' });
         return;
     }
@@ -172,9 +176,9 @@ export default function FeedContent() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-3xl font-bold tracking-tight">Social Feed</h1>
-      <div className="space-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="lg:col-span-2 space-y-8">
+        <h1 className="text-3xl font-bold tracking-tight">Social Feed</h1>
         <CreatePostForm onPost={addPost} />
         <div className="space-y-4">
           {loading ? (
@@ -194,13 +198,16 @@ export default function FeedContent() {
               />
             ))
           ) : (
-            <div className="text-center text-muted-foreground py-12">
+            <div className="text-center text-muted-foreground py-12 bg-card rounded-2xl">
               <h2 className="text-xl font-semibold">No posts yet</h2>
               <p>Be the first to share something with the community!</p>
             </div>
           )}
         </div>
       </div>
+      <aside className="hidden lg:block lg:col-span-1">
+        <TrendingSidebar />
+      </aside>
     </div>
   );
 }
