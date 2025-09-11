@@ -4,12 +4,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 type AuthContextType = {
-  supabase: SupabaseClient | null;
+  supabase: SupabaseClient;
   user: User | null;
   role: UserRole;
   loading: boolean;
@@ -20,50 +20,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  const supabase = getSupabaseBrowserClient();
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase URL or Anon Key is missing. Make sure they are set in your .env file.');
-      setLoading(false);
-      return;
-    }
-
-    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
-    setSupabase(client);
-
-    const getInitialUser = async () => {
-      const { data: { user } } = await client.auth.getUser();
-      setUser(user);
-      setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
-      setLoading(false);
-    };
-
-    getInitialUser();
-
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
+      setLoading(false);
       if (event === 'SIGNED_IN') {
         router.refresh();
       }
+    });
+    
+    // Get initial user
+    supabase.auth.getUser().then(({data: { user }}) => {
+        setUser(user);
+        setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
+        setLoading(false);
     });
 
     return () => {
       subscription?.unsubscribe();
     };
-  }, [router]);
+  }, [router, supabase.auth]);
 
   const signOut = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+    await supabase.auth.signOut();
     setUser(null);
     setRole('guest');
     router.push('/login');

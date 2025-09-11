@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 import MainLayout from '@/components/layout/main-layout';
 import { AuthProvider } from '@/hooks/use-auth';
+import ClientOnly from '@/components/client-only';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://uninest.app'), // Replace with your actual domain
@@ -64,11 +65,13 @@ export default function RootLayout({
       <body className={cn(
         "min-h-screen bg-background font-body antialiased"
       )}>
-        <AuthProvider>
-          <MainLayout>
-            {children}
-          </MainLayout>
-        </AuthProvider>
+        <ClientOnly>
+          <AuthProvider>
+            <MainLayout>
+              {children}
+            </MainLayout>
+          </AuthProvider>
+        </ClientOnly>
         <Toaster />
       </body>
     </html>
