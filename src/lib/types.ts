@@ -1,3 +1,4 @@
+
 import type { User } from "@supabase/supabase-js";
 
 export type Profile = {
@@ -114,4 +115,10 @@ export type PostWithAuthor = {
   } | null;
   isLiked: boolean;
   isFollowed: boolean;
+};
+
+export type MonetizationSettings = {
+    charge_for_posts: boolean;
+    post_price: number;
+    start_date: string | null;
 };

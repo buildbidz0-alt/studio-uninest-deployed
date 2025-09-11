@@ -12,10 +12,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
+import { useRazorpay } from '@/hooks/use-razorpay';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const categories = ["Library Services", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
 
@@ -27,6 +29,8 @@ const formSchema = z.object({
   image: z.any().optional(), // Allow optional image for edit mode
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 type ProductFormProps = {
   product?: {
     id: number;
@@ -35,17 +39,20 @@ type ProductFormProps = {
     price: number;
     category: string;
     image_url: string | null;
-  }
+  };
+  chargeForPosts?: boolean;
+  postPrice?: number;
 }
 
-export default function ProductForm({ product }: ProductFormProps) {
+export default function ProductForm({ product, chargeForPosts = false, postPrice = 0 }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { user, supabase } = useAuth();
+  const { openCheckout, isLoaded } = useRazorpay();
   const isEditMode = !!product;
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: product?.name || '',
@@ -56,6 +63,7 @@ export default function ProductForm({ product }: ProductFormProps) {
   });
 
   const uploadFile = async (file: File): Promise<string | null> => {
+    if (!supabase) return null;
     const filePath = `public/${user?.id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('products')
@@ -73,15 +81,11 @@ export default function ProductForm({ product }: ProductFormProps) {
     return publicUrl;
   }
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
-        return;
-    }
-    
+  const handleCreateListing = async (values: FormValues, paymentId?: string) => {
+    if (!user || !supabase) return;
     setIsLoading(true);
-    
-    let imageUrl = product?.image_url || null;
+
+     let imageUrl = product?.image_url || null;
     
     if (values.image && values.image instanceof File) {
         imageUrl = await uploadFile(values.image);
@@ -92,44 +96,116 @@ export default function ProductForm({ product }: ProductFormProps) {
         }
     }
 
-    if (isEditMode) {
-        const { error } = await supabase.from('products')
-            .update({
-                name: values.name,
-                description: values.description,
-                price: values.price,
-                category: values.category,
-                image_url: imageUrl,
-            })
-            .eq('id', product.id);
+    const { error } = await supabase.from('products').insert({
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        category: values.category,
+        seller_id: user.id,
+        image_url: imageUrl,
+        // You could also store the payment ID if needed
+        // listing_payment_id: paymentId,
+    });
 
-        if (error) {
-            toast({ variant: 'destructive', title: 'Error updating product', description: error.message });
-        } else {
-            toast({ title: 'Success!', description: 'Your product has been updated.' });
-            router.push('/vendor/products');
-            router.refresh();
-        }
+     if (error) {
+        toast({ variant: 'destructive', title: 'Error creating product', description: error.message });
     } else {
-        const { error } = await supabase.from('products').insert({
+        toast({ title: 'Success!', description: 'Your product has been listed.' });
+        router.push('/vendor/products');
+        router.refresh();
+    }
+
+    setIsLoading(false);
+  }
+
+  const handleUpdateListing = async (values: FormValues) => {
+    if (!user || !supabase) return;
+    setIsLoading(true);
+
+     let imageUrl = product?.image_url || null;
+    
+    if (values.image && values.image instanceof File) {
+        imageUrl = await uploadFile(values.image);
+        if (!imageUrl) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload image.' });
+            setIsLoading(false);
+            return;
+        }
+    }
+
+    const { error } = await supabase.from('products')
+        .update({
             name: values.name,
             description: values.description,
             price: values.price,
             category: values.category,
-            seller_id: user.id,
             image_url: imageUrl,
-        });
+        })
+        .eq('id', product.id);
 
-        if (error) {
-            toast({ variant: 'destructive', title: 'Error creating product', description: error.message });
-        } else {
-            toast({ title: 'Success!', description: 'Your product has been listed.' });
-            router.push('/vendor/products');
-            router.refresh();
-        }
+    if (error) {
+        toast({ variant: 'destructive', title: 'Error updating product', description: error.message });
+    } else {
+        toast({ title: 'Success!', description: 'Your product has been updated.' });
+        router.push('/vendor/products');
+        router.refresh();
     }
-    
+
     setIsLoading(false);
+  }
+
+  async function onSubmit(values: FormValues) {
+    if (!user || !supabase) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+        return;
+    }
+
+    if (isEditMode) {
+        await handleUpdateListing(values);
+        return;
+    }
+
+    if (chargeForPosts && postPrice > 0) {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: postPrice * 100, currency: 'INR' }),
+            });
+        
+            const order = await response.json();
+            if (!response.ok) throw new Error(order.error || 'Failed to create payment order.');
+
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+                amount: order.amount,
+                currency: order.currency,
+                name: 'UniNest Listing Fee',
+                description: `One-time fee for posting "${values.name}"`,
+                order_id: order.id,
+                handler: async function (response: any) {
+                    // On successful payment, create the listing
+                    await handleCreateListing(values, response.razorpay_payment_id);
+                },
+                modal: { ondismiss: () => setIsLoading(false) },
+                prefill: { name: user?.user_metadata?.full_name || '', email: user?.email || '' },
+                notes: { type: 'listing_fee', userId: user?.id, productName: values.name },
+                theme: { color: '#4A90E2' },
+            };
+            openCheckout(options);
+
+        } catch(error) {
+            console.error(error);
+            const errorMessage = error instanceof Error ? error.message : 'Could not connect to the payment gateway.';
+            toast({ variant: 'destructive', title: 'Payment Error', description: errorMessage });
+            setIsLoading(false);
+        }
+
+    } else {
+        // Post for free if charging is disabled or price is 0
+        await handleCreateListing(values);
+    }
   }
 
   return (
@@ -139,6 +215,15 @@ export default function ProductForm({ product }: ProductFormProps) {
             <CardDescription>{isEditMode ? 'Update the details below.' : 'All fields are required.'}</CardDescription>
         </CardHeader>
         <CardContent>
+            {chargeForPosts && !isEditMode && postPrice > 0 && (
+                <Alert className="mb-6">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Listing Fee</AlertTitle>
+                    <AlertDescription>
+                        A one-time fee of <strong>₹{postPrice}</strong> is required to publish this listing.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <FormField control={form.control} name="name" render={({ field }) => (
@@ -178,9 +263,14 @@ export default function ProductForm({ product }: ProductFormProps) {
                             <FormMessage />
                         </FormItem>
                      )} />
-                    <Button type="submit" disabled={isLoading}>
+                    <Button type="submit" disabled={isLoading || (chargeForPosts && !isEditMode && !isLoaded)}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isEditMode ? 'Save Changes' : 'Create Listing'}
+                        {isEditMode 
+                            ? 'Save Changes' 
+                            : chargeForPosts && postPrice > 0
+                                ? `Proceed to Pay ₹${postPrice}`
+                                : 'Create Listing'
+                        }
                     </Button>
                 </form>
             </Form>
