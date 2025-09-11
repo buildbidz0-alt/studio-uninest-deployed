@@ -28,10 +28,16 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
+import { Bed, Book, Utensils, Laptop } from 'lucide-react';
 
-const vendorCategories = ["library", "food mess", "cybercafe", "hostels"] as const;
+const vendorCategories = [
+    { id: "library", label: "Library", icon: Book },
+    { id: "food mess", label: "Food Mess", icon: Utensils },
+    { id: "cybercafe", label: "Cyber Café", icon: Laptop },
+    { id: "hostels", label: "Hostels", icon: Bed },
+] as const;
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
@@ -177,46 +183,37 @@ export default function SignupForm() {
               <FormField
                 control={form.control}
                 name="vendorCategories"
-                render={() => (
+                render={({ field }) => (
                   <FormItem>
                      <Separator className="my-4" />
                     <div className="mb-4">
                       <FormLabel className="text-base">Vendor Categories</FormLabel>
+                      <p className="text-sm text-muted-foreground">Select all that apply to your business.</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                    {vendorCategories.map((item) => (
-                      <FormField
-                        key={item}
-                        control={form.control}
-                        name="vendorCategories"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={item}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(item)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), item])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== item
-                                          )
-                                        )
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal capitalize">
-                                {item}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
+                    <div className="grid grid-cols-2 gap-3">
+                    {vendorCategories.map((item) => {
+                        const isSelected = field.value?.includes(item.id);
+                        return (
+                             <Button
+                                key={item.id}
+                                type="button"
+                                variant={isSelected ? 'default' : 'outline'}
+                                className="h-auto justify-start p-4 text-left"
+                                onClick={() => {
+                                    const currentCategories = field.value || [];
+                                    const newCategories = isSelected
+                                        ? currentCategories.filter(c => c !== item.id)
+                                        : [...currentCategories, item.id];
+                                    field.onChange(newCategories);
+                                }}
+                              >
+                                <div className="flex flex-col items-start gap-2">
+                                  <item.icon className="size-5"/>
+                                  <span className="font-semibold capitalize">{item.label}</span>
+                                </div>
+                            </Button>
+                        )
+                    })}
                     </div>
                     <FormMessage />
                   </FormItem>
