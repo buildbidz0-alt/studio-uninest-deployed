@@ -18,8 +18,8 @@ export default {
     extend: {
       fontFamily: {
         headline: ['var(--font-poppins)', 'sans-serif'],
-        body: ['var(--font-inter)', 'sans-serif'],
-        label: ['var(--font-roboto)', 'sans-serif'],
+        body: ['var(--font-poppins)', 'sans-serif'],
+        label: ['var(--font-poppins)', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',

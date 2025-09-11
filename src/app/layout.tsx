@@ -5,24 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import MainLayout from '@/components/layout/main-layout';
 import { AuthProvider } from '@/hooks/use-auth';
 import ClientOnly from '@/components/client-only';
-import { Poppins, Inter, Roboto } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['700'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-poppins',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-});
-
-const roboto = Roboto({
-  subsets: ['latin'],
-  weight: ['500'],
-  variable: '--font-roboto',
 });
 
 export const metadata: Metadata = {
@@ -71,9 +59,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
         "min-h-screen bg-background font-body antialiased",
-        poppins.variable,
-        inter.variable,
-        roboto.variable
+        poppins.variable
       )}>
         <ClientOnly>
           <AuthProvider>
