@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -41,12 +40,6 @@ export default function ChatList({ rooms, selectedRoom, onSelectRoom }: ChatList
                 </div>
                 <div className="flex flex-col items-end text-xs text-muted-foreground">
                     {/* TODO: Add real timestamp and unread count */}
-                    {/* <span>{formatDistanceToNow(new Date(room.timestamp), { addSuffix: true })}</span>
-                    {room.unreadCount > 0 && (
-                        <span className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
-                        {room.unreadCount}
-                        </span>
-                    )} */}
                 </div>
               </button>
             ))

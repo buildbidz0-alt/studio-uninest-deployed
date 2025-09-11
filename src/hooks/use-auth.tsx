@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode, useCallback } from 'react';
@@ -10,7 +9,7 @@ import type { Notification } from '@/lib/types';
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 type AuthContextType = {
-  supabase: SupabaseClient | undefined;
+  supabase: SupabaseClient;
   user: User | null;
   role: UserRole;
   loading: boolean;
@@ -28,15 +27,20 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
-  const [supabase, setSupabase] = useState<SupabaseClient | undefined>(undefined);
+  const [supabase] = useState(() => 
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  );
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = useCallback(async (client: SupabaseClient, userId: string) => {
-    const { data, error } = await client
+  const fetchNotifications = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
       .from('notifications')
       .select('*, sender:sender_id (full_name, avatar_url)')
       .eq('user_id', userId)
@@ -48,10 +52,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setNotifications(data as Notification[]);
       setUnreadCount(data.filter(n => !n.is_read).length);
     }
-  }, []);
+  }, [supabase]);
 
   const markAsRead = useCallback(async (notificationId: number) => {
-    if (!supabase || !user) return;
+    if (!user) return;
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -65,60 +69,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    const isSupabaseConfigured = supabaseUrl && supabaseUrl.startsWith('http') && supabaseAnonKey;
-
-    if (isSupabaseConfigured) {
-      const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
-      setSupabase(client);
-
-      const getInitialSession = async () => {
-        const { data: { session } } = await client.auth.getSession();
-        const currentUser = session?.user || null;
-        setUser(currentUser);
-        setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
-        if (currentUser) {
-            await fetchNotifications(client, currentUser.id);
-        }
-        setLoading(false);
-      };
-
-      getInitialSession();
-
-      const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
-        
-        if (currentUser) {
-            fetchNotifications(client, currentUser.id);
-        } else {
-            setNotifications([]);
-            setUnreadCount(0);
-        }
-
-        if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-          router.refresh();
-        }
-      });
-
-      return () => {
-        subscription?.unsubscribe();
-      };
-    } else {
-      console.warn('Supabase credentials are not configured or are invalid. Please check your .env.local file.');
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
+      if (currentUser) {
+          await fetchNotifications(currentUser.id);
+      }
       setLoading(false);
-      setUser(null);
-      setSupabase(undefined);
-    }
-  }, [router, fetchNotifications]);
+    };
+
+    getInitialSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
+      
+      if (currentUser) {
+          fetchNotifications(currentUser.id);
+      } else {
+          setNotifications([]);
+          setUnreadCount(0);
+      }
+
+      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        router.refresh();
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [router, fetchNotifications, supabase.auth]);
 
 
   // Realtime subscription for new notifications
   useEffect(() => {
-      if (!supabase || !user) return;
+      if (!user) return;
 
       const channel = supabase.channel(`notifications_${user.id}`)
         .on<Notification>('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, 
@@ -147,7 +136,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [supabase, user]);
 
   const signOut = async () => {
-    if (!supabase) return;
     await supabase.auth.signOut();
     setUser(null);
     setRole('guest');

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -23,6 +22,27 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   const { user, supabase } = useAuth();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+
+  const handleSelectRoom = useCallback(async (room: Room) => {
+    if (!supabase) return;
+    setSelectedRoom(room);
+    setLoadingMessages(true);
+    setMessages([]);
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*, profile:profiles(*)')
+      .eq('room_id', room.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error fetching messages' });
+      console.error(error);
+    } else {
+      setMessages(data || []);
+    }
+    setLoadingMessages(false);
+  }, [supabase, toast]);
 
   useEffect(() => {
     if (!isMobile && initialRooms.length > 0 && !selectedRoom) {
@@ -64,27 +84,6 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
     };
   }, [selectedRoom, supabase]);
   
-
-  const handleSelectRoom = useCallback(async (room: Room) => {
-    if (!supabase) return;
-    setSelectedRoom(room);
-    setLoadingMessages(true);
-    setMessages([]);
-
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select('*, profile:profiles(*)')
-      .eq('room_id', room.id)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error fetching messages' });
-      console.error(error);
-    } else {
-      setMessages(data || []);
-    }
-    setLoadingMessages(false);
-  }, [supabase, toast]);
 
   const handleSendMessage = async (content: string) => {
     if (!selectedRoom || !user || !supabase) return;

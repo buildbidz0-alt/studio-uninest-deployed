@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import ChatLayout from '@/components/chat/chat-layout';
 import { createClient } from '@/lib/supabase/server';

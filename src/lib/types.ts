@@ -1,4 +1,3 @@
-
 import type { User } from "@supabase/supabase-js";
 
 export type Profile = {
@@ -6,6 +5,7 @@ export type Profile = {
   full_name: string | null;
   avatar_url: string | null;
   handle: string | null;
+  bio?: string | null;
   followers?: { count: number }[];
   following?: { count: number }[];
 };
@@ -19,7 +19,6 @@ export type Room = {
   // Computed properties, not in DB
   name?: string;
   avatar?: string;
-  lastMessage?: Message | null;
 };
 
 export type Message = {
