@@ -4,8 +4,8 @@
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
-import { BookOpen, Search, ShoppingBag, Users, Armchair, Bell, Heart } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { BookOpen, Search, ShoppingBag, Users, Bell, Heart, LayoutGrid } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import DonationModal from '@/components/home/donation-modal';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
@@ -23,7 +23,7 @@ const quickAccessItems = [
     { title: "Social Feed", description: "See what's trending", icon: Users, href: "/feed", color: "from-blue-400 to-blue-500" },
     { title: "Marketplace", description: "Featured items", icon: ShoppingBag, href: "/marketplace", color: "from-green-400 to-green-500" },
     { title: "Study Hub", description: "Upload & Share", icon: BookOpen, href: "/notes", color: "from-purple-400 to-purple-500" },
-    { title: "Library Booking", description: "Book a Seat", icon: Armchair, href: "/booking", color: "from-orange-400 to-orange-500" },
+    { title: "Workspace", description: "Compete & Grow", icon: LayoutGrid, href: "/workspace", color: "from-orange-400 to-orange-500" },
 ];
 
 const featuredVendors = [
