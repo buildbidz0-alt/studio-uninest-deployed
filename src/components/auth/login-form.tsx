@@ -51,7 +51,7 @@ export default function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     if (!supabase) {
-        toast({ variant: 'destructive', title: 'Auth not configured.'});
+        toast({ variant: 'destructive', title: 'Authentication is not configured.'});
         setIsLoading(false);
         return;
     }
@@ -65,7 +65,7 @@ export default function LoginForm() {
       });
     } else {
       router.push('/feed');
-      router.refresh(); // Refresh to trigger auth state change handling
+      // No need to refresh, onAuthStateChange will handle it.
     }
     setIsLoading(false);
   }

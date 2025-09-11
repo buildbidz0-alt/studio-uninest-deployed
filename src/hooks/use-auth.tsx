@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
@@ -29,8 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase URL and/or Anon Key are not defined. Please check your .env.local file.');
+      console.error('Supabase URL and/or Anon Key are not defined. Please check your .env file.');
       setLoading(false);
+      setUser(null);
+      setSupabase(undefined);
       return;
     }
     
@@ -40,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
-      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
         router.refresh();
       }
     });

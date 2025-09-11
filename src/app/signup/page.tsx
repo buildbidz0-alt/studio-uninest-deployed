@@ -1,16 +1,19 @@
 
+'use client';
+
 import SignupForm from '@/components/auth/signup-form';
 import type { Metadata } from 'next';
+import { useAuth } from '@/hooks/use-auth';
 
-export const metadata: Metadata = {
-    title: 'Sign Up | Uninest',
-    description: 'Create a new account on Uninest.',
-};
+// export const metadata: Metadata = {
+//     title: 'Sign Up | Uninest',
+//     description: 'Create a new account on Uninest.',
+// };
 
 export default function SignupPage() {
-    const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const { supabase } = useAuth();
 
-    if (!isSupabaseConfigured) {
+    if (!supabase) {
         return (
             <div className="flex min-h-[calc(100vh-150px)] items-center justify-center bg-background">
                 <div className="p-8 rounded-lg border bg-card text-card-foreground shadow-sm w-full max-w-sm text-center">

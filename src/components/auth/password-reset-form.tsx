@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -35,7 +35,7 @@ const formSchema = z.object({
 export default function PasswordResetForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const supabase = getSupabaseBrowserClient();
+  const { supabase } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -45,6 +45,10 @@ export default function PasswordResetForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!supabase) {
+        toast({ variant: 'destructive', title: 'Authentication is not configured.' });
+        return;
+    }
     setIsLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
       redirectTo: `${window.location.origin}/password-update`, // You need to create a page for this
@@ -88,7 +92,7 @@ export default function PasswordResetForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !supabase}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send Reset Link
             </Button>
