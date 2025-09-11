@@ -31,6 +31,7 @@ export default function InternshipsClient() {
 
   useEffect(() => {
     const fetchInternships = async () => {
+        if (!supabase) return;
         setLoading(true);
         const { data, error } = await supabase
             .from('internships')
@@ -73,7 +74,7 @@ export default function InternshipsClient() {
                 <CardHeader>
                 {internship.image_url && (
                     <div className="relative h-40 mb-4 rounded-md overflow-hidden">
-                        <Image src={internship.image_url} alt={internship.company} fill objectFit="cover" />
+                        <Image src={internship.image_url} alt={internship.company} fill objectFit="cover" data-ai-hint="company logo" />
                     </div>
                 )}
                 <CardTitle className="flex items-center gap-2">

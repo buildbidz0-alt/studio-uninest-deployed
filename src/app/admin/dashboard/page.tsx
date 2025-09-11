@@ -1,5 +1,4 @@
 
-import { DollarSign, Users, ShoppingCart, Gift } from 'lucide-react';
 import PageHeader from '@/components/admin/page-header';
 import AdminDashboardContent from '@/components/admin/dashboard/page';
 

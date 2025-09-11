@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import ProfileClient from '@/components/profile/profile-client';
 

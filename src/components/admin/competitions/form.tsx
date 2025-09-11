@@ -42,6 +42,7 @@ export default function CompetitionForm() {
   });
 
   const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
+    if (!supabase) return null;
     const filePath = `public/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -60,6 +61,7 @@ export default function CompetitionForm() {
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!supabase) return;
     setIsLoading(true);
     
     let imageUrl: string | undefined = undefined;
@@ -137,7 +139,7 @@ export default function CompetitionForm() {
                             <FormItem><FormLabel>Banner Image</FormLabel><FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
                          )} />
                          <FormField control={form.control} name="details_pdf" render={({ field: { onChange, value, ...rest } }) => (
-                            <FormItem><FormLabel>Details PDF</FormLabel><FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Details PDF</FormLabel><FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0路上])} {...rest} /></FormControl><FormMessage /></FormItem>
                          )} />
                     </div>
                     <Button type="submit" disabled={isLoading}>

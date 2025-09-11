@@ -44,7 +44,7 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
   const { toast } = useToast();
 
   const handleDelete = async () => {
-    if (!productToDelete) return;
+    if (!productToDelete || !supabase) return;
     setIsDeleting(true);
 
     const { error } = await supabase

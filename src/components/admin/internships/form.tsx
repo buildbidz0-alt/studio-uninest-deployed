@@ -45,6 +45,7 @@ export default function InternshipForm() {
   });
 
   const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
+    if (!supabase) return null;
     const filePath = `public/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -63,6 +64,7 @@ export default function InternshipForm() {
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!supabase) return;
     setIsLoading(true);
     
     let imageUrl: string | undefined = undefined;

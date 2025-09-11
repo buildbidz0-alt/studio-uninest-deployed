@@ -29,13 +29,14 @@ type UserProfile = {
     created_at: string;
 };
 
-export default function AdminUsersPage() {
+export default function AdminUsersContent() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const { supabase } = useAuth();
     const { toast } = useToast();
 
     const fetchUsers = async () => {
+        if (!supabase) return;
         setLoading(true);
         const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
         if (authError) {
@@ -60,7 +61,7 @@ export default function AdminUsersPage() {
                 full_name: profile?.full_name || authUser.user_metadata?.full_name || 'N/A',
                 email: authUser.email || 'N/A',
                 avatar_url: profile?.avatar_url || authUser.user_metadata?.avatar_url,
-                role: authUser.user_metadata?.role || 'student',
+                role: profile?.role || authUser.user_metadata?.role || 'student',
                 created_at: authUser.created_at,
             };
         });
@@ -74,6 +75,7 @@ export default function AdminUsersPage() {
     }, [supabase]);
     
     const makeAdmin = async (userId: string) => {
+        if (!supabase) return;
         const { data, error } = await supabase.auth.admin.updateUserById(
             userId,
             { user_metadata: { role: 'admin' } }
@@ -127,7 +129,7 @@ export default function AdminUsersPage() {
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="size-9">
-                                                    <AvatarImage src={user.avatar_url} alt={user.full_name} />
+                                                    <AvatarImage src={user.avatar_url} alt={user.full_name} data-ai-hint="person face" />
                                                     <AvatarFallback>{user.full_name?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>

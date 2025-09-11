@@ -29,6 +29,7 @@ export default function CompetitionsClient() {
 
   useEffect(() => {
     const fetchCompetitions = async () => {
+        if (!supabase) return;
         setLoading(true);
         const { data, error } = await supabase
             .from('competitions')
@@ -48,7 +49,7 @@ export default function CompetitionsClient() {
 
 
   const handleApply = async (competition: Competition) => {
-    if (!user) {
+    if (!user || !supabase) {
         toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to apply for competitions.' });
         return;
     }

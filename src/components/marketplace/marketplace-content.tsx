@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2 } from 'lucide-react';
+import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2, Plus } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
@@ -38,6 +38,7 @@ export default function MarketplaceContent() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!supabase) return;
       setLoading(true);
       let query = supabase
         .from('products')
@@ -83,7 +84,7 @@ export default function MarketplaceContent() {
   }, [products, searchQuery]);
 
   const handleBuyNow = async (product: Product) => {
-    if (!user) {
+    if (!user || !supabase) {
         toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to purchase items.' });
         return;
     }
@@ -174,6 +175,15 @@ export default function MarketplaceContent() {
         </p>
       </section>
 
+      {user && (
+        <Link href="/marketplace/new">
+          <Button className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-40 h-16 w-16 rounded-full shadow-lg">
+            <Plus className="h-8 w-8" />
+          </Button>
+        </Link>
+      )}
+
+
       <section>
          <h2 className="text-2xl font-bold tracking-tight mb-6">Categories</h2>
          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -216,9 +226,6 @@ export default function MarketplaceContent() {
                     </Link>
                   </Button>
                 )}
-                <Button asChild disabled={!user}>
-                  <Link href="/marketplace/new">+ Add Listing</Link>
-                </Button>
             </div>
         </div>
         {loading ? (

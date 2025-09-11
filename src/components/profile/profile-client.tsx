@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -9,36 +10,73 @@ import { Award, Edit, Loader2, BookCopy, Package, Newspaper } from 'lucide-react
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-// Mock data, to be replaced with API calls
-const myNotes = [
-  { id: 1, title: "Quantum Physics Lecture 1", subject: "Physics" },
-  { id: 2, title: "Intro to Algorithms Notes", subject: "Computer Science" },
-];
-const myListings = [
-    { id: 1, title: "Used Calculus Textbook", price: "₹500" },
-    { id: 2, title: "Mini Fridge for Hostel", price: "₹2500" },
-];
+import type { Note, PostWithAuthor, Product } from '@/lib/types';
+import NoteCard from '../notes/note-card';
+import ProductCard from '../marketplace/product-card';
+import PostCard from '../feed/post-card';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfileClient() {
   const { user, loading, supabase } = useAuth();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<any>(null);
-  
+  const [profileContent, setProfileContent] = useState<{
+    notes: Note[],
+    listings: Product[],
+    posts: PostWithAuthor[]
+  }>({ notes: [], listings: [], posts: [] });
+  const [contentLoading, setContentLoading] = useState(true);
+
   useEffect(() => {
     if (!loading && !user) {
       redirect('/login');
     }
     
-    if (user) {
-        const fetchProfile = async () => {
-            const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if (data) {
-                setProfile(data);
-            }
+    if (user && supabase) {
+        const fetchProfileData = async () => {
+            setContentLoading(true);
+            
+            const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (profileData) setProfile(profileData);
+            if (profileError) toast({ variant: 'destructive', title: 'Error fetching profile' });
+
+            const { data: notesData, error: notesError } = await supabase.from('notes').select('*, profiles(full_name, avatar_url)').eq('user_id', user.id);
+            if (notesError) toast({ variant: 'destructive', title: 'Error fetching notes' });
+            
+            const { data: listingsData, error: listingsError } = await supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', user.id);
+            if (listingsError) toast({ variant: 'destructive', title: 'Error fetching listings' });
+
+            const { data: postsData, error: postsError } = await supabase
+              .from('posts')
+              .select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`)
+              .eq('user_id', user.id);
+            if (postsError) toast({ variant: 'destructive', title: 'Error fetching posts' });
+
+            const { data: likedPosts, error: likedError } = await supabase.from('likes').select('post_id').eq('user_id', user.id);
+            const likedPostIds = new Set(likedPosts?.map(p => p.post_id) || []);
+            
+            const finalPosts = (postsData || []).map(p => ({
+              ...p,
+              isLiked: likedPostIds.has(p.id),
+              comments: p.comments || [],
+            }));
+
+            setProfileContent({
+                notes: (notesData as Note[]) || [],
+                listings: (listingsData as Product[]) || [],
+                posts: finalPosts as PostWithAuthor[],
+            });
+
+            setContentLoading(false);
         }
-        fetchProfile();
+        fetchProfileData();
     }
-  }, [user, loading, supabase]);
+  }, [user, loading, supabase, toast]);
+  
+  const handlePostAction = () => {
+      // In a real app, you would refetch or update state here.
+      toast({ title: 'Action not fully implemented in profile view.' });
+  }
 
   if (loading || !user || !profile) {
     return (
@@ -76,51 +114,72 @@ export default function ProfileClient() {
                   <Award className="size-5" />
                   <span>2 Badges</span>
               </div>
-              {/* More stats can go here */}
           </div>
         </CardContent>
       </Card>
       
       {/* Tabs */}
-      <Tabs defaultValue="notes" className="w-full">
+      <Tabs defaultValue="activity" className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-card shadow-sm rounded-full">
+          <TabsTrigger value="activity" className="rounded-full py-2"><Newspaper className="mr-2 size-4" />My Feed</TabsTrigger>
           <TabsTrigger value="notes" className="rounded-full py-2"><BookCopy className="mr-2 size-4" />My Notes</TabsTrigger>
           <TabsTrigger value="listings" className="rounded-full py-2"><Package className="mr-2 size-4" />My Listings</TabsTrigger>
-          <TabsTrigger value="activity" className="rounded-full py-2"><Newspaper className="mr-2 size-4" />My Feed</TabsTrigger>
         </TabsList>
-        <TabsContent value="notes" className="mt-6">
-           <div className="space-y-4">
-            {myNotes.map(note => (
-                <Card key={note.id}>
-                    <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                            <p className="font-bold">{note.title}</p>
-                            <p className="text-sm text-muted-foreground">{note.subject}</p>
-                        </div>
-                        <Button variant="ghost" size="sm">View</Button>
-                    </CardContent>
-                </Card>
-            ))}
-           </div>
-        </TabsContent>
-        <TabsContent value="listings" className="mt-6">
-            <div className="space-y-4">
-            {myListings.map(listing => (
-                <Card key={listing.id}>
-                    <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                            <p className="font-bold">{listing.title}</p>
-                            <p className="text-sm text-muted-foreground">{listing.price}</p>
-                        </div>
-                        <Button variant="ghost" size="sm">Manage</Button>
-                    </CardContent>
-                </Card>
-            ))}
-           </div>
-        </TabsContent>
-        <TabsContent value="activity" className="mt-6">
-          <p className="text-center text-muted-foreground p-8">Your recent feed activity will appear here.</p>
-        </TabsContent>
+        
+        {contentLoading ? (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            </div>
+        ) : (
+          <>
+            <TabsContent value="activity" className="mt-6">
+                <div className="space-y-4">
+                {profileContent.posts.length > 0 ? (
+                    profileContent.posts.map(post => (
+                        <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            currentUser={user}
+                            onDelete={handlePostAction}
+                            onEdit={handlePostAction}
+                            onComment={handlePostAction}
+                            onLike={handlePostAction}
+                        />
+                    ))
+                ) : (
+                    <p className="text-center text-muted-foreground p-8">You haven't posted anything yet.</p>
+                )}
+                </div>
+            </TabsContent>
+            <TabsContent value="notes" className="mt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {profileContent.notes.length > 0 ? (
+                    profileContent.notes.map(note => <NoteCard key={note.id} note={note} />)
+                ) : (
+                    <p className="text-center text-muted-foreground p-8 sm:col-span-2">You haven't uploaded any notes yet.</p>
+                )}
+                </div>
+            </TabsContent>
+            <TabsContent value="listings" className="mt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {profileContent.listings.length > 0 ? (
+                    profileContent.listings.map(listing => (
+                        <ProductCard 
+                            key={listing.id} 
+                            product={listing} 
+                            user={user}
+                            onBuyNow={() => {}}
+                            isBuying={false}
+                            isRazorpayLoaded={false}
+                        />
+                    ))
+                ) : (
+                    <p className="text-center text-muted-foreground p-8 sm:col-span-2">You don't have any active listings.</p>
+                )}
+                </div>
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );

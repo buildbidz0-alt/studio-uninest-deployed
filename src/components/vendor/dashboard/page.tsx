@@ -16,7 +16,7 @@ export default function VendorDashboardContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !supabase) return;
 
     const fetchData = async () => {
       setLoading(true);

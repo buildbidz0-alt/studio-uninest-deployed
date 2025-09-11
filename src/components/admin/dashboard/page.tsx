@@ -148,7 +148,7 @@ export default function AdminDashboardContent() {
         </div>
       </div>
        <div className="grid grid-cols-1">
-          {/* This component is now a Server Component, so we pass loading state if needed or let it handle its own */}
+          <TopDonorsTable />
        </div>
     </>
   );

@@ -1,6 +1,5 @@
 
-import PageHeader from "@/components/admin/page-header";
-import InternshipForm from "@/components/admin/internships/form";
+import PageHeader from "@/components/admin/internships/form";
 
 export default function NewInternshipPage() {
     return (
