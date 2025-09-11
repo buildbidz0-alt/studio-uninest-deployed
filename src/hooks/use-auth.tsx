@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase URL or Anon Key is missing. Make sure they are set in your .env.local file.');
+      console.error('Supabase URL or Anon Key is missing. Make sure they are set in your .env file.');
       setLoading(false);
       return;
     }
