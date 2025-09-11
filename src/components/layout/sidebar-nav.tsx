@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -106,33 +107,36 @@ export function MobileBottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
         <div className="h-full w-full grid grid-cols-5">
-            {mobileNavItems.map(item => (
-                <Link 
-                    key={item.href} 
-                    href={item.href} 
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-1 transition-colors",
-                        pathname === item.href ? "primary-gradient bg-clip-text text-transparent font-bold" : "text-muted-foreground hover:text-primary"
-                    )}
-                >
-                    {item.icon === 'avatar' ? (
-                        <div className={cn(
-                            "w-7 h-7 rounded-full flex items-center justify-center",
-                            pathname === item.href && "primary-gradient p-0.5"
-                        )}>
-                            <Avatar className="w-full h-full">
-                                {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
-                                <AvatarFallback className="text-xs">
-                                    {user ? user.email?.[0].toUpperCase() : 'G'}
-                                </AvatarFallback>
-                            </Avatar>
-                        </div>
-                    ) : (
-                        <item.icon className="size-6" />
-                    )}
-                    <span className="text-xs font-label">{item.label}</span>
-                </Link>
-            ))}
+            {mobileNavItems.map(item => {
+                const isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
+                return (
+                    <Link 
+                        key={item.href} 
+                        href={item.href} 
+                        className={cn(
+                            "flex flex-col items-center justify-center gap-1 transition-colors",
+                            isActive ? "primary-gradient bg-clip-text text-transparent font-bold" : "text-muted-foreground hover:text-primary"
+                        )}
+                    >
+                        {item.icon === 'avatar' ? (
+                            <div className={cn(
+                                "w-7 h-7 rounded-full flex items-center justify-center",
+                                isActive && "primary-gradient p-0.5"
+                            )}>
+                                <Avatar className="w-full h-full">
+                                    {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
+                                    <AvatarFallback className="text-xs">
+                                        {user ? user.email?.[0].toUpperCase() : 'G'}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+                        ) : (
+                            <item.icon className="size-6" />
+                        )}
+                        <span className="text-xs font-label">{item.label}</span>
+                    </Link>
+                )
+            })}
         </div>
     </nav>
   )
