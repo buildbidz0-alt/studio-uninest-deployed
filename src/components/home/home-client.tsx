@@ -38,6 +38,8 @@ export default function HomeClient() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
 
+  // This effect shows the modal on first visit for demonstration.
+  // The trigger can be moved to any button's onClick event.
   useEffect(() => {
     const hasSeenModal = localStorage.getItem('donationModalSeen');
     if (!hasSeenModal) {
@@ -61,6 +63,9 @@ export default function HomeClient() {
                     <p className="text-muted-foreground text-lg">Your digital campus hub ✨</p>
                  </div>
                  <div className="order-1 sm:order-2 flex items-center gap-2 self-end sm:self-center">
+                     <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setIsModalOpen(true)}>
+                         <Heart className="size-5" />
+                     </Button>
                      <Button variant="ghost" size="icon" className="rounded-full">
                          <Bell className="size-5" />
                      </Button>

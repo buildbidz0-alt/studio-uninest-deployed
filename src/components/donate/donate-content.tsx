@@ -5,78 +5,66 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Trophy, Loader2, IndianRupee } from 'lucide-react';
+import { Heart, Loader2, BookOpen, ShoppingBag, Armchair, IndianRupee, Sparkles, Star } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Input } from '../ui/input';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '../ui/scroll-area';
 
-export default function DonateContent() {
+const impactCards = [
+    { title: "Shared Notes", description: "Keep the knowledge flowing with free access to notes.", icon: BookOpen },
+    { title: "Marketplace", description: "Enable students to buy and sell without platform fees.", icon: ShoppingBag },
+    { title: "Library Booking", description: "Ensure seamless access to campus study spaces.", icon: Armchair },
+];
+
+const donationTiers = [
+    { amount: 50, title: "📖 Knowledge Giver" },
+    { amount: 100, title: "✨ Campus Hero" },
+    { amount: 250, title: "🔥 UniNest Champion" },
+];
+
+const medalColors = ["text-amber-400", "text-slate-400", "text-amber-700"];
+
+type Donor = {
+    name: string | null;
+    avatar: string | null;
+    amount: number;
+}
+
+type DonateContentProps = {
+    initialDonors: Donor[];
+    initialGoal: number;
+    initialRaised: number;
+}
+
+export default function DonateContent({ initialDonors, initialGoal, initialRaised }: DonateContentProps) {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
   const { user, supabase } = useAuth();
   const [isDonating, setIsDonating] = useState(false);
-  const [raisedAmount, setRaisedAmount] = useState(0);
-  const [goalAmount, setGoalAmount] = useState(50000); // Example, could come from admin setting
-  const [topDonors, setTopDonors] = useState<any[]>([]);
+  const [donors, setDonors] = useState<Donor[]>(initialDonors);
+  const [goalAmount] = useState(initialGoal);
+  const [raisedAmount, setRaisedAmount] = useState(initialRaised);
   const [donationAmount, setDonationAmount] = useState('100');
 
   useEffect(() => {
-    const fetchData = async () => {
-        // Fetch raised amount
-        const { data: donations, error: donationsError } = await supabase
-            .from('donations')
-            .select('amount');
-        if (donations) {
-            const total = donations.reduce((sum, d) => sum + d.amount, 0);
-            setRaisedAmount(total);
-        }
+    // Supabase real-time subscription for donations can be added here
+    // to keep the leaderboard live without polling.
+  }, []);
 
-        // Fetch top donors
-        const { data: topDonorsData, error: topDonorsError } = await supabase
-            .from('donations')
-            .select('amount, profiles(full_name, avatar_url, email)')
-            .order('amount', { ascending: false })
-            .limit(5);
-
-        if (topDonorsData) {
-            // This is a simplified aggregation
-            const aggregatedDonors = topDonorsData.reduce((acc: any[], current) => {
-                if (!current.profiles) return acc;
-                const existing = acc.find(d => d.email === current.profiles!.email);
-                if (existing) {
-                    existing.amount += current.amount;
-                } else {
-                    acc.push({
-                        name: current.profiles.full_name,
-                        email: current.profiles.email,
-                        avatar: current.profiles.avatar_url,
-                        amount: current.amount
-                    });
-                }
-                return acc;
-            }, []).sort((a,b) => b.amount - a.amount).slice(0, 3);
-            setTopDonors(aggregatedDonors);
-        }
-    }
-    fetchData();
-  }, [supabase]);
-
-  const progressPercentage = goalAmount > 0 ? (raisedAmount / goalAmount) * 100 : 0;
+  const progressPercentage = goalAmount > 0 ? Math.min((raisedAmount / goalAmount) * 100, 100) : 0;
   
-  const handleDonate = async () => {
+  const handleDonate = async (amountStr: string) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to donate.' });
       return;
     }
-    const amount = parseInt(donationAmount, 10);
+    const amount = parseInt(amountStr, 10);
     if (isNaN(amount) || amount <= 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Amount',
-        description: 'Please enter a valid donation amount.',
-      });
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid donation amount.' });
       return;
     }
     setIsDonating(true);
@@ -88,10 +76,7 @@ export default function DonateContent() {
       });
       
       const order = await response.json();
-
-      if (!response.ok) {
-          throw new Error(order.error || 'Failed to create order');
-      }
+      if (!response.ok) throw new Error(order.error || 'Failed to create order');
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
@@ -101,7 +86,6 @@ export default function DonateContent() {
         description: 'Support student innovation!',
         order_id: order.id,
         handler: async function (response: any) {
-            // Save donation to the database
             const { error } = await supabase.from('donations').insert({
                 user_id: user?.id,
                 amount: amount,
@@ -110,134 +94,177 @@ export default function DonateContent() {
             });
 
             if (error) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Error Saving Donation',
-                    description: 'Your donation was processed, but we failed to record it. Please contact support.',
-                });
+                 toast({ variant: 'destructive', title: 'Error Saving Donation', description: 'Your donation was processed, but we failed to record it. Please contact support.'});
             } else {
-                toast({
-                title: '🎉 Thank you for your support!',
-                description: 'Your donation helps keep UniNest running.',
-                });
+                toast({ title: `🔥 Thanks, ${user?.user_metadata?.full_name}! You’re officially a Campus Hero!`, description: 'Your donation helps keep UniNest running.'});
                 // Optimistically update UI
                 setRaisedAmount(prev => prev + amount);
+                const existingDonor = donors.find(d => d.name === user.user_metadata?.full_name);
+                if (existingDonor) {
+                    setDonors(donors.map(d => d.name === user.user_metadata?.full_name ? {...d, amount: d.amount + amount} : d).sort((a,b) => b.amount - a.amount));
+                } else {
+                    setDonors([...donors, { name: user.user_metadata?.full_name, avatar: user.user_metadata?.avatar_url, amount }].sort((a,b) => b.amount - a.amount));
+                }
             }
         },
-        prefill: {
-          name: user?.user_metadata?.full_name || '',
-          email: user?.email || '',
-        },
-        notes: {
-          type: 'donation',
-          userId: user?.id,
-        },
-        theme: {
-          color: '#1B365D',
-        },
+        prefill: { name: user?.user_metadata?.full_name || '', email: user?.email || '' },
+        notes: { type: 'donation', userId: user?.id },
+        theme: { color: '#1B365D' },
       };
-
       openCheckout(options);
     } catch (error) {
         console.error(error);
-        toast({
-            variant: 'destructive',
-            title: 'Donation Failed',
-            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway. Please try again later.',
-        });
+        toast({ variant: 'destructive', title: 'Donation Failed', description: error instanceof Error ? error.message : 'Could not connect to the payment gateway.' });
     } finally {
         setIsDonating(false);
     }
   };
+  
+  const topDonors = donors.slice(0, 3);
+  const otherDonors = donors.slice(3);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12">
-      <section className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Support UniNest</h1>
+    <div className="space-y-16 md:space-y-24">
+      {/* Hero Section */}
+      <section className="text-center space-y-4">
+        <h1 className="text-4xl md:text-6xl font-headline font-bold primary-gradient bg-clip-text text-transparent">Fuel the Future of Students 🚀</h1>
         <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
-          UniNest runs on community support. Your contribution helps us cover our monthly server costs and continue building a better platform for students.
+          Every donation helps UniNest stay alive for your campus.
         </p>
+        <Button size="lg" className="text-lg" onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}>
+            Power Up Now ⚡
+        </Button>
+      </section>
+      
+      {/* Impact Section */}
+      <section>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              {impactCards.map(card => (
+                 <Card key={card.title} className="text-center p-6 shadow-lg hover:shadow-2xl transition-shadow hover:-translate-y-2">
+                     <div className="mx-auto bg-primary/10 text-primary size-16 rounded-full flex items-center justify-center mb-4">
+                        <card.icon className="size-8" />
+                     </div>
+                     <h3 className="text-xl font-headline font-bold">{card.title}</h3>
+                     <p className="text-muted-foreground">{card.description}</p>
+                 </Card>
+              ))}
+          </div>
       </section>
 
-      <div className="grid md:grid-cols-2 gap-8">
-        <Card className="shadow-lg">
+      {/* Donation & Leaderboard Section */}
+      <div id="donate-section" className="grid lg:grid-cols-2 gap-12 items-start max-w-6xl mx-auto">
+        {/* Donation Card */}
+        <Card className="shadow-xl sticky top-24">
           <CardHeader>
-            <CardTitle>Help Us Reach Our Goal</CardTitle>
+            <CardTitle className="text-2xl font-headline">Help Us Reach Our Goal</CardTitle>
             <CardDescription>
-              Our monthly server cost is ₹{goalAmount.toLocaleString()}. Every rupee helps keep the platform running and ad-free for everyone.
+              Our monthly server cost is ₹{goalAmount.toLocaleString()}. Every rupee helps keep the platform running and ad-free.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Progress value={progressPercentage} className="h-3" />
+              <Progress value={progressPercentage} className="h-4" />
               <div className="flex justify-between text-sm font-medium">
                 <span className="text-primary">Raised: ₹{raisedAmount.toLocaleString()}</span>
                 <span className="text-muted-foreground">Goal: ₹{goalAmount.toLocaleString()}</span>
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                  <Button variant="outline" onClick={() => setDonationAmount('50')}>₹50</Button>
-                  <Button variant="outline" onClick={() => setDonationAmount('100')}>₹100</Button>
-                  <Button variant="outline" onClick={() => setDonationAmount('250')}>₹250</Button>
-              </div>
-              <div className="relative">
-                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+             <div className="grid grid-cols-3 gap-3">
+                {donationTiers.map(tier => (
+                    <Button 
+                        key={tier.amount} 
+                        variant="outline"
+                        className={cn(
+                            "py-6 text-base font-bold transition-all border-2 flex flex-col h-auto",
+                            donationAmount === tier.amount.toString() && "primary-gradient text-primary-foreground border-transparent ring-2 ring-primary"
+                        )}
+                        onClick={() => setDonationAmount(tier.amount.toString())}
+                    >
+                        <span>₹{tier.amount}</span>
+                        <span className="text-xs font-normal">{tier.title}</span>
+                    </Button>
+                ))}
+            </div>
+            <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
                 <Input
                     type="number"
-                    placeholder="Or enter a custom amount"
-                    className="pl-8 text-center text-lg font-semibold"
+                    placeholder="Choose your power-up ✨"
+                    className="pl-10 text-center text-lg font-semibold h-14 rounded-xl"
                     value={donationAmount}
                     onChange={(e) => setDonationAmount(e.target.value)}
                 />
-              </div>
             </div>
-            <Button size="lg" className="w-full text-lg" onClick={handleDonate} disabled={!isLoaded || isDonating || !donationAmount}>
-                {isLoaded ? <Heart className="mr-2 size-5" /> : <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button size="lg" className="w-full text-lg h-14" onClick={() => handleDonate(donationAmount)} disabled={!isLoaded || isDonating || !donationAmount}>
+                {isLoaded ? <Sparkles className="mr-2 size-5" /> : <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isDonating ? 'Processing...' : `Donate ₹${donationAmount || 0}`}
             </Button>
           </CardContent>
         </Card>
 
+        {/* Leaderboard Card */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="text-amber-500" />
-              Top Donors This Month
-            </CardTitle>
-            <CardDescription>Thank you for your incredible support!</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {topDonors.length > 0 ? (
-              topDonors.map((donor, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      {donor.avatar && <AvatarImage src={donor.avatar} alt={donor.name} data-ai-hint="person face" />}
-                      <AvatarFallback>{donor.name ? donor.name.split(' ').map((n: string) => n[0]).join('') : 'A'}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{donor.name || 'Anonymous'}</p>
-                      <p className="text-sm text-muted-foreground">Donated ₹{donor.amount.toLocaleString()}</p>
+            <CardHeader>
+                <CardTitle className="text-2xl font-headline flex items-center gap-2">
+                    <Star className="text-amber-400" />
+                    Hall of Heroes
+                </CardTitle>
+                <CardDescription>Meet the legends fueling UniNest this month.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {topDonors.length > 0 ? topDonors.map((donor, index) => (
+                    <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-primary/10 border-2 border-primary/20">
+                       <span className={cn("text-3xl font-bold w-8 text-center", medalColors[index])}>
+                         {['🥇', '🥈', '🥉'][index]}
+                       </span>
+                        <Avatar className="size-12">
+                            {donor.avatar && <AvatarImage src={donor.avatar} alt={donor.name || 'Anonymous'} data-ai-hint="person face" />}
+                            <AvatarFallback className="text-xl">{donor.name?.charAt(0) || 'A'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                            <p className="font-bold text-lg text-foreground">{donor.name || 'Anonymous'}</p>
+                            <p className="text-sm text-primary font-semibold">₹{donor.amount.toLocaleString()}</p>
+                        </div>
                     </div>
-                  </div>
-                  <div className="font-bold text-lg text-primary">#{index + 1}</div>
-                </div>
-              ))
-            ) : (
-                <div className="text-center text-muted-foreground py-10">
-                    <p>Be the first to donate!</p>
-                </div>
-            )}
-          </CardContent>
+                )) : (
+                     <div className="text-center text-muted-foreground py-10">
+                        <p>Be the first to enter the Hall of Heroes!</p>
+                    </div>
+                )}
+                
+                {otherDonors.length > 0 && (
+                  <ScrollArea className="h-64">
+                    <div className="space-y-4 pr-4">
+                        {otherDonors.map((donor, index) => (
+                             <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="size-9">
+                                        {donor.avatar && <AvatarImage src={donor.avatar} alt={donor.name || 'Anonymous'} data-ai-hint="person face" />}
+                                        <AvatarFallback>{donor.name?.charAt(0) || 'A'}</AvatarFallback>
+                                    </Avatar>
+                                    <p className="font-semibold">{donor.name || 'Anonymous'}</p>
+                                </div>
+                                <p className="font-medium text-muted-foreground">₹{donor.amount.toLocaleString()}</p>
+                             </div>
+                        ))}
+                    </div>
+                  </ScrollArea>
+                )}
+            </CardContent>
         </Card>
       </div>
-
-       <section className="text-center bg-muted p-8 rounded-lg">
-          <h2 className="text-2xl font-bold text-primary">Your Impact</h2>
+      
+       {/* Footer CTA */}
+       <section className="text-center bg-card p-8 md:p-12 rounded-2xl shadow-xl max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold font-headline primary-gradient bg-clip-text text-transparent">Your donation writes the next chapter 📖</h2>
           <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
-            Your donation directly supports our mission to provide a free, high-quality, and unified digital ecosystem for students. It allows us to maintain our servers, develop new features, and expand our reach to help more learners worldwide.
+            Join our community of supporters and make a direct impact on the student experience.
           </p>
+          <div className="mt-6">
+            <Button size="lg" className="text-lg" onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                Donate Now & Join the Heroes ⚡
+            </Button>
+          </div>
         </section>
     </div>
   );

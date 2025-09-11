@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -22,6 +23,11 @@ type DonationModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+type TopDonor = {
+  name: string;
+  amount: number;
+} | null;
+
 const suggestedAmounts = [50, 100, 250];
 
 export default function DonationModal({ isOpen, onOpenChange }: DonationModalProps) {
@@ -30,15 +36,33 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
   const { user, supabase } = useAuth();
   const [isDonating, setIsDonating] = useState(false);
   const [donationAmount, setDonationAmount] = useState('100');
+  const [topDonor, setTopDonor] = useState<TopDonor>(null);
+
+  useEffect(() => {
+    if (isOpen && supabase) {
+        const fetchTopDonor = async () => {
+            const { data: topDonorsData } = await supabase
+                .from('donations')
+                .select('amount, profiles(full_name)')
+                .order('amount', { ascending: false })
+                .limit(1);
+
+            if (topDonorsData && topDonorsData.length > 0) {
+                const top = topDonorsData[0];
+                setTopDonor({
+                    name: top.profiles?.full_name || 'Anonymous',
+                    amount: top.amount,
+                });
+            }
+        };
+        fetchTopDonor();
+    }
+  }, [isOpen, supabase]);
 
   const handleDonate = async () => {
     const amount = parseInt(donationAmount, 10);
     if (isNaN(amount) || amount <= 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid Amount',
-            description: 'Please enter a valid amount to donate.',
-        });
+        toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid amount to donate.'});
         return;
     }
     
@@ -61,10 +85,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
       });
       
       const order = await response.json();
-
-      if (!response.ok) {
-          throw new Error(order.error || 'Failed to create order');
-      }
+      if (!response.ok) throw new Error(order.error || 'Failed to create order');
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
@@ -83,39 +104,19 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
             if (error) {
                  toast({ variant: 'destructive', title: 'Donation record failed', description: 'Your payment was successful but we couldn\'t record it. Please contact support.' });
             } else {
-                toast({
-                  title: '🎉 Thank you for your support!',
-                  description: 'Your donation helps keep student life thriving.',
-                });
+                toast({ title: '🔥 Thanks, ' + (user?.user_metadata?.full_name || 'Campus Hero') + '! You’re making a difference!',});
             }
             onOpenChange(false);
         },
-        modal: {
-            ondismiss: function() {
-                setIsDonating(false);
-            }
-        },
-        prefill: {
-          name: user?.user_metadata?.full_name || '',
-          email: user?.email || '',
-        },
-        notes: {
-          type: 'donation',
-          userId: user?.id,
-        },
-        theme: {
-          color: '#4A90E2',
-        },
+        modal: { ondismiss: () => setIsDonating(false) },
+        prefill: { name: user?.user_metadata?.full_name || '', email: user?.email || '' },
+        notes: { type: 'donation', userId: user?.id },
+        theme: { color: '#4A90E2' },
       };
-
       openCheckout(options);
     } catch (error) {
         console.error(error);
-        toast({
-            variant: 'destructive',
-            title: 'Donation Failed',
-            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway.',
-        });
+        toast({ variant: 'destructive', title: 'Donation Failed', description: error instanceof Error ? error.message : 'Could not connect to the payment gateway.'});
         setIsDonating(false);
     }
   };
@@ -125,7 +126,6 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
       <DialogContent className="sm:max-w-md text-center p-8">
         <DialogHeader className="space-y-4">
             <div className="relative mx-auto w-24 h-32">
-                {/* Animated Jar */}
                 <div className="absolute bottom-0 left-0 w-full h-full">
                     <svg viewBox="0 0 100 120" className="w-full h-full">
                         <path d="M10 110 C 10 120, 90 120, 90 110 L 90 20 C 90 10, 70 0, 50 0 C 30 0, 10 10, 10 20 Z" fill="#F5F6FA" stroke="#2C3E50" strokeWidth="4"/>
@@ -143,6 +143,12 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
                 Support UniNest to keep student life thriving ✨
             </DialogDescription>
         </DialogHeader>
+
+        {topDonor && (
+             <div className="text-sm text-center bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full px-3 py-1">
+                🌟 Top Donor Today: <strong>{topDonor.name}</strong> — ₹{topDonor.amount.toLocaleString()}
+            </div>
+        )}
 
         <div className="space-y-4 py-4">
             <div className="grid grid-cols-3 gap-3">
@@ -164,12 +170,8 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
 
         <div className="flex flex-col gap-3">
             <Button size="lg" className="w-full text-lg py-7" onClick={handleDonate} disabled={isLoaded === false || isDonating}>
-                {isDonating ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                    <Sparkles className="mr-2 size-5" />
-                )}
-                {isDonating ? 'Processing...' : `Donate ₹${donationAmount || 0}`}
+                {isDonating ? ( <Loader2 className="mr-2 h-5 w-5 animate-spin" /> ) : ( <Sparkles className="mr-2 size-5" /> )}
+                {isDonating ? 'Processing...' : `Fuel the Future — ₹${donationAmount || 0}`}
             </Button>
             <Button variant="ghost" onClick={() => onOpenChange(false)}>Maybe Later</Button>
         </div>
