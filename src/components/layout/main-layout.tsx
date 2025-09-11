@@ -77,6 +77,16 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
+        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-2" />
+               <Logo className="size-7 text-primary" />
+               <h1 className="text-lg font-semibold">UniNest</h1>
+            </div>
+             <div className="flex items-center gap-2">
+              {user && <NotificationsDropdown />}
+            </div>
+        </header>
         <main className={cn("flex-1 overflow-y-auto p-4 md:p-8", isMobile && "pb-24")}>
           {children}
         </main>

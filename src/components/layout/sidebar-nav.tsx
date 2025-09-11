@@ -10,14 +10,21 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Separator } from '../ui/separator';
 
-const navItems = [
+const mainNavItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/chat', label: 'Chat', icon: MessageSquare, roles: ['student', 'vendor', 'admin'] },
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
+];
+
+const socialNavItems = [
+    { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
+    { href: '/chat', label: 'Chat', icon: MessageSquare, roles: ['student', 'vendor', 'admin'] },
+];
+
+const secondaryNavItems = [
   { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
@@ -34,11 +41,10 @@ export function SidebarNav() {
   const { user, signOut } = useAuth();
   const role = getRole(user);
 
-  const filteredNavItems = navItems.filter(item => item.roles.includes(role));
-
-  return (
-    <SidebarMenu>
-      {filteredNavItems.map((item) => (
+  const renderNavItems = (items: typeof mainNavItems) => {
+    return items
+      .filter(item => item.roles.includes(role))
+      .map(item => (
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton
             asChild
@@ -51,7 +57,27 @@ export function SidebarNav() {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
-      ))}
+      ));
+  };
+  
+  return (
+    <SidebarMenu>
+      {renderNavItems(mainNavItems)}
+
+      <SidebarMenuItem>
+        <div className="px-4 py-2 text-xs font-semibold text-muted-foreground tracking-wider">
+          SOCIAL
+        </div>
+      </SidebarMenuItem>
+      
+      {renderNavItems(socialNavItems)}
+
+      <SidebarMenuItem>
+        <Separator className="my-2" />
+      </SidebarMenuItem>
+
+      {renderNavItems(secondaryNavItems)}
+
 
         <div className='flex-grow' />
 
@@ -100,9 +126,9 @@ export function MobileBottomNav() {
 
   const mobileNavItems = [
       { href: '/', label: 'Home', icon: Home },
-      { href: '/marketplace', label: 'Market', icon: ShoppingBag },
+      { href: '/feed', label: 'Feed', icon: Newspaper },
       { href: '/chat', label: 'Chat', icon: MessageSquare },
-      { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
+      { href: '/marketplace', label: 'Market', icon: ShoppingBag },
       { href: '/profile', label: 'Profile', icon: 'avatar' },
   ];
 
@@ -110,7 +136,25 @@ export function MobileBottomNav() {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
         <div className="h-full w-full grid grid-cols-5">
             {mobileNavItems.map(item => {
-                const isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
+                 // Special handling for social pages to highlight the feed icon
+                const isSocialActive = pathname.startsWith('/feed') || pathname.startsWith('/chat');
+                let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
+                
+                if (item.href === '/feed' && isSocialActive) {
+                    isActive = true;
+                }
+                 if ((item.href === '/chat') && isSocialActive) {
+                    // Don't show chat as active if feed is active to avoid double selection
+                    isActive = pathname.startsWith('/chat');
+                }
+
+
+                // Adjust profile link activation
+                if (item.href === '/profile' && (pathname.startsWith('/profile') || pathname.startsWith('/settings'))) {
+                    isActive = true;
+                }
+
+
                 return (
                     <Link 
                         key={item.href} 
