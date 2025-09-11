@@ -1,17 +1,21 @@
+
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, UserCog, LogOut, Settings } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, UserCog, LogOut, Settings, Heart, LayoutGrid } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '../ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
+  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/booking', label: 'Library', icon: Armchair, roles: ['student', 'guest', 'admin'] },
 ];
