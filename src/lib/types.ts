@@ -46,3 +46,41 @@ export type Product = {
     full_name: string;
   } | null;
 };
+
+export type Note = {
+  id: number;
+  created_at: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  file_url: string;
+  file_type: string;
+  tags: string[] | null;
+  profiles: {
+    full_name: string;
+    avatar_url: string;
+  } | null;
+}
+
+export type Order = {
+  id: number;
+  created_at: string;
+  buyer_id: string;
+  vendor_id: string;
+  total_amount: number;
+  razorpay_payment_id: string;
+  order_items: OrderItem[];
+  buyer: Profile;
+}
+
+export type OrderItem = {
+    id: number;
+    order_id: number;
+    product_id: number;
+    quantity: number;
+    price: number;
+    products: {
+        name: string;
+        image_url: string | null;
+    }
+}

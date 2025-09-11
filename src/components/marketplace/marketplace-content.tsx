@@ -12,6 +12,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
+import { useRazorpay } from '@/hooks/use-razorpay';
 
 const categories = [
   { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services', color: 'from-sky-100 to-sky-200 dark:from-sky-900/50 dark:to-sky-800/50' },
@@ -26,10 +27,12 @@ export default function MarketplaceContent() {
   const { user, supabase } = useAuth();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { openCheckout, isLoaded } = useRazorpay();
   
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [purchasingProductId, setPurchasingProductId] = useState<number | null>(null);
   
   const selectedCategory = searchParams.get('category');
 
@@ -59,7 +62,6 @@ export default function MarketplaceContent() {
           description: 'Could not fetch product listings.',
         });
       } else {
-        // Map the data to match the expected Product type structure
         const mappedData = data.map(p => ({
           ...p,
           seller: p.profiles
@@ -80,6 +82,88 @@ export default function MarketplaceContent() {
     );
   }, [products, searchQuery]);
 
+  const handleBuyNow = async (product: Product) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to purchase items.' });
+        return;
+    }
+    setPurchasingProductId(product.id);
+
+    try {
+        const response = await fetch('/api/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: product.price * 100, currency: 'INR' }),
+        });
+
+        if (!response.ok) throw new Error('Failed to create Razorpay order.');
+        
+        const order = await response.json();
+
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: `Purchase: ${product.name}`,
+          description: `Order from vendor: ${product.seller.full_name}`,
+          order_id: order.id,
+          handler: async function (response: any) {
+            const { data: newOrder, error: orderError } = await supabase
+              .from('orders')
+              .insert({
+                buyer_id: user.id,
+                vendor_id: product.seller_id,
+                total_amount: product.price,
+                razorpay_payment_id: response.razorpay_payment_id,
+              })
+              .select('id')
+              .single();
+
+            if (orderError || !newOrder) {
+                toast({ variant: 'destructive', title: 'Error Saving Order', description: 'Payment received, but failed to save your order. Please contact support.' });
+                return;
+            }
+
+            const { error: itemError } = await supabase
+              .from('order_items')
+              .insert({
+                order_id: newOrder.id,
+                product_id: product.id,
+                quantity: 1, // Assuming quantity is always 1 for now
+                price: product.price,
+              });
+
+             if (itemError) {
+                toast({ variant: 'destructive', title: 'Error Saving Order Item', description: 'Your order was processed but had an issue. Please contact support.' });
+             } else {
+                toast({ title: 'Payment Successful!', description: `${product.name} has been purchased.` });
+             }
+          },
+          prefill: {
+            name: user.user_metadata?.full_name || '',
+            email: user.email || '',
+          },
+          notes: {
+            type: 'product_purchase',
+            productId: product.id,
+            userId: user.id,
+          },
+          theme: {
+            color: '#1B365D',
+          },
+        };
+        openCheckout(options);
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Purchase Failed',
+            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway.',
+        });
+    } finally {
+        setPurchasingProductId(null);
+    }
+  }
 
   return (
     <div className="space-y-12">
@@ -144,7 +228,14 @@ export default function MarketplaceContent() {
         ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} user={user} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                user={user}
+                onBuyNow={() => handleBuyNow(product)}
+                isBuying={purchasingProductId === product.id}
+                isRazorpayLoaded={isLoaded}
+              />
             ))}
           </div>
         ) : (

@@ -1,18 +1,18 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import StatsCard from '@/components/vendor/stats-card';
 import SalesChart from '@/components/vendor/sales-chart';
 import RecentOrdersTable from '@/components/vendor/recent-orders-table';
 import { DollarSign, ShoppingCart, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import type { Order, OrderItem } from '@/lib/types';
+import { subDays, format, startOfDay } from 'date-fns';
 
 export default function VendorDashboardContent() {
   const { user, supabase } = useAuth();
-  const [stats, setStats] = useState({ revenue: 0, orders: 0, productsSold: 0 });
-  const [salesData, setSalesData] = useState([]);
-  const [recentOrders, setRecentOrders] = useState([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,33 +21,62 @@ export default function VendorDashboardContent() {
     const fetchData = async () => {
       setLoading(true);
 
-      // This is a simplified example. In a real app, you would have tables for
-      // orders, products, etc., and you'd query them with RLS policies.
-      // For now, we'll use placeholder logic.
-
-      // TODO: Replace with real queries to your 'orders' and 'products' tables.
-      // Example for stats:
-      // const { data: ordersData, error: ordersError } = await supabase
-      //   .from('orders')
-      //   .select('total_price, order_items(quantity)')
-      //   .eq('vendor_id', user.id);
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            quantity,
+            products ( name )
+          ),
+          buyer:profiles!buyer_id (
+            id, full_name, avatar_url
+          )
+        `)
+        .eq('vendor_id', user.id);
       
-      // if (ordersData) {
-      //   const totalRevenue = ordersData.reduce((acc, o) => acc + o.total_price, 0);
-      //   const totalOrders = ordersData.length;
-      //   const productsSoldCount = ordersData.reduce((acc, o) => acc + o.order_items.reduce((i_acc, i) => i_acc + i.quantity, 0), 0);
-      //   setStats({ revenue: totalRevenue, orders: totalOrders, productsSold: productsSoldCount });
-      // }
-      
-      setStats({ revenue: 0, orders: 0, productsSold: 0 });
-      setSalesData([]);
-      setRecentOrders([]);
+      if (error) {
+        console.error("Error fetching vendor data:", error);
+      } else {
+        setOrders(data as unknown as Order[]);
+      }
 
       setLoading(false);
     };
 
     fetchData();
   }, [user, supabase]);
+  
+  const stats = useMemo(() => {
+    const totalRevenue = orders.reduce((acc, o) => acc + o.total_amount, 0);
+    const totalOrders = orders.length;
+    const productsSoldCount = orders.reduce((acc, o) => acc + o.order_items.reduce((i_acc, i) => i_acc + i.quantity, 0), 0);
+    return { revenue: totalRevenue, orders: totalOrders, productsSold: productsSoldCount };
+  }, [orders]);
+
+  const salesData = useMemo(() => {
+    const last7Days: { name: string, total: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = subDays(new Date(), i);
+      last7Days.push({ name: format(date, 'MMM d'), total: 0 });
+    }
+
+    orders.forEach(order => {
+      const orderDate = startOfDay(new Date(order.created_at));
+      const day = last7Days.find(d => startOfDay(new Date(d.name)) .getTime() === orderDate.getTime());
+      if (day) {
+        day.total += order.total_amount;
+      }
+    });
+
+    return last7Days;
+  }, [orders]);
+
+  const recentOrders = useMemo(() => {
+      return orders
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5);
+  }, [orders]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
@@ -65,19 +94,19 @@ export default function VendorDashboardContent() {
             title="Total Revenue" 
             value={formatCurrency(stats.revenue)} 
             icon={DollarSign} 
-            change={loading ? 'Loading...' : 'No sales yet'} 
+            change={loading ? 'Loading...' : `${stats.orders} sales`} 
         />
         <StatsCard 
             title="Total Orders" 
             value={stats.orders.toString()} 
             icon={ShoppingCart} 
-            change={loading ? 'Loading...' : 'No orders yet'} 
+            change={loading ? 'Loading...' : `from ${[...new Set(orders.map(o => o.buyer_id))].length} customers`} 
         />
         <StatsCard 
             title="Products Sold" 
             value={stats.productsSold.toString()} 
             icon={BookOpen} 
-            change={loading ? 'Loading...' : 'No products sold yet'} 
+            change={loading ? 'Loading...' : 'items sold'} 
         />
       </div>
 
