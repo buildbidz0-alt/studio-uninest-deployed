@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -40,7 +41,7 @@ export default function ProfileClient() {
             if (profileData) setProfile(profileData);
             if (profileError) toast({ variant: 'destructive', title: 'Error fetching profile' });
 
-            const { data: notesData, error: notesError } = await supabase.from('notes').select('*, profiles(full_name, avatar_url)').eq('user_id', user.id);
+            const { data: notesData, error: notesError } = await supabase.from('notes').select('*, profiles:user_id(full_name, avatar_url)').eq('user_id', user.id);
             if (notesError) toast({ variant: 'destructive', title: 'Error fetching notes' });
             
             const { data: listingsData, error: listingsError } = await supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', user.id);
