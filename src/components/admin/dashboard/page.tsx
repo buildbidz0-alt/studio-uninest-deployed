@@ -30,7 +30,18 @@ type CompetitionEntry = {
   created_at: string;
 }
 
-export default function AdminDashboardContent() {
+type AggregatedDonor = {
+  name: string;
+  email: string;
+  avatar: string | null;
+  total: number;
+};
+
+type AdminDashboardContentProps = {
+  topDonors: AggregatedDonor[];
+};
+
+export default function AdminDashboardContent({ topDonors }: AdminDashboardContentProps) {
   const { supabase } = useAuth();
   const [stats, setStats] = useState({ revenue: 0, donations: 0, users: 0, listings: 0 });
   const [revenueData, setRevenueData] = useState<any[]>([]);
@@ -40,6 +51,7 @@ export default function AdminDashboardContent() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!supabase) return;
       setLoading(true);
 
       // Fetch stats
@@ -148,7 +160,7 @@ export default function AdminDashboardContent() {
         </div>
       </div>
        <div className="grid grid-cols-1">
-          <TopDonorsTable />
+          <TopDonorsTable donors={topDonors} />
        </div>
     </>
   );
