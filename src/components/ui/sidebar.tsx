@@ -369,16 +369,25 @@ const SidebarMenuButton = React.forwardRef<
         className={cn(sidebarMenuButtonVariants({ isActive }), state === 'collapsed' && 'justify-center', className)}
         {...props}
       >
-        {children}
-        <span className={cn('transition-opacity duration-200', state === 'collapsed' && 'opacity-0 w-0')}>{ (children as any[])[1] }</span>
+        {state === 'expanded' ? (
+            children
+        ) : (
+            // In collapsed state, only render the icon (the first child)
+            Array.isArray(children) ? children[0] : children
+        )}
       </Comp>
     )
 
-    if (!tooltip && state !== 'collapsed') {
-      return button
+    if (state === 'expanded' || isMobile) {
+      return button;
     }
     
-    const tooltipContent = tooltip || (children as any[])[1];
+    // Determine content for tooltip
+    const tooltipContent = tooltip || (Array.isArray(children) && children.length > 1 ? children[1] : null);
+
+    if (!tooltipContent) {
+        return button;
+    }
 
     return (
       <Tooltip>
