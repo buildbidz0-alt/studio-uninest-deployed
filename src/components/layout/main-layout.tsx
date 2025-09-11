@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNav, MobileBottomNav } from './sidebar-nav';
 import { Logo } from '@/components/icons';
-import { Home, Newspaper, ShoppingBag, BookOpen, Armchair } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, LayoutGrid } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -75,7 +75,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <main className={cn("flex-1 overflow-y-auto p-4 md:p-8", isMobile && "pb-20")}>
+        <main className={cn("flex-1 overflow-y-auto p-4 md:p-8", isMobile && "pb-24")}>
           {children}
         </main>
       </SidebarInset>

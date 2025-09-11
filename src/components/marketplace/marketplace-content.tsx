@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2, Plus, MessageSquare } from 'lucide-react';
+import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2, Plus, MessageSquare, Armchair } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import Link from 'next/link';
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -16,7 +16,7 @@ import { useRazorpay } from '@/hooks/use-razorpay';
 import { useRouter } from 'next/navigation';
 
 const categories = [
-  { name: 'Library Services', icon: Library, href: '/marketplace?category=Library+Services', color: 'from-sky-100 to-sky-200 dark:from-sky-900/50 dark:to-sky-800/50' },
+  { name: 'Library Booking', icon: Armchair, href: '/booking', color: 'from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50' },
   { name: 'Food Mess', icon: Utensils, href: '/marketplace?category=Food+Mess', color: 'from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-800/50' },
   { name: 'Cyber Café', icon: Laptop, href: '/marketplace?category=Cyber+Café', color: 'from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50' },
   { name: 'Books', icon: Book, href: '/marketplace?category=Books', color: 'from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50' },

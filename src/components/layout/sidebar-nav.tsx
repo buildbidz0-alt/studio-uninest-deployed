@@ -17,7 +17,6 @@ const navItems = [
   { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/booking', label: 'Library', icon: Armchair, roles: ['student', 'guest', 'admin'] },
 ];
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
@@ -100,7 +99,7 @@ export function MobileBottomNav() {
       { href: '/', label: 'Home', icon: Home },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag },
       { href: '/notes', label: 'Study', icon: BookOpen },
-      { href: '/booking', label: 'Library', icon: Armchair },
+      { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
       { href: '/profile', label: 'Profile', icon: 'avatar' },
   ];
 
