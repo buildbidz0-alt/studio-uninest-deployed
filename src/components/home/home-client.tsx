@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowRight, BookOpen, GraduationCap, Rocket, Users, Building, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, GraduationCap, Rocket, Users, Building, Sparkles, Library } from 'lucide-react';
 
 const stats = [
   { value: 10000, label: 'Students', icon: GraduationCap, isPlus: true },
