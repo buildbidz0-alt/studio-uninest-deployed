@@ -2,14 +2,14 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 type AuthContextType = {
-  supabase: SupabaseClient;
+  supabase: SupabaseClient | null;
   user: User | null;
   role: UserRole;
   loading: boolean;
@@ -20,19 +20,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  // Create client inside the provider, which is guaranteed to be on the client side.
-  const [supabase] = useState(() => createClient());
+  // Get the Supabase client, which may be null on the initial server render.
+  const supabase = getSupabaseBrowserClient();
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      setRole(currentUser?.user_metadata?.role || 'student');
-      setLoading(false);
-    });
+    // If the supabase client is not available, we can't do anything.
+    if (!supabase) {
+        setLoading(false);
+        return;
+    };
 
     const getInitialUser = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -45,7 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setLoading(false);
     }
+    
     getInitialUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
+      setLoading(false);
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -53,7 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, router]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+        await supabase.auth.signOut();
+    }
     setUser(null);
     setRole('guest');
     router.push('/login');
