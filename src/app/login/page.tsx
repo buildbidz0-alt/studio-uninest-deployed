@@ -1,7 +1,6 @@
 
 'use client';
 
-import type { Metadata } from 'next';
 import LoginForm from '@/components/auth/login-form';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -12,7 +11,17 @@ import { useAuth } from '@/hooks/use-auth';
 // };
 
 export default function LoginPage() {
-    const { supabase } = useAuth();
+    const { supabase, loading } = useAuth();
+    
+    if (loading) {
+      return (
+        <div className="flex min-h-[calc(100vh-150px)] items-center justify-center bg-background">
+          <div className="p-8 rounded-lg border bg-card text-card-foreground shadow-sm w-full max-w-sm text-center">
+             <p>Loading...</p>
+          </div>
+        </div>
+      );
+    }
     
     if (!supabase) {
         return (

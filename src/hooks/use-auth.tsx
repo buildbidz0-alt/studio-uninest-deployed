@@ -18,7 +18,13 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+type AuthProviderProps = {
+  children: ReactNode;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
+};
+
+export function AuthProvider({ children, supabaseUrl, supabaseAnonKey }: AuthProviderProps) {
   const router = useRouter();
   const [supabase, setSupabase] = useState<SupabaseClient | undefined>(undefined);
   const [user, setUser] = useState<User | null>(null);
@@ -26,9 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase URL and/or Anon Key are not defined. Please check your .env file.');
       setLoading(false);
@@ -40,14 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
     setSupabase(client);
 
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
-      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-        router.refresh();
-      }
-    });
-
     const getInitialUser = async () => {
       const { data: { user } } = await client.auth.getUser();
       setUser(user);
@@ -57,10 +52,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialUser();
 
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
+      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        router.refresh();
+      }
+    });
+
     return () => {
       subscription?.unsubscribe();
     };
-  }, [router]);
+  }, [router, supabaseUrl, supabaseAnonKey]);
 
   const signOut = async () => {
     if (!supabase) return;
