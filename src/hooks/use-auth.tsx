@@ -9,7 +9,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 type AuthContextType = {
-  supabase: SupabaseClient;
+  supabase: SupabaseClient | undefined;
   user: User | null;
   role: UserRole;
   loading: boolean;
@@ -26,6 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
@@ -45,9 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [router, supabase.auth]);
+  }, [router, supabase]);
 
   const signOut = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
     setUser(null);
     setRole('guest');

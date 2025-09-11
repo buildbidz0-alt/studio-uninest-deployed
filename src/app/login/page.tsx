@@ -1,13 +1,12 @@
 import type { Metadata } from 'next';
 import LoginForm from '@/components/auth/login-form';
-import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
     title: 'Login | Uninest',
     description: 'Login to your Uninest account.',
 };
 
-export default async function LoginPage() {
+export default function LoginPage() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const isSupabaseConfigured = supabaseUrl && supabaseAnonKey;

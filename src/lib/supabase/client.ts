@@ -12,7 +12,9 @@ export function getSupabaseBrowserClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase URL or Anon Key is missing from client environment variables.');
+    // This will now prevent the crash and give a clear server-side error
+    // if the variables are not configured.
+    return undefined;
   }
 
   client = createBrowserClient(supabaseUrl, supabaseAnonKey);
