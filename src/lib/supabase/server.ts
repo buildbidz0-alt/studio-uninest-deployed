@@ -2,6 +2,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+// This is the server-side client. It should only be used in Server Components,
+// Route Handlers, and other server-side code.
 export function createClient() {
   const cookieStore = cookies()
 
