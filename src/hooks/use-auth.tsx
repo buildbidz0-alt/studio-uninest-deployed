@@ -20,11 +20,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 type AuthProviderProps = {
   children: ReactNode;
-  supabaseUrl?: string;
-  supabaseAnonKey?: string;
 };
 
-export function AuthProvider({ children, supabaseUrl, supabaseAnonKey }: AuthProviderProps) {
+export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const [supabase, setSupabase] = useState<SupabaseClient | undefined>(undefined);
   const [user, setUser] = useState<User | null>(null);
@@ -32,12 +30,12 @@ export function AuthProvider({ children, supabaseUrl, supabaseAnonKey }: AuthPro
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Only create the client if the URL and Key are provided and are not the placeholder values
-    const isSupabaseConfigured = 
-      supabaseUrl && 
-      supabaseAnonKey &&
-      supabaseUrl !== 'YOUR_SUPABASE_URL_HERE' &&
-      supabaseAnonKey !== 'YOUR_SUPABASE_ANON_KEY_HERE';
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // Only create the client if the URL and Key are provided and valid
+    const isSupabaseConfigured =
+      supabaseUrl && supabaseUrl.startsWith('http') && supabaseAnonKey;
 
     if (isSupabaseConfigured) {
       const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
@@ -64,13 +62,13 @@ export function AuthProvider({ children, supabaseUrl, supabaseAnonKey }: AuthPro
         subscription?.unsubscribe();
       };
     } else {
-      // If credentials are not provided or are placeholders, stop loading and show the app in a logged-out state.
-      console.warn('Supabase credentials are not configured or are using placeholder values. Please check your .env.local file.');
+      // If credentials are not provided or are invalid, stop loading and show the app in a logged-out state.
+      console.warn('Supabase credentials are not configured or are invalid. Please check your .env.local file.');
       setLoading(false);
       setUser(null);
       setSupabase(undefined);
     }
-  }, [router, supabaseUrl, supabaseAnonKey]);
+  }, [router]);
 
   const signOut = async () => {
     if (!supabase) return;

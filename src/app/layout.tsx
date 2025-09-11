@@ -55,9 +55,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -69,7 +66,7 @@ export default function RootLayout({
         "min-h-screen bg-background font-body antialiased"
       )}>
         <ClientOnly>
-          <AuthProvider supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey}>
+          <AuthProvider>
             <MainLayout>
               {children}
             </MainLayout>
