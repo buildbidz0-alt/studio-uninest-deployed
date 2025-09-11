@@ -54,10 +54,10 @@ const timeline = [
 
 const features = [
   {
-    title: 'Social Feed',
+    title: 'Social',
     description: 'See what\'s trending',
     icon: Users,
-    href: '/feed',
+    href: '/social',
     color: 'bg-blue-500',
   },
   {
