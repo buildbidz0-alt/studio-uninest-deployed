@@ -21,8 +21,8 @@ const mainNavItems = [
 ];
 
 const secondaryNavItems = [
-  { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
@@ -178,14 +178,15 @@ export function MobileBottomNav() {
 
   const mobileNavItems = [
       { href: '/', label: 'Home', icon: Home },
-      { href: '/social', label: 'Social', icon: Users },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag },
+      { href: '/social', label: 'Social', icon: Users },
+      { href: '/workspace', label: 'Space', icon: LayoutGrid },
       { href: '/profile', label: 'Profile', icon: 'avatar' },
   ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
-        <div className="h-full w-full grid grid-cols-4">
+        <div className="h-full w-full grid grid-cols-5">
             {mobileNavItems.map(item => {
                  // Special handling for social pages to highlight the feed icon
                 let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
@@ -196,6 +197,11 @@ export function MobileBottomNav() {
 
                 // Adjust profile link activation
                 if (item.href === '/profile' && (pathname.startsWith('/profile') || pathname.startsWith('/settings'))) {
+                    isActive = true;
+                }
+
+                // Adjust workspace link activation
+                if (item.href === '/workspace' && (pathname.startsWith('/workspace'))) {
                     isActive = true;
                 }
 
