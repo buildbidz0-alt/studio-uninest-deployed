@@ -98,7 +98,7 @@ export function MobileBottomNav() {
   const mobileNavItems = [
       { href: '/', label: 'Home', icon: Home },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag },
-      { href: '/notes', label: 'Study', icon: BookOpen },
+      { href: '/donate', label: 'Donate', icon: Heart },
       { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
       { href: '/profile', label: 'Profile', icon: 'avatar' },
   ];
