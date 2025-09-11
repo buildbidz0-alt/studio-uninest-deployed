@@ -20,7 +20,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const supabase = createClient();
+  // Create client inside the provider, which is guaranteed to be on the client side.
+  const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
