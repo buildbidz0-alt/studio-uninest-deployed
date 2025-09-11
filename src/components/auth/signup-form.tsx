@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from '@/hooks/use-auth';
 
 const vendorCategories = ["library", "food mess", "cybercafe", "hostels"] as const;
 
@@ -61,7 +61,7 @@ export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
+  const { supabase } = useAuth();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,6 +78,11 @@ export default function SignupForm() {
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
+    if (!supabase) {
+        toast({ variant: 'destructive', title: 'Auth not configured.'});
+        setIsLoading(false);
+        return;
+    }
     
     const role = values.userType;
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({

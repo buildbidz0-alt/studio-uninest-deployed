@@ -1,4 +1,3 @@
-import LoginForm from '@/components/auth/login-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -9,7 +8,12 @@ export const metadata: Metadata = {
 export default function LoginPage() {
     return (
         <div className="flex min-h-[calc(100vh-150px)] items-center justify-center bg-background">
-            <LoginForm />
+            <div className="p-8 rounded-lg border bg-card text-card-foreground shadow-sm w-full max-w-sm">
+                <h1 className="text-2xl font-bold text-center">Login Disabled</h1>
+                <p className="text-muted-foreground text-center mt-2">
+                    The authentication service is not configured. Please add your Supabase credentials to the .env file.
+                </p>
+            </div>
         </div>
     );
 }

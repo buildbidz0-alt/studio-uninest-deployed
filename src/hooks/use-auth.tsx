@@ -2,9 +2,9 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
@@ -28,9 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
+    
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase URL and/or Anon Key are not defined.');
+      console.error('Supabase URL or Anon Key is missing. Make sure they are set in your .env.local file.');
       setLoading(false);
       return;
     }
@@ -39,24 +39,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSupabase(client);
 
     const getInitialUser = async () => {
-        const { data: { session } } = await client.auth.getSession();
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
-        setLoading(false);
+      const { data: { user } } = await client.auth.getUser();
+      setUser(user);
+      setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
+      setLoading(false);
     };
-    
+
     getInitialUser();
 
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
-      setLoading(false);
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
+      if (event === 'SIGNED_IN') {
+        router.refresh();
+      }
     });
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, [router]);
 
