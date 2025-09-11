@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createBrowserClient } from '@supabase/ssr';
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
@@ -25,30 +25,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // getSupabaseBrowserClient might return undefined if env vars are not set
-    const client = getSupabaseBrowserClient();
-    setSupabase(client);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!client) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase URL and/or Anon Key are not defined. Please check your .env.local file.');
       setLoading(false);
       return;
     }
+    
+    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    setSupabase(client);
 
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
-      setLoading(false);
-      if (event === 'SIGNED_IN') {
+      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         router.refresh();
       }
     });
-    
-    // Get initial user
-    client.auth.getUser().then(({data: { user }}) => {
-        setUser(user);
-        setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
-        setLoading(false);
-    });
+
+    const getInitialUser = async () => {
+      const { data: { user } } = await client.auth.getUser();
+      setUser(user);
+      setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
+      setLoading(false);
+    };
+
+    getInitialUser();
 
     return () => {
       subscription?.unsubscribe();
@@ -61,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setRole('guest');
     router.push('/login');
-    router.refresh();
   };
 
   const value = {
