@@ -1,137 +1,154 @@
 
 'use client';
 
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  Users, 
-  BookOpen, 
-  Store, 
-  GraduationCap,
-  ArrowRight,
-  Sparkles,
-  Search,
-  MessageSquare
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import StatCard from './stat-card';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowRight, BookOpen, GraduationCap, Rocket, Users, Building, Sparkles } from 'lucide-react';
 
-const features = [
+const stats = [
+  { value: 10000, label: 'Students', icon: GraduationCap, isPlus: true },
+  { value: 12000, label: 'Notes Shared', icon: BookOpen, isPlus: true },
+  { value: 200, label: 'Vendors', icon: Building, isPlus: true },
+];
+
+const testimonials = [
   {
-    icon: MessageSquare,
-    title: 'Student Social Feed',
-    description: 'Connect with peers, share updates, and stay in the loop with campus life. Your community is just a post away.',
-    id: 'feed',
-    imageUrl: 'https://picsum.photos/seed/feed-feature/800/600',
-    dataAiHint: 'student social feed mobile app'
+    quote: "UniNest completely changed how I find study materials. The note sharing is a lifesaver, and I've connected with so many peers!",
+    name: 'Ananya Sharma',
+    college: 'IIT Delhi',
+    avatar: 'https://picsum.photos/seed/testimonial1/100',
   },
   {
-    icon: Store,
-    title: 'Textbook Marketplace',
-    description: 'Buy and sell textbooks, notes, and other essentials directly with fellow students. Save money and declutter.',
-    id: 'marketplace',
-    imageUrl: 'https://picsum.photos/seed/market-feature/800/600',
-    dataAiHint: 'marketplace mobile app'
+    quote: "The marketplace is brilliant. I sold all my old textbooks in a week and found a great deal on a used bike. It's so much better than other platforms.",
+    name: 'Rohan Verma',
+    college: 'St. Stephen\'s College',
+    avatar: 'https://picsum.photos/seed/testimonial2/100',
   },
   {
-    icon: BookOpen,
-    title: 'AI-Powered Study Hub',
-    description: 'Upload your notes and let our AI automatically tag and organize them for you. Find the exact material you need, instantly.',
-    id: 'study-hub',
-    imageUrl: 'https://picsum.photos/seed/study-feature/800/600',
-    dataAiHint: 'ai education mobile app'
+    quote: "As a fresher, UniNest helped me feel connected to the campus community instantly. The social feed is always buzzing with useful info.",
+    name: 'Priya Singh',
+    college: 'Christ University',
+    avatar: 'https://picsum.photos/seed/testimonial3/100',
   },
 ];
 
-const scrollTo = (id: string) => {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-};
+const timelineEvents = [
+  { year: "2024", title: "The Vision", description: "Founded with a mission to simplify student life.", icon: Sparkles },
+  { year: "2024 Q2", title: "First 1,000 Users", description: "Our community begins to take shape.", icon: Users },
+  { year: "2025 Q1", title: "10,000 Strong", description: "Crossed 10k students & 200 vendors.", icon: GraduationCap },
+  { year: "Future", title: "Global Expansion", description: "Connecting 100,000+ learners worldwide.", icon: Rocket },
+];
 
 export default function HomeClient() {
   return (
     <div className="space-y-24 md:space-y-32">
       {/* Hero Section */}
       <section className="text-center pt-8">
+         <div className="inline-block bg-primary/10 text-primary font-semibold text-sm py-1 px-3 rounded-full mb-4">
+           The fastest-growing student platform
+        </div>
         <h1 className="text-4xl md:text-6xl font-headline font-extrabold tracking-tight">
-          Your All-In-One <span className="primary-gradient bg-clip-text text-transparent">Campus Hub</span>
+          Join 10,000+ Students <br/> Already on <span className="primary-gradient bg-clip-text text-transparent">UniNest 🎓</span>
         </h1>
-        <p className="mt-6 max-w-3xl mx-auto text-lg text-muted-foreground">
-          UniNest brings your entire campus to your fingertips. From buying textbooks to connecting with friends and acing your exams—it all happens here.
+        <p className="mt-6 max-w-2xl mx-auto text-lg text-muted-foreground">
+          The ultimate platform to connect, study, and thrive with your peers. Stop missing out.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button size="lg" className="text-lg" asChild>
-            <Link href="/signup">Get Started for Free</Link>
+            <Link href="/signup">Sign Up Free</Link>
           </Button>
-          <Button size="lg" variant="outline" className="text-lg" onClick={() => scrollTo('features')}>
-            Explore Features <ArrowRight className="ml-2" />
+          <Button size="lg" variant="outline" className="text-lg" asChild>
+            <Link href="/feed">Explore the Community</Link>
           </Button>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section id="features" className="max-w-5xl mx-auto">
+      {/* Impact Numbers Section */}
+      <section className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {features.map((feature) => (
-            <div key={feature.id} className="cursor-pointer" onClick={() => scrollTo(feature.id)}>
-              <Card className="h-full text-center hover:shadow-xl hover:-translate-y-2 transition-transform duration-300">
-                <CardHeader>
-                    <div className="mx-auto bg-primary/10 text-primary size-16 rounded-full flex items-center justify-center mb-4">
-                        <feature.icon className="size-8" />
-                    </div>
-                  <CardTitle>{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
-            </div>
+          {stats.map((stat, index) => (
+            <StatCard key={index} {...stat} />
           ))}
         </div>
       </section>
 
-      {/* Detailed Feature Spotlights */}
-      {features.map((feature, index) => (
-        <section key={feature.id} id={feature.id} className="max-w-5xl mx-auto">
-          <div className={`grid md:grid-cols-2 gap-8 md:gap-12 items-center ${index % 2 !== 0 ? 'md:grid-flow-col-dense' : ''}`}>
-            <div className={`relative aspect-square md:aspect-[4/3] rounded-2xl overflow-hidden shadow-lg ${index % 2 !== 0 ? 'md:col-start-2' : ''}`}>
-              <Image 
-                src={feature.imageUrl}
-                alt={feature.title}
-                fill
-                className="object-cover"
-                data-ai-hint={feature.dataAiHint}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 rounded-full">
-                  <feature.icon className="size-6 text-primary" />
+      {/* Testimonials Section */}
+       <section className="w-full">
+         <h2 className="text-3xl font-headline font-bold text-center mb-10">Loved by Students Everywhere</h2>
+          <Carousel
+            plugins={[Autoplay({ delay: 5000, stopOnInteraction: true })]}
+            className="w-full max-w-4xl mx-auto"
+          >
+            <CarouselContent>
+              {testimonials.map((testimonial, index) => (
+                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1 h-full">
+                    <Card className="h-full flex flex-col justify-between shadow-lg">
+                      <CardContent className="p-6 text-lg font-medium italic text-center">
+                        "{testimonial.quote}"
+                      </CardContent>
+                      <div className="flex items-center justify-center gap-3 p-6 pt-0">
+                         <Avatar>
+                           <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="person face" />
+                           <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
+                         </Avatar>
+                        <div>
+                          <p className="font-semibold">{testimonial.name}</p>
+                          <p className="text-sm text-muted-foreground">{testimonial.college}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+             <CarouselPrevious className="hidden md:flex" />
+             <CarouselNext className="hidden md:flex" />
+          </Carousel>
+      </section>
+
+      {/* Growth Timeline Section */}
+      <section>
+        <h2 className="text-3xl font-headline font-bold text-center mb-12">Our Journey So Far</h2>
+        <div className="max-w-5xl mx-auto">
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {timelineEvents.map((event, index) => (
+                <div key={index} className="flex items-start gap-4">
+                  <div className="mt-1 bg-primary/10 text-primary rounded-full p-2">
+                    <event.icon className="size-6" />
+                  </div>
+                  <div>
+                     <p className="font-bold text-lg">{event.year}</p>
+                     <h3 className="font-headline text-xl font-semibold">{event.title}</h3>
+                     <p className="text-muted-foreground">{event.description}</p>
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold font-headline">{feature.title}</h2>
-              </div>
-              <p className="text-lg text-muted-foreground">
-                {feature.description}
-              </p>
-              <Button asChild variant="link" className="p-0 text-lg">
-                <Link href={feature.id === 'study-hub' ? '/notes' : `/${feature.id}`}>
-                  Learn More <ArrowRight className="ml-2" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      ))}
+              ))}
+           </div>
+        </div>
+      </section>
 
       {/* Final CTA */}
       <section className="text-center bg-card rounded-2xl p-8 md:p-12 shadow-xl border max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold font-headline">Ready to Supercharge Your Campus Life?</h2>
+        <h2 className="text-3xl font-bold font-headline">Don’t Miss Out.</h2>
         <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
-          Create your free account in seconds and unlock a smarter way to navigate your studies and social life.
+          Be part of the fastest-growing student movement and supercharge your campus life.
         </p>
         <div className="mt-8">
           <Button size="lg" className="text-lg" asChild>
-            <Link href="/signup">Join UniNest Today 🚀</Link>
+            <Link href="/signup">Get Started Now 🚀</Link>
           </Button>
         </div>
       </section>

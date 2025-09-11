@@ -20,6 +20,7 @@ const timelineEvents = [
 
 const impactStats = [
   { value: 10000, label: "Students Connected", icon: GraduationCap, isPlus: true },
+  { value: 12000, label: "Notes Shared", icon: BookOpen, isPlus: true },
   { value: 200, label: "Vendors Empowering", icon: Store, isPlus: true },
   { value: 50, label: "Libraries Managed", icon: Library, isPlus: true },
 ];
@@ -64,7 +65,7 @@ export default function AboutPage() {
 
       {/* Impact Counters */}
       <section>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
           {impactStats.map((stat, index) => (
             <div key={index} className="bg-card border rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-shadow">
               <stat.icon className="size-8 text-primary mx-auto mb-3" />
