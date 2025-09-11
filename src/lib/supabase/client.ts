@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // It's a lazy-initialized singleton that ensures the client is created only once, and only in the browser.
 let supabase: SupabaseClient | undefined = undefined;
 
-export function getSupabaseBrowserClient() {
+export function getSupabaseBrowserClient(): SupabaseClient {
   if (typeof window === 'undefined') {
     // This function should not be called on the server.
     // If it is, it's a bug in the code.

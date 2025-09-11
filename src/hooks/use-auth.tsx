@@ -2,14 +2,14 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createBrowserClient } from '@supabase/ssr';
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 type AuthContextType = {
-  supabase: SupabaseClient;
+  supabase: SupabaseClient | null;
   user: User | null;
   role: UserRole;
   loading: boolean;
@@ -20,28 +20,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  // Get the Supabase client, which is now guaranteed to be a client-side singleton.
-  const supabase = getSupabaseBrowserClient();
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase URL and/or Anon Key are not defined.');
+      setLoading(false);
+      return;
+    }
+
+    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    setSupabase(client);
+
     const getInitialUser = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await client.auth.getSession();
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-        if (currentUser) {
-            setRole(currentUser.user_metadata?.role || 'student');
-        } else {
-            setRole('guest');
-        }
+        setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
         setLoading(false);
-    }
+    };
     
     getInitialUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
@@ -51,10 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, router]);
+  }, [router]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
     setRole('guest');
     router.push('/login');
