@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { type ReactNode } from 'react';
@@ -77,11 +78,13 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-2" />
-               <Logo className="size-7 text-primary" />
-               <h1 className="text-lg font-semibold">UniNest</h1>
+        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+            <div className="flex items-center gap-1">
+              <SidebarTrigger />
+               <Link href="/" className="flex items-center gap-2">
+                 <Logo className="size-7 text-primary" />
+                 <h1 className="text-lg font-semibold">UniNest</h1>
+              </Link>
             </div>
              <div className="flex items-center gap-2">
               {user && <NotificationsDropdown />}
