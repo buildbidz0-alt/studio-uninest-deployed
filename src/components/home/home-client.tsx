@@ -74,9 +74,8 @@ export default function HomeClient() {
 
       {/* Impact Numbers Section */}
       <section className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border rounded-2xl overflow-hidden shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border rounded-2xl overflow-hidden shadow-lg">
           <StatCard value="10000" label="Students Connected" icon={GraduationCap} isPlus={true} />
-          <StatCard value="12000" label="Notes Shared" icon={BookOpen} isPlus={true} />
           <StatCard value="200" label="Vendors Onboarded" icon={Store} isPlus={true} />
           <StatCard value="50" label="Libraries Managed" icon={Users} isPlus={true} />
         </div>
