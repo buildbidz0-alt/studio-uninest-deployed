@@ -61,7 +61,7 @@ export default function AdminUsersContent() {
                 full_name: profile?.full_name || authUser.user_metadata?.full_name || 'N/A',
                 email: authUser.email || 'N/A',
                 avatar_url: profile?.avatar_url || authUser.user_metadata?.avatar_url,
-                role: profile?.role || authUser.user_metadata?.role || 'student',
+                role: authUser.user_metadata?.role || 'student',
                 created_at: authUser.created_at,
             };
         });
@@ -83,16 +83,8 @@ export default function AdminUsersContent() {
         if (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update user role.' });
         } else {
-             const { error: profileError } = await supabase
-                .from('profiles')
-                .update({ role: 'admin' })
-                .eq('id', userId);
-            if(profileError) {
-                 toast({ variant: 'destructive', title: 'Error', description: 'Could not update public profile role.' });
-            } else {
-                toast({ title: 'Success', description: 'User promoted to Admin.' });
-                fetchUsers();
-            }
+            toast({ title: 'Success', description: 'User promoted to Admin.' });
+            fetchUsers(); // Refetch users to update the UI
         }
     }
 

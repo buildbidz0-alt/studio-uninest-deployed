@@ -114,7 +114,6 @@ export default function SignupForm() {
             .insert({ 
                 id: signUpData.user.id,
                 full_name: values.fullName,
-                role: role,
                 handle: `user${signUpData.user.id.substring(0, 8)}`,
              });
 
