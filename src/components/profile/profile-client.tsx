@@ -91,17 +91,17 @@ export default function ProfileClient() {
       {/* Header */}
       <Card className="overflow-hidden">
         <div className="h-32 md:h-48 primary-gradient" />
-        <CardContent className="p-6 pt-0">
-          <div className="flex items-end -mt-16">
+        <CardContent className="p-4 md:p-6 pt-0">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:gap-4 -mt-16">
             <Avatar className="size-24 md:size-32 border-4 border-card">
               <AvatarImage src={user.user_metadata?.avatar_url} />
               <AvatarFallback className="text-4xl">{user.email?.[0].toUpperCase()}</AvatarFallback>
             </Avatar>
-            <div className="ml-4 mb-2">
+            <div className="mt-2 sm:mt-0 flex-grow">
               <h1 className="text-2xl md:text-3xl font-bold font-headline">{profile.full_name}</h1>
               <p className="text-muted-foreground">@{profile.handle}</p>
             </div>
-            <Link href="/settings" className="ml-auto">
+            <Link href="/settings" className="mt-2 sm:mt-0 ml-auto">
               <Button variant="outline">
                 <Edit className="mr-2 size-4" />
                 Edit Profile
@@ -169,6 +169,7 @@ export default function ProfileClient() {
                             product={listing} 
                             user={user}
                             onBuyNow={() => {}}
+                            onChat={() => {}}
                             isBuying={false}
                             isRazorpayLoaded={false}
                         />
