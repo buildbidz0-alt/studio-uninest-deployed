@@ -197,7 +197,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Progress value={progressPercentage} className="h-4" />
+              <Progress value={progressPercentage} className="h-3" />
               <div className="flex justify-between text-sm font-medium">
                 <span className="text-primary">Raised: ₹{raisedAmount.toLocaleString()}</span>
                 <span className="text-muted-foreground">Goal: ₹{goalAmount.toLocaleString()}</span>
@@ -214,7 +214,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
                         )}
                         onClick={() => setDonationAmount(tier.amount.toString())}
                     >
-                        <span>₹{tier.amount}</span>
+                        <span className="text-lg">₹{tier.amount}</span>
                         <span className="text-xs font-normal">{tier.title}</span>
                     </Button>
                 ))}
@@ -223,7 +223,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
                 <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
                 <Input
                     type="number"
-                    placeholder="Choose your power-up ✨"
+                    placeholder="Or enter a custom amount"
                     className="pl-10 text-center text-lg font-semibold h-14 rounded-xl"
                     value={donationAmount}
                     onChange={(e) => setDonationAmount(e.target.value)}
@@ -303,3 +303,5 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
     </div>
   );
 }
+
+    
