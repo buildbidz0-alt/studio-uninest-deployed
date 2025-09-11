@@ -1,55 +1,34 @@
-
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, FileText, LayoutDashboard, Info, Settings, Heart, Briefcase, Trophy, UserCog, MessageSquare, Package, Armchair } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, UserCog, LogOut, Settings } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Separator } from '../ui/separator';
-import type { User } from '@supabase/supabase-js';
+import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '../ui/button';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/feed', label: 'Social Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
-  { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'vendor', 'admin'] },
-  { href: '/notes', label: 'Notes Hub', icon: FileText, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/workspace', label: 'Workspace', icon: Briefcase, roles: ['student', 'guest', 'admin'] },
-  { href: '/booking', label: 'Seat Booking', icon: Armchair, roles: ['student', 'guest', 'admin'] },
-  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/booking', label: 'Library', icon: Armchair, roles: ['student', 'guest', 'admin'] },
 ];
-
-const vendorNavItems = [
-  { href: '/vendor/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['vendor'] },
-  { href: '/vendor/products', label: 'My Products', icon: Package, roles: ['vendor'] },
-];
-
-const bottomNavItems = [
-    { href: '/settings', label: 'Settings', icon: Settings, roles: ['student', 'vendor', 'admin'] },
-    { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
-]
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
-function getRole(user: User | null): UserRole {
+function getRole(user: any): UserRole {
     if (!user) return 'guest';
-    // This logic can be expanded based on your app's needs
     return user.user_metadata?.role || 'student';
 }
 
-export function SidebarNav({ user }: { user: User | null }) {
+export function SidebarNav() {
   const pathname = usePathname();
-  const { setOpenMobile } = useSidebar();
-  
+  const { user, signOut } = useAuth();
   const role = getRole(user);
 
   const filteredNavItems = navItems.filter(item => item.roles.includes(role));
-  const filteredVendorNavItems = vendorNavItems.filter(item => item.roles.includes(role));
-  const filteredBottomNavItems = bottomNavItems.filter(item => item.roles.includes(role));
-
-  const handleLinkClick = () => {
-    setOpenMobile(false);
-  }
 
   return (
     <SidebarMenu>
@@ -57,68 +36,101 @@ export function SidebarNav({ user }: { user: User | null }) {
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton
             asChild
-            isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/')}
-            onClick={handleLinkClick}
+            isActive={pathname === item.href}
+            className="font-headline"
           >
             <Link href={item.href}>
-              <item.icon className="size-4" />
+              <item.icon className="size-5" />
               <span>{item.label}</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
 
-        {filteredVendorNavItems.length > 0 && <Separator className='my-2' />}
-        
-        {filteredVendorNavItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(item.href)}
-                onClick={handleLinkClick}
-            >
-                <Link href={item.href}>
-                <item.icon className="size-4" />
-                <span>{item.label}</span>
-                </Link>
-            </SidebarMenuButton>
-            </SidebarMenuItem>
-        ))}
-
         <div className='flex-grow' />
 
         {role === 'admin' && (
              <SidebarMenuItem>
-                <Separator className='my-2' />
                 <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin')}
-                    onClick={handleLinkClick}
+                    className="font-headline"
                 >
                     <Link href="/admin/dashboard">
-                    <UserCog className="size-4" />
+                    <UserCog className="size-5" />
                     <span>Admin Panel</span>
                     </Link>
                 </SidebarMenuButton>
              </SidebarMenuItem>
         )}
         
-        <Separator className='my-2' />
-
-        {filteredBottomNavItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
-                onClick={handleLinkClick}
-            >
-                <Link href={item.href}>
-                <item.icon className="size-4" />
-                <span>{item.label}</span>
-                </Link>
-            </SidebarMenuButton>
-            </SidebarMenuItem>
-        ))}
+        {user && (
+            <>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/settings'} className="font-headline">
+                         <Link href="/settings">
+                            <Settings className="size-5" />
+                            <span>Settings</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={signOut} className="font-headline text-red-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/50 dark:hover:text-red-400">
+                        <LogOut className="size-5" />
+                        <span>Logout</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </>
+        )}
     </SidebarMenu>
   );
+}
+
+
+export function MobileBottomNav() {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const role = getRole(user);
+
+  const mobileNavItems = [
+      { href: '/', label: 'Home', icon: Home },
+      { href: '/marketplace', label: 'Market', icon: ShoppingBag },
+      { href: '/notes', label: 'Study', icon: BookOpen },
+      { href: '/booking', label: 'Library', icon: Armchair },
+      { href: '/profile', label: 'Profile', icon: 'avatar' },
+  ];
+
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
+        <div className="h-full w-full grid grid-cols-5">
+            {mobileNavItems.map(item => (
+                <Link 
+                    key={item.href} 
+                    href={item.href} 
+                    className={cn(
+                        "flex flex-col items-center justify-center gap-1 transition-colors",
+                        pathname === item.href ? "primary-gradient bg-clip-text text-transparent font-bold" : "text-muted-foreground hover:text-primary"
+                    )}
+                >
+                    {item.icon === 'avatar' ? (
+                        <div className={cn(
+                            "w-7 h-7 rounded-full flex items-center justify-center",
+                            pathname === item.href && "primary-gradient p-0.5"
+                        )}>
+                            <Avatar className="w-full h-full">
+                                {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
+                                <AvatarFallback className="text-xs">
+                                    {user ? user.email?.[0].toUpperCase() : 'G'}
+                                </AvatarFallback>
+                            </Avatar>
+                        </div>
+                    ) : (
+                        <item.icon className="size-6" />
+                    )}
+                    <span className="text-xs font-label">{item.label}</span>
+                </Link>
+            ))}
+        </div>
+    </nav>
+  )
 }

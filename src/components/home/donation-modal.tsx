@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -9,14 +8,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { Heart, Loader2, IndianRupee } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '../ui/input';
 
@@ -30,7 +27,7 @@ const suggestedAmounts = [50, 100, 250];
 export default function DonationModal({ isOpen, onOpenChange }: DonationModalProps) {
   const { openCheckout, isLoaded } = useRazorpay();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const [isDonating, setIsDonating] = useState(false);
   const [donationAmount, setDonationAmount] = useState('100');
 
@@ -46,7 +43,12 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
     }
     
     if (!user) {
-        toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to make a donation.' });
+        onOpenChange(false);
+        toast({ 
+            title: 'Login to Donate', 
+            description: 'Please log in to make a donation.',
+            action: <Link href="/login"><Button>Login</Button></Link>
+        });
         return;
     }
 
@@ -71,19 +73,25 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
         name: 'UniNest Donation',
         description: 'Support student innovation!',
         order_id: order.id,
-        handler: function (response: any) {
-            // TODO: Call your backend to verify the payment
-            // Example:
-            // await fetch('/api/donation/verify', { method: 'POST', body: JSON.stringify(response) });
-            toast({
-              title: '🎉 Thank you for your support!',
-              description: 'Your donation helps keep UniNest running.',
+        handler: async function (response: any) {
+            const { error } = await supabase.from('donations').insert({
+                user_id: user?.id,
+                amount: amount,
+                currency: 'INR',
+                razorpay_payment_id: response.razorpay_payment_id
             });
+            if (error) {
+                 toast({ variant: 'destructive', title: 'Donation record failed', description: 'Your payment was successful but we couldn\'t record it. Please contact support.' });
+            } else {
+                toast({
+                  title: '🎉 Thank you for your support!',
+                  description: 'Your donation helps keep student life thriving.',
+                });
+            }
             onOpenChange(false);
         },
         modal: {
             ondismiss: function() {
-                // This function is called when the modal is closed by the user
                 setIsDonating(false);
             }
         },
@@ -96,7 +104,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
           userId: user?.id,
         },
         theme: {
-          color: '#1B365D',
+          color: '#4A90E2',
         },
       };
 
@@ -106,23 +114,33 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
         toast({
             variant: 'destructive',
             title: 'Donation Failed',
-            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway. Please try again later.',
+            description: error instanceof Error ? error.message : 'Could not connect to the payment gateway.',
         });
         setIsDonating(false);
     }
-    // Note: isDonating will be reset in the modal.ondismiss handler if the user closes it
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md text-center">
-        <DialogHeader>
-            <div className="mx-auto bg-primary text-primary-foreground rounded-full p-3 w-fit mb-4">
-                <Heart className="size-8" />
+      <DialogContent className="sm:max-w-md text-center p-8">
+        <DialogHeader className="space-y-4">
+            <div className="relative mx-auto w-24 h-32">
+                {/* Animated Jar */}
+                <div className="absolute bottom-0 left-0 w-full h-full">
+                    <svg viewBox="0 0 100 120" className="w-full h-full">
+                        <path d="M10 110 C 10 120, 90 120, 90 110 L 90 20 C 90 10, 70 0, 50 0 C 30 0, 10 10, 10 20 Z" fill="#F5F6FA" stroke="#2C3E50" strokeWidth="4"/>
+                        <path d="M8 20 L 92 20" stroke="#2C3E50" strokeWidth="4" />
+                    </svg>
+                </div>
+                <div className="absolute bottom-0 left-0 w-full h-full p-1.5">
+                    <div className="relative w-full h-full overflow-hidden" style={{ borderRadius: '0 0 40px 40px'}}>
+                        <div className="absolute bottom-0 left-0 w-full primary-gradient animate-fill-jar"></div>
+                    </div>
+                </div>
             </div>
-            <DialogTitle className="text-3xl font-bold">Support UniNest</DialogTitle>
-            <DialogDescription>
-                Our platform is free for all students. Your donation helps cover server costs and keeps the community thriving.
+            <DialogTitle className="text-3xl font-bold font-headline">Keep the Hive Buzzing!</DialogTitle>
+            <DialogDescription className="text-lg">
+                Support UniNest to keep student life thriving ✨
             </DialogDescription>
         </DialogHeader>
 
@@ -133,8 +151,8 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
                         key={amount} 
                         variant="outline"
                         className={cn(
-                            "py-6 text-lg font-bold transition-all",
-                            donationAmount === amount.toString() && "bg-accent text-accent-foreground border-accent"
+                            "py-6 text-lg font-bold transition-all border-2",
+                            donationAmount === amount.toString() && "primary-gradient text-primary-foreground border-transparent"
                         )}
                         onClick={() => setDonationAmount(amount.toString())}
                     >
@@ -142,31 +160,19 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
                     </Button>
                 ))}
             </div>
-            <div className="relative">
-                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                    type="number"
-                    placeholder="Custom amount"
-                    className="pl-8 text-center"
-                    value={donationAmount}
-                    onChange={(e) => setDonationAmount(e.target.value)}
-                />
-            </div>
         </div>
 
-        <DialogFooter className="flex-col gap-2">
-            <Button size="lg" className="w-full text-lg py-6" onClick={handleDonate} disabled={!isLoaded || isDonating || !donationAmount}>
+        <div className="flex flex-col gap-3">
+            <Button size="lg" className="w-full text-lg py-7" onClick={handleDonate} disabled={isLoaded === false || isDonating}>
                 {isDonating ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
-                    <Heart className="mr-2 size-5" />
+                    <Sparkles className="mr-2 size-5" />
                 )}
                 {isDonating ? 'Processing...' : `Donate ₹${donationAmount || 0}`}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-                You can also donate later from the <Link href="/donate" className="underline font-semibold" onClick={() => onOpenChange(false)}>Donate</Link> page.
-            </p>
-        </DialogFooter>
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Maybe Later</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

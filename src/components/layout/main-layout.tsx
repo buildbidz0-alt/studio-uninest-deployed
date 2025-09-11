@@ -1,7 +1,7 @@
-
 'use client';
 
 import React, { type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -11,144 +11,76 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SidebarNav } from './sidebar-nav';
+import { SidebarNav, MobileBottomNav } from './sidebar-nav';
 import { Logo } from '@/components/icons';
-import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import Link from 'next/link';
+import { Home, Newspaper, ShoppingBag, BookOpen, Armchair } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
-  const { user, signOut } = useAuth();
-  
-  // TODO: Fetch notifications from your backend
-  const notifications: any[] = [];
+  const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const pathname = usePathname();
+  const isAdminPage = pathname.startsWith('/admin');
+
+  if (isAdminPage) {
+    return <>{children}</>;
+  }
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar className="hidden md:block">
         <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <Logo className="size-8 text-primary" />
-            <h1 className="text-xl font-semibold">Uninest</h1>
-          </div>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="p-2 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg">
+                <Logo className="size-6 text-white" />
+            </div>
+            <h1 className="text-xl font-headline font-bold">UniNest</h1>
+          </Link>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarNav user={user} />
+          <SidebarNav />
         </SidebarContent>
         <SidebarFooter>
           {user ? (
-            <div className="flex items-center gap-3">
-              <Avatar className="size-8">
-                <AvatarImage src={user.user_metadata?.avatar_url || 'https://picsum.photos/id/237/40/40'} alt="User avatar" />
-                <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col text-sm">
-                <span className="font-semibold">{user.user_metadata?.full_name || 'User'}</span>
-                <span className="text-muted-foreground">{user.email}</span>
+            <Link href="/profile">
+              <div className="flex items-center gap-3">
+                <Avatar className="size-9">
+                  <AvatarImage src={user.user_metadata?.avatar_url || ''} alt="User avatar" />
+                  <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col text-sm overflow-hidden">
+                  <span className="font-semibold truncate">{user.user_metadata?.full_name || 'User'}</span>
+                  <span className="text-muted-foreground truncate">{user.email}</span>
+                </div>
               </div>
-            </div>
+            </Link>
           ) : (
              <div className="flex items-center gap-3">
-                <Avatar className="size-8">
+                <Avatar className="size-9">
                   <AvatarFallback>G</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col text-sm">
                   <span className="font-semibold">Guest</span>
-                  <a href="/login" className="text-sm text-primary hover:underline">
-                    Login to get started
-                  </a>
+                  <Link href="/login" className="text-sm primary-gradient bg-clip-text text-transparent font-semibold">
+                    Login
+                  </Link>
                 </div>
               </div>
           )}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6">
-          <div className="flex items-center gap-2 md:hidden">
-              <SidebarTrigger className="-ml-2" />
-               <Logo className="size-7 text-primary" />
-               <h1 className="text-lg font-semibold">Uninest</h1>
-          </div>
-          <div className="flex flex-1 items-center justify-end gap-4">
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Bell className="h-5 w-5" />
-                    <span className="sr-only">Toggle notifications</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <DropdownMenuItem key={notification.id} className="flex-col items-start">
-                          <p className="font-medium">{notification.title}</p>
-                          <p className="text-xs text-muted-foreground">{notification.description}</p>
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                       <DropdownMenuItem disabled>
-                         <p className="text-sm text-muted-foreground">No new notifications</p>
-                       </DropdownMenuItem>
-                    )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="size-8">
-                       {user && <AvatarImage src={user.user_metadata?.avatar_url || 'https://picsum.photos/id/237/40/40'} alt="User avatar" />}
-                      <AvatarFallback>
-                        {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-5" />}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {user ? (
-                    <>
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                         <Link href="/settings">
-                            <Settings className="mr-2 size-4" />
-                            Settings
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={signOut}>
-                        <LogOut className="mr-2 size-4" />
-                        Logout
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href="/login">Login</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/signup">Sign Up</Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-          </div>
-        </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}
         </main>
       </SidebarInset>
+      
+      {/* Mobile Bottom Navigation */}
+      {isMobile && <MobileBottomNav />}
     </SidebarProvider>
   );
 }

@@ -5,24 +5,43 @@ import { Toaster } from "@/components/ui/toaster";
 import MainLayout from '@/components/layout/main-layout';
 import { AuthProvider } from '@/hooks/use-auth';
 import ClientOnly from '@/components/client-only';
+import { Poppins, Inter, Roboto } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-poppins',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
+});
+
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['500'],
+  variable: '--font-roboto',
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://uninest.app'), // Replace with your actual domain
+  metadataBase: new URL('https://uninest.app'),
   title: {
-    default: 'UniNest – The All-in-One Student Platform',
+    default: 'UniNest – Your Digital Campus Hub',
     template: '%s | UniNest',
   },
-  description: 'UniNest is a one-stop platform for students to connect, share notes, join competitions, buy/sell textbooks, and explore campus life with ease.',
-  keywords: ['student platform', 'UniNest', 'campus life', 'social feed', 'marketplace', 'competitions', 'internships'],
+  description: 'A vibrant, modern, and student-friendly UI that feels like a digital campus hub. Connect, share, and thrive!',
+  keywords: ['student platform', 'UniNest', 'digital campus', 'social feed', 'marketplace', 'study hub'],
   authors: [{ name: 'UniNest Team' }],
   openGraph: {
-    title: 'UniNest – The All-in-One Student Platform',
-    description: 'Connect, share, and thrive with UniNest.',
+    title: 'UniNest – Your Digital Campus Hub',
+    description: 'Connect, share, and thrive on your digital campus.',
     url: 'https://uninest.app',
     siteName: 'UniNest',
     images: [
       {
-        url: '/images/uninest-og.png', // Path to your OG image in the public folder
+        url: '/images/uninest-og-new.png',
         width: 1200,
         height: 630,
         alt: 'UniNest Platform Banner',
@@ -33,20 +52,13 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UniNest – The All-in-One Student Platform',
-    description: 'The ultimate platform for modern students. Connect, learn, and grow.',
-    images: ['/images/uninest-og.png'], // Path to your Twitter image in the public folder
+    title: 'UniNest – Your Digital Campus Hub',
+    description: 'The ultimate platform for modern students.',
+    images: ['/images/uninest-og-new.png'],
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
 };
 
@@ -57,13 +69,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
       <body className={cn(
-        "min-h-screen bg-background font-body antialiased"
+        "min-h-screen bg-background font-body antialiased",
+        poppins.variable,
+        inter.variable,
+        roboto.variable
       )}>
         <ClientOnly>
           <AuthProvider>
