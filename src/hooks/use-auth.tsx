@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
@@ -20,18 +19,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const supabase = getSupabaseBrowserClient();
+  const [supabase, setSupabase] = useState<SupabaseClient | undefined>(undefined);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
+    // getSupabaseBrowserClient might return undefined if env vars are not set
+    const client = getSupabaseBrowserClient();
+    setSupabase(client);
+
+    if (!client) {
       setLoading(false);
       return;
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
       setLoading(false);
@@ -41,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     
     // Get initial user
-    supabase.auth.getUser().then(({data: { user }}) => {
+    client.auth.getUser().then(({data: { user }}) => {
         setUser(user);
         setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
         setLoading(false);
@@ -50,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [router, supabase]);
+  }, [router]);
 
   const signOut = async () => {
     if (!supabase) return;

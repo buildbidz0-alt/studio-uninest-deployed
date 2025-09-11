@@ -7,9 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default function SignupPage() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const isSupabaseConfigured = supabaseUrl && supabaseAnonKey;
+    const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!isSupabaseConfigured) {
         return (
