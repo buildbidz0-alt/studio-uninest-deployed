@@ -27,20 +27,20 @@ const stats = [
 const testimonials = [
   {
     quote: "UniNest completely changed how I find study materials. The note sharing is a lifesaver, and I've connected with so many peers!",
-    name: "Ananya Sharma",
-    school: "IIT Delhi",
+    name: "Fatima Khan",
+    school: "Jamia Millia Islamia",
     avatar: "https://picsum.photos/seed/testimonial1/100"
   },
   {
     quote: "The marketplace is brilliant. I sold all my old textbooks in a week and found a great deal on a used bike. It's so much better than other platforms.",
-    name: "Rohan Verma",
+    name: "John Mathew",
     school: "St. Stephen's College",
     avatar: "https://picsum.photos/seed/testimonial2/100"
   },
   {
     quote: "As a fresher, UniNest helped me feel connected to the campus community instantly. The social feed is always buzzing with useful info.",
-    name: "Priya Singh",
-    school: "Christ University",
+    name: "Jaspreet Kaur",
+    school: "Guru Nanak Dev University",
     avatar: "https://picsum.photos/seed/testimonial3/100"
   },
 ];
