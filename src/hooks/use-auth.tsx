@@ -32,37 +32,38 @@ export function AuthProvider({ children, supabaseUrl, supabaseAnonKey }: AuthPro
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase URL and/or Anon Key are not defined. Please check your .env file.');
+    // Only create the client if the URL and Key are provided and valid
+    if (supabaseUrl && supabaseAnonKey) {
+      const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+      setSupabase(client);
+
+      const getInitialUser = async () => {
+        const { data: { user } } = await client.auth.getUser();
+        setUser(user);
+        setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
+        setLoading(false);
+      };
+
+      getInitialUser();
+
+      const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+        setUser(session?.user ?? null);
+        setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
+        if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+          router.refresh();
+        }
+      });
+
+      return () => {
+        subscription?.unsubscribe();
+      };
+    } else {
+      // If credentials are not provided, stop loading and show the app in a logged-out state.
+      console.error('Supabase URL and/or Anon Key are not defined. Please check your .env.local file.');
       setLoading(false);
       setUser(null);
       setSupabase(undefined);
-      return;
     }
-    
-    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
-    setSupabase(client);
-
-    const getInitialUser = async () => {
-      const { data: { user } } = await client.auth.getUser();
-      setUser(user);
-      setRole(user?.user_metadata?.role || (user ? 'student' : 'guest'));
-      setLoading(false);
-    };
-
-    getInitialUser();
-
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setRole(session?.user?.user_metadata?.role || (session?.user ? 'student' : 'guest'));
-      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-        router.refresh();
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
   }, [router, supabaseUrl, supabaseAnonKey]);
 
   const signOut = async () => {

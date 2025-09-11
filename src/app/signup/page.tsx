@@ -28,7 +28,7 @@ export default function SignupPage() {
                 <div className="p-8 rounded-lg border bg-card text-card-foreground shadow-sm w-full max-w-sm text-center">
                     <h1 className="text-2xl font-bold">Authentication Not Configured</h1>
                     <p className="text-muted-foreground mt-2">
-                         Please add your Supabase credentials to the <code className="bg-muted px-1 py-0.5 rounded">.env</code> file to enable login and signup.
+                         Please add your Supabase credentials to the <code className="bg-muted px-1 py-0.5 rounded">.env.local</code> file to enable login and signup.
                     </p>
                 </div>
             </div>
