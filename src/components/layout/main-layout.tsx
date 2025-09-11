@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { type ReactNode } from 'react';
@@ -74,7 +75,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className={cn("flex-1 overflow-y-auto p-4 md:p-8", isMobile && "pb-20")}>
           {children}
         </main>
       </SidebarInset>

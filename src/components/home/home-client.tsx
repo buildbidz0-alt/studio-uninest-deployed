@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -54,12 +55,12 @@ export default function HomeClient() {
       <div className="space-y-8 md:space-y-12">
         {/* Top Header / Hero */}
         <section className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                 <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                 <div className="order-2 sm:order-1">
                     <h1 className="text-3xl md:text-4xl font-headline font-bold text-foreground">Welcome to UniNest!</h1>
                     <p className="text-muted-foreground text-lg">Your digital campus hub ✨</p>
                  </div>
-                 <div className="flex items-center gap-2">
+                 <div className="order-1 sm:order-2 flex items-center gap-2 self-end sm:self-center">
                      <Button variant="ghost" size="icon" className="rounded-full">
                          <Bell className="size-5" />
                      </Button>
