@@ -19,8 +19,8 @@ import { ArrowRight, BookOpen, GraduationCap, Rocket, Users, Building, Sparkles 
 
 const stats = [
   { value: 10000, label: 'Students', icon: GraduationCap, isPlus: true },
-  { value: 12000, label: 'Notes Shared', icon: BookOpen, isPlus: true },
   { value: 200, label: 'Vendors', icon: Building, isPlus: true },
+  { value: 50, label: 'Libraries Managed', icon: Library, isPlus: true },
 ];
 
 const testimonials = [
