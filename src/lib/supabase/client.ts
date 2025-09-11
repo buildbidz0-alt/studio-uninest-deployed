@@ -3,38 +3,30 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-function createClient() {
+export function getSupabaseBrowserClient() {
+  // IMPORTANT: The browser client should be a singleton.
+  // We use `window` as a cache to ensure it's only created once.
+  // @ts-ignore
+  if (window.supabase) {
+    // @ts-ignore
+    return window.supabase as SupabaseClient;
+  }
+  
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase URL and/or Anon Key are not defined. Please check your .env file.');
-    // Return a dummy object or null to avoid crashing the app
-    // The AuthProvider will handle the null case.
-    return null;
+    // This will be caught by the error boundary and show a user-friendly message.
+    throw new Error('Supabase URL and/or Anon Key are not defined. Please check your .env file.');
   }
-  
-  return createBrowserClient(
-    supabaseUrl,
-    supabaseAnonKey
+
+  const supabase = createBrowserClient(
+      supabaseUrl,
+      supabaseAnonKey
   );
-}
-
-// This is a singleton instance of the Supabase client.
-// We are using a lazy initialization pattern to ensure the client is only created
-// when it's first needed, and only in a browser environment.
-let supabase: SupabaseClient | null = null;
-
-export function getSupabaseBrowserClient() {
-  // If we are on the server, we don't want to create a client.
-  if (typeof window === 'undefined') {
-    return null;
-  }
   
-  // If the client doesn't exist, create it.
-  if (!supabase) {
-    supabase = createClient();
-  }
-  
+  // @ts-ignore
+  window.supabase = supabase;
+
   return supabase;
 }

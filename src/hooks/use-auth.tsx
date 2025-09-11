@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
 
 type AuthContextType = {
-  supabase: SupabaseClient | null;
+  supabase: SupabaseClient;
   user: User | null;
   role: UserRole;
   loading: boolean;
@@ -20,19 +20,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  // Get the Supabase client, which may be null on the initial server render.
+  // Get the Supabase client, which is now guaranteed to be a client-side singleton.
   const supabase = getSupabaseBrowserClient();
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If the supabase client is not available, we can't do anything.
-    if (!supabase) {
-        setLoading(false);
-        return;
-    };
-
     const getInitialUser = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user ?? null;
@@ -60,9 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, router]);
 
   const signOut = async () => {
-    if (supabase) {
-        await supabase.auth.signOut();
-    }
+    await supabase.auth.signOut();
     setUser(null);
     setRole('guest');
     router.push('/login');
