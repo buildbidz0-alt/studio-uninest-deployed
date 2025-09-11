@@ -3,7 +3,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -14,19 +14,15 @@ import { Separator } from '../ui/separator';
 
 const mainNavItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/social', label: 'Social', icon: Users, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
 
-const socialNavItems = [
-    { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'vendor', 'guest', 'admin'] },
-    { href: '/chat', label: 'Chat', icon: MessageSquare, roles: ['student', 'vendor', 'admin'] },
-];
-
 const secondaryNavItems = [
-  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
 
 type UserRole = 'student' | 'vendor' | 'admin' | 'guest';
@@ -48,7 +44,7 @@ export function SidebarNav() {
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton
             asChild
-            isActive={pathname === item.href}
+            isActive={pathname.startsWith(item.href) && item.href !== '/'}
             className="font-headline"
           >
             <Link href={item.href}>
@@ -62,15 +58,71 @@ export function SidebarNav() {
   
   return (
     <SidebarMenu>
-      {renderNavItems(mainNavItems)}
+       <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname === '/'}
+            className="font-headline"
+          >
+            <Link href={'/'}>
+              <Home className="size-5" />
+              <span>Home</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
 
       <SidebarMenuItem>
-        <div className="px-4 py-2 text-xs font-semibold text-muted-foreground tracking-wider">
-          SOCIAL
-        </div>
-      </SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')}
+            className="font-headline"
+          >
+            <Link href={'/social'}>
+              <Users className="size-5" />
+              <span>Social</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
       
-      {renderNavItems(socialNavItems)}
+      <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname.startsWith('/marketplace')}
+            className="font-headline"
+          >
+            <Link href={'/marketplace'}>
+              <ShoppingBag className="size-5" />
+              <span>Marketplace</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+      <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname.startsWith('/workspace')}
+            className="font-headline"
+          >
+            <Link href={'/workspace'}>
+              <LayoutGrid className="size-5" />
+              <span>Workspace</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      
+      <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname.startsWith('/notes')}
+            className="font-headline"
+          >
+            <Link href={'/notes'}>
+              <BookOpen className="size-5" />
+              <span>Study Hub</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      
 
       <SidebarMenuItem>
         <Separator className="my-2" />
@@ -126,28 +178,21 @@ export function MobileBottomNav() {
 
   const mobileNavItems = [
       { href: '/', label: 'Home', icon: Home },
-      { href: '/feed', label: 'Feed', icon: Newspaper },
-      { href: '/chat', label: 'Chat', icon: MessageSquare },
+      { href: '/social', label: 'Social', icon: Users },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag },
       { href: '/profile', label: 'Profile', icon: 'avatar' },
   ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
-        <div className="h-full w-full grid grid-cols-5">
+        <div className="h-full w-full grid grid-cols-4">
             {mobileNavItems.map(item => {
                  // Special handling for social pages to highlight the feed icon
-                const isSocialActive = pathname.startsWith('/feed') || pathname.startsWith('/chat');
                 let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
                 
-                if (item.href === '/feed' && isSocialActive) {
+                if (item.href === '/social' && (pathname.startsWith('/feed') || pathname.startsWith('/chat'))) {
                     isActive = true;
                 }
-                 if ((item.href === '/chat') && isSocialActive) {
-                    // Don't show chat as active if feed is active to avoid double selection
-                    isActive = pathname.startsWith('/chat');
-                }
-
 
                 // Adjust profile link activation
                 if (item.href === '/profile' && (pathname.startsWith('/profile') || pathname.startsWith('/settings'))) {
