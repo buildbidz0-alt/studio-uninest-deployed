@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import DonateContent from '@/components/donate/donate-content';
 import { createClient } from '@/lib/supabase/server';
@@ -18,9 +19,17 @@ export default async function DonatePage() {
     const supabase = createClient();
     
     // Fetch initial data for SSR
-    // Use the RPC function to get aggregated donor data efficiently
-    const { data: aggregatedDonors, error: donorsError } = await supabase
-        .rpc('get_aggregated_donors');
+    const { data: donations, error: donorsError } = await supabase
+        .from('donations')
+        .select(`
+            amount,
+            profiles (
+                full_name,
+                email,
+                avatar_url
+            )
+        `)
+        .order('amount', { ascending: false });
 
     const { data: goalData, error: goalError } = await supabase
         .from('app_config')
@@ -34,6 +43,23 @@ export default async function DonatePage() {
 
     if (donorsError) console.error('Error fetching donors:', donorsError);
     if (raisedError) console.error('Error fetching raised amount:', raisedError);
+
+    const aggregatedDonors: AggregatedDonor[] = (donations || []).reduce((acc: any[], current) => {
+        if (!current.profiles) return acc;
+        const existing = acc.find(d => d.email === current.profiles!.email);
+        if (existing) {
+            existing.amount += current.amount;
+        } else {
+            acc.push({
+                name: current.profiles.full_name,
+                email: current.profiles.email,
+                avatar: current.profiles.avatar_url,
+                amount: current.amount
+            });
+        }
+        return acc;
+    }, []).sort((a,b) => b.amount - a.amount);
+
 
     const goalAmount = goalData ? Number(goalData.value) : 50000;
     const initialRaisedAmount = (raisedData || []).reduce((sum, d) => sum + d.amount, 0);
