@@ -29,18 +29,18 @@ export default function VendorDashboardContent() {
       setLoading(true);
 
       const { data, error } = await supabase
-        .from('orders')
+        .from('donations')
         .select(`
           *,
-          order_items (
-            quantity,
-            products ( name )
+          order_items:donations (
+            quantity:id,
+            products:id ( name )
           ),
-          profiles:buyer_id (
+          profiles:user_id (
             id, full_name, avatar_url
           )
         `)
-        .eq('vendor_id', user.id);
+        .eq('id', user.id);
       
       if (error) {
         console.error("Error fetching vendor data:", error);

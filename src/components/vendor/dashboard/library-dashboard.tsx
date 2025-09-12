@@ -34,13 +34,13 @@ export default function LibraryDashboard() {
 
             // Fetch bookings (orders for library services)
             const { data: ordersData } = await supabase
-                .from('orders')
+                .from('donations')
                 .select(`
                     *,
-                    order_items(products(name, category)),
-                    profiles!buyer_id(full_name)
+                    order_items:donations(products:id(name, category)),
+                    profiles!user_id(full_name)
                 `)
-                .eq('vendor_id', user.id)
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (ordersData) {
