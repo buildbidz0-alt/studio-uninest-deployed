@@ -33,12 +33,11 @@ function getRole(user: any): UserRole {
 export function SidebarNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-  const { setOpen } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const role = getRole(user);
 
   const handleLinkClick = () => {
-    // This is for the desktop sidebar, which doesn't need to close.
-    // The mobile sidebar logic is in MobileBottomNav.
+    setOpenMobile(false);
   }
 
   const renderNavItems = (items: typeof mainNavItems) => {
@@ -226,11 +225,10 @@ export function MobileBottomNav() {
   };
 
   const navItems = getNavItems();
-  const gridColsClass = `grid-cols-${navItems.length}`;
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
-      <div className={cn("grid h-full w-full", gridColsClass)}>
+      <div className="grid h-full w-full" style={{ gridTemplateColumns: `repeat(${navItems.length}, 1fr)`}}>
         {navItems.map(item => {
           let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
 
@@ -258,7 +256,7 @@ export function MobileBottomNav() {
               ) : (
                 <item.icon className="size-5" />
               )}
-              <span className="text-xs">{item.label}</span>
+              <span className="text-[10px]">{item.label}</span>
             </Link>
           );
         })}
