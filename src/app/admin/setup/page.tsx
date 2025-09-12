@@ -66,7 +66,7 @@ export default function AdminSetupPage() {
         description: result.message,
       });
 
-      setMessage(result.message);
+      setMessage(result.message + " You will be redirected to the login page shortly.");
       
       // Redirect to login page after a delay
       setTimeout(() => {
@@ -91,7 +91,7 @@ export default function AdminSetupPage() {
           <CardHeader>
             <CardTitle>Admin User Setup</CardTitle>
             <CardDescription>
-              Enter the email of an existing user to promote them to an administrator. This is a one-time setup process.
+              Enter the email of an existing user to promote them to an administrator.
             </CardDescription>
           </CardHeader>
           <CardContent>

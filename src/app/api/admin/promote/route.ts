@@ -16,7 +16,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Supabase credentials are not configured on the server.' }, { status: 500 });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     try {
         // 1. Get the user by email
@@ -34,13 +39,24 @@ export async function POST(request: NextRequest) {
         const user = users[0];
 
         // 2. Update the user's metadata with the admin role
-        const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        const { data: { user: updatedUser }, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             user.id,
             { user_metadata: { ...user.user_metadata, role: 'admin' } }
         );
 
         if (updateError) {
             throw updateError;
+        }
+
+        // 3. Update the public profiles table as well
+        const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', user.id);
+
+        if (profileError) {
+            // Log this error but don't fail the whole request, as the primary goal (auth role) was met.
+            console.error('Could not update role in public profiles table:', profileError);
         }
 
         return NextResponse.json({ message: `Successfully promoted ${updatedUser?.email} to admin.` });
