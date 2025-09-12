@@ -5,21 +5,19 @@ import { useState, useEffect, useCallback } from 'react';
 import ChatList from './chat-list';
 import ChatMessages from './chat-messages';
 import type { Room, Message } from '@/lib/types';
-import { Card } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, Search, MoreVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { redirect } from 'next/navigation';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 
-type ChatLayoutProps = {
-  initialRooms: Room[];
-};
-
-export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
+export default function ChatLayout() {
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const { user, supabase, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
@@ -30,6 +28,48 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
       redirect('/login');
     }
   }, [authLoading, user]);
+  
+  useEffect(() => {
+    if (user && supabase) {
+      const fetchRooms = async () => {
+        setLoadingRooms(true);
+        const { data: roomsData, error } = await supabase
+          .from('chat_room_participants')
+          .select(`
+            room:chat_rooms (
+              id,
+              created_at,
+              participants:chat_room_participants (
+                profile:profiles (
+                  id,
+                  full_name,
+                  avatar_url
+                )
+              )
+            )
+          `)
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Error fetching chat rooms:', error);
+          toast({ variant: 'destructive', title: 'Error loading chats' });
+        } else {
+            const mappedRooms = roomsData?.map(r => r.room).filter(Boolean).map(room => {
+                if (!room) return null;
+                const otherParticipant = room.participants.find(p => p.profile.id !== user.id);
+                return {
+                  ...room,
+                  name: otherParticipant?.profile.full_name || 'Chat',
+                  avatar: otherParticipant?.profile.avatar_url || `https://picsum.photos/seed/${room.id}/40`,
+                };
+            }).filter(Boolean) as any[];
+            setRooms(mappedRooms);
+        }
+        setLoadingRooms(false);
+      }
+      fetchRooms();
+    }
+  }, [user, supabase, toast]);
 
 
   const handleSelectRoom = useCallback(async (room: Room) => {
@@ -54,10 +94,10 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   }, [supabase, toast]);
 
   useEffect(() => {
-    if (!isMobile && initialRooms.length > 0 && !selectedRoom) {
-      handleSelectRoom(initialRooms[0]);
+    if (!isMobile && rooms.length > 0 && !selectedRoom) {
+      handleSelectRoom(rooms[0]);
     }
-  }, [initialRooms, isMobile, selectedRoom, handleSelectRoom]);
+  }, [rooms, isMobile, selectedRoom, handleSelectRoom]);
 
   // Real-time message subscription
   useEffect(() => {
@@ -111,6 +151,31 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
     }
   };
 
+  const ChatListScreen = () => (
+    <div className="h-full flex flex-col">
+       <header className="p-4 space-y-4 bg-card border-b">
+          <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-primary">Messages</h1>
+              <div className="flex items-center gap-2">
+                 <Button variant="ghost" size="icon"><Camera className="size-5" /></Button>
+                 <Button variant="ghost" size="icon"><MoreVertical className="size-5" /></Button>
+              </div>
+          </div>
+          <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+              <Input placeholder="Search" className="pl-10 rounded-full" />
+          </div>
+      </header>
+       {loadingRooms ? (
+            <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="animate-spin text-primary size-8" />
+            </div>
+        ) : (
+          <ChatList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={handleSelectRoom} />
+        )}
+    </div>
+  )
+
   if (authLoading || !user) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
@@ -124,29 +189,26 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
       <div className="h-[calc(100vh-8rem)]">
         {selectedRoom ? (
           <div className="flex flex-col h-full">
-            <button onClick={() => setSelectedRoom(null)} className="flex items-center gap-2 p-2 mb-2 font-semibold text-primary">
-              <ArrowLeft className="size-4" />
-              All Chats
-            </button>
             <ChatMessages
               room={selectedRoom}
               messages={messages}
               onSendMessage={handleSendMessage}
+              onBack={() => setSelectedRoom(null)}
               loading={loadingMessages}
               currentUser={user}
             />
           </div>
         ) : (
-          <ChatList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={handleSelectRoom} />
+          <ChatListScreen />
         )}
       </div>
     );
   }
 
   return (
-    <Card className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-8rem)] shadow-lg">
+    <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-8rem)]">
       <div className="col-span-1 border-r">
-        <ChatList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={handleSelectRoom} />
+        <ChatListScreen />
       </div>
       <div className="col-span-2 flex flex-col">
         <ChatMessages
@@ -157,6 +219,6 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
           currentUser={user}
         />
       </div>
-    </Card>
+    </div>
   );
 }

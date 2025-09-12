@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Paperclip, Send, Loader2 } from 'lucide-react';
+import { Paperclip, Send, Loader2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Room, Message } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
@@ -16,9 +17,10 @@ type ChatMessagesProps = {
   onSendMessage: (text: string) => void;
   loading: boolean;
   currentUser: User | null;
+  onBack?: () => void;
 };
 
-export default function ChatMessages({ room, messages, onSendMessage, loading, currentUser: user }: ChatMessagesProps) {
+export default function ChatMessages({ room, messages, onSendMessage, loading, currentUser: user, onBack }: ChatMessagesProps) {
   const [newMessage, setNewMessage] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +61,12 @@ export default function ChatMessages({ room, messages, onSendMessage, loading, c
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex items-center gap-3 border-b p-4">
+      <div className="flex items-center gap-2 border-b p-2 md:p-4">
+        {onBack && (
+            <Button onClick={onBack} variant="ghost" size="icon" className="md:hidden">
+                <ArrowLeft />
+            </Button>
+        )}
         <Avatar className="h-10 w-10">
           <AvatarImage src={roomAvatar} alt={roomName} data-ai-hint="person face" />
           <AvatarFallback>{roomName.charAt(0)}</AvatarFallback>
