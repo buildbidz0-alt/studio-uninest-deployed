@@ -13,6 +13,7 @@ type AuthContextType = {
   supabase: SupabaseClient;
   user: User | null;
   role: UserRole;
+  vendorCategories: string[];
   loading: boolean;
   signOut: () => Promise<void>;
   notifications: Notification[];
@@ -33,6 +34,13 @@ const determineRole = (user: User | null): UserRole => {
     return user.user_metadata?.role || 'student';
 }
 
+const getVendorCategories = (user: User | null): string[] => {
+    if (!user || user.user_metadata?.role !== 'vendor') {
+        return [];
+    }
+    return user.user_metadata?.vendor_categories || [];
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const [supabase] = useState(() => 
@@ -43,6 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
+  const [vendorCategories, setVendorCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -82,6 +91,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const currentUser = session?.user || null;
       setUser(currentUser);
       setRole(determineRole(currentUser));
+      setVendorCategories(getVendorCategories(currentUser));
       if (currentUser) {
           await fetchNotifications(currentUser.id);
       }
@@ -94,6 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setRole(determineRole(currentUser));
+      setVendorCategories(getVendorCategories(currentUser));
       
       if (currentUser) {
           fetchNotifications(currentUser.id);
@@ -147,6 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await supabase.auth.signOut();
     setUser(null);
     setRole('guest');
+    setVendorCategories([]);
     setNotifications([]);
     setUnreadCount(0);
     router.push('/login');
@@ -156,6 +168,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     supabase,
     user,
     role,
+    vendorCategories,
     loading,
     signOut,
     notifications,

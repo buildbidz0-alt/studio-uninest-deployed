@@ -5,13 +5,21 @@ import { useEffect, useState, useMemo } from 'react';
 import StatsCard from '@/components/vendor/stats-card';
 import SalesChart from '@/components/vendor/sales-chart';
 import RecentOrdersTable from '@/components/vendor/recent-orders-table';
-import { DollarSign, ShoppingCart, BookOpen } from 'lucide-react';
+import { DollarSign, ShoppingCart, Users, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import type { Order, OrderItem } from '@/lib/types';
+import type { Order } from '@/lib/types';
 import { subDays, format, startOfDay } from 'date-fns';
+import LibraryDashboard from './library-dashboard';
+import PageHeader from '@/components/admin/page-header';
+
+// Placeholder components for other vendor types
+const FoodMessDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Food Mess Dashboard Coming Soon</div>;
+const HostelDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Hostel Dashboard Coming Soon</div>;
+const CybercafeDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Cybercafé Dashboard Coming Soon</div>;
+
 
 export default function VendorDashboardContent() {
-  const { user, supabase } = useAuth();
+  const { user, supabase, vendorCategories } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,8 +58,8 @@ export default function VendorDashboardContent() {
   const stats = useMemo(() => {
     const totalRevenue = orders.reduce((acc, o) => acc + o.total_amount, 0);
     const totalOrders = orders.length;
-    const productsSoldCount = orders.reduce((acc, o) => acc + o.order_items.reduce((i_acc, i) => i_acc + i.quantity, 0), 0);
-    return { revenue: totalRevenue, orders: totalOrders, productsSold: productsSoldCount };
+    const uniqueCustomers = new Set(orders.map(o => o.buyer_id)).size;
+    return { revenue: totalRevenue, orders: totalOrders, customers: uniqueCustomers };
   }, [orders]);
 
   const salesData = useMemo(() => {
@@ -62,8 +70,8 @@ export default function VendorDashboardContent() {
     }
 
     orders.forEach(order => {
-      const orderDate = startOfDay(new Date(order.created_at));
-      const day = last7Days.find(d => startOfDay(new Date(d.name)) .getTime() === orderDate.getTime());
+      const orderDate = format(new Date(order.created_at), 'MMM d');
+      const day = last7Days.find(d => d.name === orderDate);
       if (day) {
         day.total += order.total_amount;
       }
@@ -82,42 +90,55 @@ export default function VendorDashboardContent() {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
+  const hasGeneralFeatures = vendorCategories.some(cat => !['library', 'food mess', 'hostels', 'cybercafe'].includes(cat.toLowerCase()));
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Vendor Dashboard</h1>
-        <p className="text-muted-foreground">An overview of your sales and performance.</p>
+      <PageHeader title="Dashboard" description={`Welcome, ${user?.user_metadata?.full_name || 'Vendor'}. Here's what's happening.`} />
+
+      {/* Render dashboards based on vendor category */}
+      <div className="space-y-8">
+        {vendorCategories.includes('library') && <LibraryDashboard />}
+        {vendorCategories.includes('food mess') && <FoodMessDashboard />}
+        {vendorCategories.includes('hostels') && <HostelDashboard />}
+        {vendorCategories.includes('cybercafe') && <CybercafeDashboard />}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <StatsCard 
-            title="Total Revenue" 
-            value={formatCurrency(stats.revenue)} 
-            icon={DollarSign} 
-            change={loading ? 'Loading...' : `${stats.orders} sales`} 
-        />
-        <StatsCard 
-            title="Total Orders" 
-            value={stats.orders.toString()} 
-            icon={ShoppingCart} 
-            change={loading ? 'Loading...' : `from ${[...new Set(orders.map(o => o.buyer_id))].length} customers`} 
-        />
-        <StatsCard 
-            title="Products Sold" 
-            value={stats.productsSold.toString()} 
-            icon={BookOpen} 
-            change={loading ? 'Loading...' : 'items sold'} 
-        />
-      </div>
+      {/* General Product Sales Dashboard */}
+      {hasGeneralFeatures && (
+         <div className="space-y-8 pt-8 border-t">
+            <h2 className="text-2xl font-bold tracking-tight">General Sales Overview</h2>
+            <div className="grid gap-6 md:grid-cols-3">
+                <StatsCard 
+                    title="Product Revenue" 
+                    value={formatCurrency(stats.revenue)} 
+                    icon={DollarSign} 
+                    change={loading ? 'Loading...' : `${stats.orders} sales`} 
+                />
+                <StatsCard 
+                    title="Product Orders" 
+                    value={stats.orders.toString()} 
+                    icon={ShoppingCart} 
+                    change={loading ? 'Loading...' : `from ${stats.customers} customers`} 
+                />
+                 <StatsCard 
+                    title="Unique Customers" 
+                    value={stats.customers.toString()} 
+                    icon={Users} 
+                    change={loading ? 'Loading...' : 'have made purchases'} 
+                />
+            </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <SalesChart data={salesData} loading={loading} />
-        </div>
-        <div className="lg:col-span-2">
-          <RecentOrdersTable orders={recentOrders} loading={loading} />
-        </div>
-      </div>
+            <div className="grid gap-6 lg:grid-cols-5">
+                <div className="lg:col-span-3">
+                <SalesChart data={salesData} loading={loading} />
+                </div>
+                <div className="lg:col-span-2">
+                <RecentOrdersTable orders={recentOrders} loading={loading} />
+                </div>
+            </div>
+         </div>
+      )}
     </div>
   );
 }
