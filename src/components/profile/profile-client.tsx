@@ -40,75 +40,71 @@ export default function ProfileClient() {
 
   const isMyProfile = !handleFromParams || (user?.user_metadata?.handle === handleFromParams);
 
-  const fetchProfileData = useCallback(async (handle: string) => {
-      if (!supabase) return;
-      setContentLoading(true);
-
-      const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select(`*`)
-          .eq('handle', handle)
-          .single();
-      
-      if (profileError || !profileData) {
-          toast({ variant: 'destructive', title: 'Error fetching profile' });
-          console.error("Profile fetch error:", profileError);
-          redirect('/'); // Redirect if profile not found
-          return;
-      }
-      
-      const userId = profileData.id;
-
-      // Correctly fetch follower and following counts
-      const { count: followerCount, error: followerError } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('following_id', userId);
-      const { count: followingCount, error: followingError } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
-
-      if (followerError || followingError) {
-          toast({ variant: 'destructive', title: 'Error fetching follow counts' });
-          console.error("Follow count error:", { followerError, followingError });
-      }
-
-      setProfile({
-          ...profileData,
-          follower_count: followerCount || 0,
-          following_count: followingCount || 0,
-      });
-      
-      if (user && user.id !== userId) {
-        const { data, error } = await supabase
-            .from('followers')
-            .select('*', { count: 'exact' })
-            .eq('follower_id', user.id)
-            .eq('following_id', userId);
-        if (!error && data.length > 0) {
-            setIsFollowing(true);
-        }
-      }
-
-      // Fetch content associated with the profile
-      const { data: listingsData } = await supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', userId);
-      const { data: postsData } = await supabase.from('posts').select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`).eq('user_id', userId);
-      
-      const { data: followersData } = await supabase.from('followers').select('follower:follower_id(*)').eq('following_id', userId);
-      const { data: followingData } = await supabase.from('followers').select('following:following_id(*)').eq('follower_id', userId);
-
-      const likedPostIds = new Set();
-      if (user) {
-          const { data: likedPosts } = await supabase.from('likes').select('post_id').eq('user_id', user.id);
-          likedPosts?.forEach(p => likedPostIds.add(p.post_id));
-      }
-      
-      setProfileContent({
-          listings: (listingsData as Product[]) || [],
-          posts: (postsData || []).map(p => ({ ...p, isLiked: likedPostIds.has(p.id) })) as PostWithAuthor[],
-          followers: (followersData?.map((f: any) => f.follower) as Profile[]) || [],
-          following: (followingData?.map((f: any) => f.following) as Profile[]) || [],
-      });
-      
-      setContentLoading(false);
-  }, [supabase, toast, user]);
-
   useEffect(() => {
+    const fetchProfileData = async (handle: string) => {
+        if (!supabase) return;
+        setContentLoading(true);
+
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select(`*`)
+            .eq('handle', handle)
+            .single();
+        
+        if (profileError || !profileData) {
+            toast({ variant: 'destructive', title: 'Error fetching profile' });
+            console.error("Profile fetch error:", profileError);
+            redirect('/'); // Redirect if profile not found
+            return;
+        }
+        
+        const userId = profileData.id;
+
+        const { count: followerCount, error: followerError } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('following_id', userId);
+        const { count: followingCount, error: followingError } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
+
+        if (followerError || followingError) {
+            toast({ variant: 'destructive', title: 'Error fetching follow counts' });
+        }
+
+        setProfile({
+            ...profileData,
+            follower_count: followerCount || 0,
+            following_count: followingCount || 0,
+        });
+        
+        if (user && user.id !== userId) {
+            const { data, error } = await supabase
+                .from('followers')
+                .select('*', { count: 'exact' })
+                .eq('follower_id', user.id)
+                .eq('following_id', userId);
+            if (!error && data.length > 0) {
+                setIsFollowing(true);
+            }
+        }
+
+        const { data: listingsData } = await supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', userId);
+        const { data: postsData } = await supabase.from('posts').select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`).eq('user_id', userId);
+        const { data: followersData } = await supabase.from('followers').select('follower:follower_id(*)').eq('following_id', userId);
+        const { data: followingData } = await supabase.from('followers').select('following:following_id(*)').eq('follower_id', userId);
+
+        const likedPostIds = new Set();
+        if (user) {
+            const { data: likedPosts } = await supabase.from('likes').select('post_id').eq('user_id', user.id);
+            likedPosts?.forEach(p => likedPostIds.add(p.post_id));
+        }
+        
+        setProfileContent({
+            listings: (listingsData as Product[]) || [],
+            posts: (postsData || []).map(p => ({ ...p, isLiked: likedPostIds.has(p.id) })) as PostWithAuthor[],
+            followers: (followersData?.map((f: any) => f.follower) as Profile[]) || [],
+            following: (followingData?.map((f: any) => f.following) as Profile[]) || [],
+        });
+        
+        setContentLoading(false);
+    };
+
     if (authLoading) return;
     
     const targetHandle = handleFromParams || user?.user_metadata?.handle;
@@ -118,14 +114,13 @@ export default function ProfileClient() {
     } else if (!authLoading && !handleFromParams && !user) {
         redirect('/login');
     }
-  }, [user, authLoading, handleFromParams, fetchProfileData]);
+  }, [user, authLoading, handleFromParams, supabase, toast]);
 
   const handleFollowToggle = async () => {
     if (!user || !profile || isMyProfile || !supabase) return;
     setIsFollowLoading(true);
 
     if (isFollowing) {
-        // Unfollow
         const { error } = await supabase.from('followers').delete().match({ follower_id: user.id, following_id: profile.id });
         if (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not unfollow user.' });
@@ -134,7 +129,6 @@ export default function ProfileClient() {
             setProfile(p => p ? { ...p, follower_count: p.follower_count - 1 } : null);
         }
     } else {
-        // Follow
         const { error } = await supabase.from('followers').insert({ follower_id: user.id, following_id: profile.id });
          if (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not follow user.' });
