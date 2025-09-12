@@ -14,9 +14,7 @@ import LibraryDashboard from './library-dashboard';
 import PageHeader from '@/components/admin/page-header';
 import FoodMessDashboard from './food-mess-dashboard';
 import HostelDashboard from './hostel-dashboard';
-
-// Placeholder components for other vendor types
-const CybercafeDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Cybercafé Dashboard Coming Soon</div>;
+import CybercafeDashboard from './cybercafe-dashboard';
 
 
 export default function VendorDashboardContent() {
