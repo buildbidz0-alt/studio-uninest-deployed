@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -10,9 +11,7 @@ import Link from 'next/link';
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetOverlay } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import {
   Tooltip,
   TooltipContent,
@@ -239,18 +238,20 @@ const SidebarHeader = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
-  const { state } = useSidebar();
+  const { state, isMobile } = useSidebar();
+  const displayState = isMobile ? 'expanded' : state;
+
   return (
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex items-center p-4", state === 'collapsed' && 'justify-center', className)}
+      className={cn("flex items-center p-4", displayState === 'collapsed' && 'justify-center', className)}
       {...props}
     >
-        <div className={cn('transition-opacity duration-200', state === 'collapsed' ? 'opacity-0 w-0' : 'opacity-100 w-auto')}>
+        <div className={cn('transition-opacity duration-200', displayState === 'collapsed' ? 'opacity-0 w-0' : 'opacity-100 w-auto')}>
             {props.children}
         </div>
-        <div className={cn('transition-opacity duration-200', state === 'expanded' ? 'opacity-0 w-0' : 'opacity-100 w-auto')}>
+        <div className={cn('transition-opacity duration-200', displayState === 'expanded' ? 'opacity-0 w-0' : 'opacity-100 w-auto')}>
              <Link href="/" className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg">
                     <Logo className="size-6 text-white" />
@@ -266,12 +267,13 @@ const SidebarFooter = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
-    const { state } = useSidebar();
+    const { state, isMobile } = useSidebar();
+    const displayState = isMobile ? 'expanded' : state;
     return (
         <div
         ref={ref}
         data-sidebar="footer"
-        className={cn("p-4 mt-auto", state === 'collapsed' && 'p-2', className)}
+        className={cn("p-4 mt-auto", displayState === 'collapsed' && 'p-2', className)}
         {...props}
         />
     )
@@ -358,17 +360,29 @@ const SidebarMenuButton = React.forwardRef<
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { isMobile, state } = useSidebar()
+    const { isMobile, state, setOpenMobile } = useSidebar()
+    const displayState = isMobile ? 'expanded' : state;
+
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (props.onClick) {
+        props.onClick(event);
+      }
+      if (isMobile) {
+        setOpenMobile(false);
+      }
+    };
+
 
     const button = (
       <Comp
         ref={ref}
         data-sidebar="menu-button"
         data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ isActive }), state === 'collapsed' && 'justify-center', className)}
+        className={cn(sidebarMenuButtonVariants({ isActive }), displayState === 'collapsed' && 'justify-center', className)}
+        onClick={handleClick}
         {...props}
       >
-        {state === 'expanded' || isMobile ? (
+        {displayState === 'expanded' ? (
             children
         ) : (
             // In collapsed state, only render the icon (the first child)
@@ -377,7 +391,7 @@ const SidebarMenuButton = React.forwardRef<
       </Comp>
     )
 
-    if (state === 'expanded' || isMobile) {
+    if (displayState === 'expanded') {
       return button;
     }
     
@@ -394,7 +408,7 @@ const SidebarMenuButton = React.forwardRef<
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={displayState !== "collapsed"}
         >
             {tooltipContent}
         </TooltipContent>

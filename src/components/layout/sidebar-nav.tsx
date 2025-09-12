@@ -3,12 +3,11 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, BookOpen, Armchair, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users, Trophy, Briefcase, User as UserIcon } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { buttonVariants } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 
@@ -34,13 +33,12 @@ function getRole(user: any): UserRole {
 export function SidebarNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { setOpen } = useSidebar();
   const role = getRole(user);
 
   const handleLinkClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    // This is for the desktop sidebar, which doesn't need to close.
+    // The mobile sidebar logic is in MobileBottomNav.
   }
 
   const renderNavItems = (items: typeof mainNavItems) => {
@@ -196,42 +194,56 @@ export function SidebarNav() {
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const role = getRole(user);
+  const { setOpenMobile } = useSidebar();
 
-  const mobileNavItems = [
+  const handleLinkClick = () => {
+    setOpenMobile(false);
+  }
+
+  const getNavItems = () => {
+    if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
+      return [
+        { href: '/feed', label: 'Feed', icon: Newspaper },
+        { href: '/chat', label: 'Messages', icon: MessageSquare },
+        { href: '/profile', label: 'Profile', icon: 'avatar' },
+      ];
+    }
+    if (pathname.startsWith('/workspace')) {
+        return [
+            { href: '/workspace/competitions', label: 'Competitions', icon: Trophy },
+            { href: '/workspace/internships', label: 'Internships', icon: Briefcase },
+            { href: '/profile', label: 'Profile', icon: 'avatar' },
+        ];
+    }
+    // Default main navigation
+    return [
       { href: '/', label: 'Home', icon: Home },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag },
       { href: '/social', label: 'Social', icon: Users },
       { href: '/workspace', label: 'Work', icon: LayoutGrid },
       { href: '/profile', label: 'Profile', icon: 'avatar' },
-  ];
+    ];
+  };
+
+  const navItems = getNavItems();
+  const gridColsClass = `grid-cols-${navItems.length}`;
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
-        <div className="h-full w-full grid grid-cols-5">
-            {mobileNavItems.map(item => {
-                 // Special handling for social pages to highlight the feed icon
+        <div className={cn("h-full w-full grid", `grid-cols-${navItems.length}`)}>
+            {navItems.map(item => {
                 let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
-                
-                if (item.href === '/social' && (pathname.startsWith('/feed') || pathname.startsWith('/chat'))) {
-                    isActive = true;
-                }
 
-                // Adjust profile link activation
-                if (item.href === '/profile' && (pathname.startsWith('/profile') || pathname.startsWith('/settings'))) {
-                    isActive = true;
+                 // Special case for profile to avoid being active on other users' profiles unless it's the dedicated nav item
+                if (item.href === '/profile') {
+                    isActive = pathname === '/profile' || pathname === '/settings';
                 }
-
-                // Adjust workspace link activation
-                if (item.href === '/workspace' && (pathname.startsWith('/workspace'))) {
-                    isActive = true;
-                }
-
 
                 return (
                     <Link 
                         key={item.href} 
                         href={item.href} 
+                        onClick={handleLinkClick}
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 transition-colors",
                             isActive ? "primary-gradient bg-clip-text text-transparent font-bold" : "text-muted-foreground hover:text-primary"
@@ -245,7 +257,7 @@ export function MobileBottomNav() {
                                 <Avatar className="w-full h-full">
                                     {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
                                     <AvatarFallback className="text-xs">
-                                        {user ? user.email?.[0].toUpperCase() : 'G'}
+                                        {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-4" />}
                                     </AvatarFallback>
                                 </Avatar>
                             </div>
