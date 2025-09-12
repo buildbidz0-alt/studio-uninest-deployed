@@ -19,7 +19,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import NotificationsDropdown from './notifications-dropdown';
 import { Button } from '../ui/button';
 import { Heart, Loader2 } from 'lucide-react';
 
@@ -85,7 +84,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                     </div>
                   </div>
                 </Link>
-                <NotificationsDropdown />
             </div>
           ) : (
              <div className="flex items-center gap-3">
@@ -118,7 +116,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                     <span className="ml-1 font-bold">Donate</span>
                   </Link>
                </Button>
-              {user && <NotificationsDropdown />}
             </div>
         </header>
         <main className={cn(
