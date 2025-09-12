@@ -33,14 +33,15 @@ export default function VendorDashboardContent() {
         .select(`
             *,
             order_items(*, products(name)),
-            buyer:profiles!buyer_id(*)
+            profiles!buyer_id(*)
         `)
         .eq('vendor_id', user.id);
       
       if (error) {
         console.error("Error fetching vendor data:", error);
       } else {
-        setOrders(data as unknown as Order[]);
+        const ordersWithBuyer = (data || []).map(o => ({...o, buyer: o.profiles}));
+        setOrders(ordersWithBuyer as unknown as Order[]);
       }
 
       setLoading(false);
