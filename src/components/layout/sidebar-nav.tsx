@@ -246,13 +246,13 @@ export function MobileBottomNav() {
                         onClick={handleLinkClick}
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 transition-colors",
-                            isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
+                            isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-primary"
                         )}
                     >
                         {item.icon === 'avatar' ? (
                             <div className={cn(
-                                "w-7 h-7 rounded-full flex items-center justify-center",
-                                isActive && "bg-muted"
+                                "w-7 h-7 rounded-full flex items-center justify-center transition-colors",
+                                isActive && "bg-primary/10"
                             )}>
                                 <Avatar className="w-6 h-6">
                                     {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
