@@ -36,13 +36,6 @@ export default function AdminSetupPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-    },
-  });
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setMessage('');
