@@ -1,13 +1,13 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
-    // IMPORTANT: This is a temporary endpoint for initial setup.
+    // IMPORTANT: This endpoint is now temporarily open for initial setup.
     // It should be deleted after the first admin user is created.
-    // It is slightly protected by checking for a development environment.
-    if (process.env.NODE_ENV !== 'development') {
-        return NextResponse.json({ error: 'This endpoint is only available in development.' }, { status: 403 });
-    }
+    // if (process.env.NODE_ENV !== 'development') {
+    //     return NextResponse.json({ error: 'This endpoint is only available in development.' }, { status: 403 });
+    // }
 
     const { email } = await request.json();
 
