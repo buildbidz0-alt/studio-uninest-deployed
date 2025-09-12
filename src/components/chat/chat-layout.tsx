@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -6,9 +7,10 @@ import ChatMessages from './chat-messages';
 import type { Room, Message } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { redirect } from 'next/navigation';
 
 type ChatLayoutProps = {
   initialRooms: Room[];
@@ -19,9 +21,16 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const { user, supabase } = useAuth();
+  const { user, supabase, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      redirect('/login');
+    }
+  }, [authLoading, user]);
+
 
   const handleSelectRoom = useCallback(async (room: Room) => {
     if (!supabase) return;
@@ -101,6 +110,14 @@ export default function ChatLayout({ initialRooms }: ChatLayoutProps) {
       console.error(error);
     }
   };
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+        <Loader2 className="animate-spin text-primary size-8" />
+      </div>
+    );
+  }
 
   if (isMobile) {
     return (
