@@ -246,15 +246,15 @@ export function MobileBottomNav() {
                         onClick={handleLinkClick}
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 transition-colors",
-                            isActive ? "primary-gradient bg-clip-text text-transparent font-bold" : "text-muted-foreground hover:text-primary"
+                            isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
                         )}
                     >
                         {item.icon === 'avatar' ? (
                             <div className={cn(
                                 "w-7 h-7 rounded-full flex items-center justify-center",
-                                isActive && "primary-gradient p-0.5"
+                                isActive && "bg-muted"
                             )}>
-                                <Avatar className="w-full h-full">
+                                <Avatar className="w-6 h-6">
                                     {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
                                     <AvatarFallback className="text-xs">
                                         {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-4" />}
@@ -262,7 +262,7 @@ export function MobileBottomNav() {
                                 </Avatar>
                             </div>
                         ) : (
-                            <item.icon className="size-6" />
+                            <item.icon className="size-5" />
                         )}
                         <span className="text-xs font-label">{item.label}</span>
                     </Link>
