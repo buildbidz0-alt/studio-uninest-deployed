@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -291,7 +292,7 @@ export default function SettingsContent() {
       
       <Card>
         <CardHeader>
-          <CardTitle>{role === 'vendor' ? 'Shop Logo' : 'Profile Picture'}</CardTitle>
+          <CardTitle>{role === 'vendor' ? 'Vendor Profile' : 'Student Profile'}</CardTitle>
           <CardDescription>Update your avatar. This will be visible to other users.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row items-center gap-6">

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -19,7 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const categories = ["Library Services", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
+const allCategories = ["Library Services", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
 
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
@@ -51,6 +52,11 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   const { user, supabase } = useAuth();
   const { openCheckout, isLoaded } = useRazorpay();
   const isEditMode = !!product;
+
+  const vendorCategories = user?.user_metadata?.vendor_categories || [];
+  const availableCategories = isEditMode 
+    ? allCategories 
+    : [...vendorCategories, "Other Products"];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -244,10 +250,10 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                                 <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                {availableCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                               </SelectContent>
                             </Select>
-                            <FormMessage />
+                             <FormMessage />
                           </FormItem>
                         )} />
                     </div>
