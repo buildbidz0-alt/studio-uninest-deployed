@@ -90,7 +90,7 @@ export default function VendorDashboardContent() {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
-  const hasGeneralFeatures = vendorCategories.some(cat => !['library', 'food mess', 'hostels', 'cybercafe'].includes(cat.toLowerCase()));
+  const hasGeneralProductFeatures = vendorCategories.length > 0 && !vendorCategories.every(cat => ['library', 'food mess', 'hostels', 'cybercafe'].includes(cat));
 
   return (
     <div className="space-y-8">
@@ -105,7 +105,7 @@ export default function VendorDashboardContent() {
       </div>
 
       {/* General Product Sales Dashboard */}
-      {hasGeneralFeatures && (
+      {hasGeneralProductFeatures && (
          <div className="space-y-8 pt-8 border-t">
             <h2 className="text-2xl font-bold tracking-tight">General Sales Overview</h2>
             <div className="grid gap-6 md:grid-cols-3">
