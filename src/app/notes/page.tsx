@@ -1,25 +1,22 @@
+
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
-import StudyHubContent from '@/components/notes/study-hub-content';
-import type { Note } from '@/lib/types';
+import { BookOpen } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Study Hub – AI-Powered Note Sharing',
-  description: 'Upload, share, and discover study notes. Our AI automatically tags your documents to make them easily searchable for everyone on campus.',
+  title: 'Study Hub | UniNest',
+  description: 'The Study Hub is coming soon! Get ready to share and discover notes like never before.',
 };
 
-export default async function NotesPage() {
-  const supabase = createClient();
-
-  const { data: notes, error } = await supabase
-    .from('notes')
-    .select('*, profiles:user_id(full_name, avatar_url)')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching notes:', error);
-    // You might want to handle this error more gracefully
-  }
-
-  return <StudyHubContent initialNotes={(notes as Note[]) || []} />;
+export default function NotesPage() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+      <div className="p-6 bg-primary/10 rounded-full mb-6">
+        <BookOpen className="size-12 text-primary" />
+      </div>
+      <h1 className="text-4xl font-bold font-headline text-primary">Coming Soon!</h1>
+      <p className="mt-2 text-lg text-muted-foreground max-w-md">
+        The Study Hub is under construction. Get ready to upload, share, and discover notes with AI-powered tagging!
+      </p>
+    </div>
+  );
 }
