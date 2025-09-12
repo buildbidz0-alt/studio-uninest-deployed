@@ -35,14 +35,14 @@ export default function HostelDashboard() {
             }
             
             // Fetch orders for revenue and activity
-            const { data: ordersData } = await supabase
-                .from('donations')
+            const { data: ordersData, error: ordersError } = await supabase
+                .from('orders')
                 .select(`
                     *,
-                    order_items:donations(products:id(name, category)),
-                    profiles!user_id(full_name)
+                    order_items(*, products(name, category)),
+                    profiles!buyer_id(full_name)
                 `)
-                .eq('user_id', user.id)
+                .eq('vendor_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (ordersData) {
@@ -153,7 +153,7 @@ export default function HostelDashboard() {
                                                 <span className="capitalize">New Booking</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="font-medium">{activity.buyer.full_name}</TableCell>
+                                        <TableCell className="font-medium">{activity.buyer?.full_name || 'N/A'}</TableCell>
                                         <TableCell>{activity.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
                                         <TableCell>{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</TableCell>
                                     </TableRow>
