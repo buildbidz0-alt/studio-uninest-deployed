@@ -8,7 +8,7 @@ import { Armchair, Book, CheckCircle, PlusCircle, Users, Loader2 } from "lucide-
 import { useAuth } from "@/hooks/use-auth";
 import { Order, Product } from "@/lib/types";
 import { useEffect, useState } from "react";
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function LibraryDashboard() {
     const { supabase, user } = useAuth();
