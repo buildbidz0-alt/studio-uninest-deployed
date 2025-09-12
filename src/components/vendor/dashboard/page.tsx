@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -87,8 +88,8 @@ export default function VendorDashboardContent() {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
-  const hasGeneralProductFeatures = useMemo(() => 
-    vendorCategories.some(cat => !['library', 'food mess', 'hostels', 'cybercafe'].includes(cat))
+  const showGeneralSales = useMemo(() => 
+    vendorCategories.some(cat => !['library', 'food mess', 'hostels', 'cybercafe'].includes(cat)) || vendorCategories.length === 0
   , [vendorCategories]);
 
 
@@ -96,7 +97,6 @@ export default function VendorDashboardContent() {
     <div className="space-y-8">
       <PageHeader title="Dashboard" description={`Welcome, ${user?.user_metadata?.full_name || 'Vendor'}. Here's what's happening.`} />
 
-      {/* Render dashboards based on vendor category */}
       <div className="space-y-8">
         {vendorCategories.includes('library') && <LibraryDashboard />}
         {vendorCategories.includes('food mess') && <FoodMessDashboard />}
@@ -104,8 +104,7 @@ export default function VendorDashboardContent() {
         {vendorCategories.includes('cybercafe') && <CybercafeDashboard />}
       </div>
 
-      {/* General Product Sales Dashboard */}
-      {hasGeneralProductFeatures && (
+      {showGeneralSales && (
          <div className="space-y-8 pt-8 border-t">
             <h2 className="text-2xl font-bold tracking-tight">General Sales Overview</h2>
             <div className="grid gap-6 md:grid-cols-3">
