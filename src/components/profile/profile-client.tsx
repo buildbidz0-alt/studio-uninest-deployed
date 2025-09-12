@@ -16,8 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import UserListCard from './user-list-card';
 
 type ProfileWithCounts = Profile & {
-    followers: { count: number }[];
-    following: { count: number }[];
+    follower_count: number;
+    following_count: number;
 }
 
 export default function ProfileClient() {
@@ -46,10 +46,10 @@ export default function ProfileClient() {
 
       const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select(`*, followers:followers!following_id(count), following:followers!follower_id(count)`)
+          .select(`*`)
           .eq('handle', handle)
           .single();
-
+      
       if (profileError || !profileData) {
           toast({ variant: 'destructive', title: 'Error fetching profile' });
           console.error("Profile fetch error:", profileError);
@@ -57,21 +57,35 @@ export default function ProfileClient() {
           return;
       }
       
-      setProfile(profileData as ProfileWithCounts);
+      const userId = profileData.id;
+
+      // Correctly fetch follower and following counts
+      const { count: followerCount, error: followerError } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('following_id', userId);
+      const { count: followingCount, error: followingError } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
+
+      if (followerError || followingError) {
+          toast({ variant: 'destructive', title: 'Error fetching follow counts' });
+          console.error("Follow count error:", { followerError, followingError });
+      }
+
+      setProfile({
+          ...profileData,
+          follower_count: followerCount || 0,
+          following_count: followingCount || 0,
+      });
       
-      if (user && user.id !== profileData.id) {
+      if (user && user.id !== userId) {
         const { data, error } = await supabase
             .from('followers')
             .select('*', { count: 'exact' })
             .eq('follower_id', user.id)
-            .eq('following_id', profileData.id);
+            .eq('following_id', userId);
         if (!error && data.length > 0) {
             setIsFollowing(true);
         }
       }
 
       // Fetch content associated with the profile
-      const userId = profileData.id;
       const { data: listingsData } = await supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', userId);
       const { data: postsData } = await supabase.from('posts').select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`).eq('user_id', userId);
       
@@ -97,16 +111,14 @@ export default function ProfileClient() {
   useEffect(() => {
     if (authLoading) return;
     
-    if (!handleFromParams) { // Viewing own profile
-        if (!user) {
-            redirect('/login');
-        } else {
-            fetchProfileData(user.user_metadata?.handle);
-        }
-    } else { // Viewing someone else's profile
-        fetchProfileData(handleFromParams);
+    const targetHandle = handleFromParams || user?.user_metadata?.handle;
+
+    if (targetHandle) {
+        fetchProfileData(targetHandle);
+    } else if (!authLoading && !handleFromParams && !user) {
+        redirect('/login');
     }
-  }, [user, authLoading, supabase, handleFromParams, fetchProfileData]);
+  }, [user, authLoading, handleFromParams, fetchProfileData]);
 
   const handleFollowToggle = async () => {
     if (!user || !profile || isMyProfile || !supabase) return;
@@ -119,7 +131,7 @@ export default function ProfileClient() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not unfollow user.' });
         } else {
             setIsFollowing(false);
-            setProfile(p => p ? { ...p, followers: [{ count: p.followers[0].count - 1 }]} : null);
+            setProfile(p => p ? { ...p, follower_count: p.follower_count - 1 } : null);
         }
     } else {
         // Follow
@@ -128,7 +140,7 @@ export default function ProfileClient() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not follow user.' });
         } else {
             setIsFollowing(true);
-            setProfile(p => p ? { ...p, followers: [{ count: p.followers[0].count + 1 }]} : null);
+            setProfile(p => p ? { ...p, follower_count: p.follower_count + 1 } : null);
         }
     }
     setIsFollowLoading(false);
@@ -180,8 +192,8 @@ export default function ProfileClient() {
           </div>
           <p className="mt-4 text-muted-foreground">{profile.bio || "No bio yet."}</p>
           <div className="mt-4 flex items-center gap-6 text-sm">
-             <span className="font-semibold text-foreground">{profile.following[0]?.count || 0}</span> Following
-             <span className="font-semibold text-foreground">{profile.followers[0]?.count || 0}</span> Followers
+             <span className="font-semibold text-foreground">{profile.following_count}</span> Following
+             <span className="font-semibold text-foreground">{profile.follower_count}</span> Followers
           </div>
         </CardContent>
       </Card>
