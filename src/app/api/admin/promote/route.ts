@@ -3,12 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
-    // IMPORTANT: This endpoint is now temporarily open for initial setup.
-    // It should be deleted after the first admin user is created.
-    // if (process.env.NODE_ENV !== 'development') {
-    //     return NextResponse.json({ error: 'This endpoint is only available in development.' }, { status: 403 });
-    // }
-
     const { email } = await request.json();
 
     if (!email) {
@@ -19,15 +13,21 @@ export async function POST(request: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-        return NextResponse.json({ error: 'Supabase credentials are not configured.' }, { status: 500 });
+        return NextResponse.json({ error: 'Supabase credentials are not configured on the server.' }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     try {
         // 1. Get the user by email
-        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
-        if (listError || !users || users.length === 0) {
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1, email: email as string });
+        
+        if (listError) {
+            console.error('Error listing users:', listError);
+            throw new Error(`Error finding user: ${listError.message}`);
+        }
+        
+        if (!users || users.length === 0) {
             throw new Error(`User with email ${email} not found.`);
         }
         
@@ -43,10 +43,11 @@ export async function POST(request: NextRequest) {
             throw updateError;
         }
 
-        return NextResponse.json({ message: `Successfully promoted ${updatedUser.email} to admin.` });
+        return NextResponse.json({ message: `Successfully promoted ${updatedUser?.email} to admin.` });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+        console.error('Admin promotion error:', errorMessage);
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
