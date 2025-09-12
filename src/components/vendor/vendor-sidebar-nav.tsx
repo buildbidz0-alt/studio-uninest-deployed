@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Settings } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import Link from 'next/link';
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/vendor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vendor/products', label: 'Products', icon: Package },
   { href: '/vendor/orders', label: 'Orders', icon: ShoppingCart },
+  { href: '/vendor/settings', label: 'Settings', icon: Settings },
 ];
 
 export function VendorSidebarNav() {
