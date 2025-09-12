@@ -1,25 +1,21 @@
 
 create or replace function get_aggregated_donors()
 returns table (
-  name text,
-  avatar text,
-  amount numeric,
-  email text
+    name text,
+    avatar text,
+    amount float,
+    email text
 ) as $$
 begin
-  return query
+    return query
     select
-      p.full_name as name,
-      p.avatar_url as avatar,
-      sum(d.amount) as amount,
-      p.email as email
-    from
-      donations d
-    join
-      profiles p on d.user_id = p.id
-    group by
-      p.id, p.full_name, p.avatar_url, p.email
-    order by
-      sum(d.amount) desc;
+        pr.full_name as name,
+        pr.avatar_url as avatar,
+        sum(d.amount) as amount,
+        pr.email as email
+    from donations d
+    join profiles pr on d.user_id = pr.id
+    group by pr.id, pr.full_name, pr.avatar_url, pr.email
+    order by sum(d.amount) desc;
 end;
 $$ language plpgsql;
