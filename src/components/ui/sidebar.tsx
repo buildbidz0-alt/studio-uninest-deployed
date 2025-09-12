@@ -162,10 +162,7 @@ const Sidebar = React.forwardRef<
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className={cn(
-            "w-[--sidebar-width] p-0 flex flex-col bg-card text-card-foreground border-r",
-            className
-          )}
+          className="w-[--sidebar-width] p-0 flex flex-col bg-card text-card-foreground border-r"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -185,7 +182,7 @@ const Sidebar = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("hidden md:flex flex-col h-screen z-10 transition-[width] bg-card text-card-foreground border-r", className, state === 'expanded' ? 'w-[--sidebar-width]' : 'w-[--sidebar-width-icon]')}
+      className={cn("flex-col h-screen z-10 transition-[width] bg-card text-card-foreground border-r", className, state === 'expanded' ? 'w-[--sidebar-width]' : 'w-[--sidebar-width-icon]')}
       data-state={state}
       {...props}
     >
