@@ -1,8 +1,10 @@
 
+
 import type { Metadata } from 'next';
 import VendorProductsContent from '@/components/vendor/products/page';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import VendorLayout from '../layout';
 
 export const metadata: Metadata = {
   title: 'My Products | Uninest',
@@ -28,5 +30,11 @@ export default async function VendorProductsPage() {
     // Render a state within the component instead of returning null
   }
 
-  return <VendorProductsContent initialProducts={products || []} />;
+  return (
+    <VendorLayout>
+        <VendorProductsContent initialProducts={products || []} />
+    </VendorLayout>
+    );
 }
+
+    

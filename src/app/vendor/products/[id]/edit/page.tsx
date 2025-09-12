@@ -1,8 +1,10 @@
 
+
 import PageHeader from "@/components/admin/page-header";
 import ProductForm from "@/components/marketplace/product-form";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from 'next/navigation';
+import VendorLayout from "../../layout";
 
 type EditProductPageProps = {
     params: {
@@ -35,9 +37,13 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     }
     
     return (
-        <div className="space-y-8 max-w-2xl mx-auto">
-            <PageHeader title="Edit Product" description="Update the details of your product listing." />
-            <ProductForm product={product} />
-        </div>
+        <VendorLayout>
+            <div className="space-y-8 max-w-2xl mx-auto">
+                <PageHeader title="Edit Product" description="Update the details of your product listing." />
+                <ProductForm product={product} />
+            </div>
+        </VendorLayout>
     )
 }
+
+    

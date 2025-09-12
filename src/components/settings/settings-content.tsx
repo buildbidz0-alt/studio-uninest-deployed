@@ -52,7 +52,7 @@ const passwordFormSchema = z.object({
 
 export default function SettingsContent() {
   const { toast } = useToast();
-  const { user, loading, supabase } = useAuth();
+  const { user, loading, supabase, role } = useAuth();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
@@ -63,18 +63,16 @@ export default function SettingsContent() {
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null);
   const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(null);
 
-  const role = user?.user_metadata?.role;
-
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      fullName: '',
-      email: '',
-      handle: '',
-      contactNumber: '',
-      bio: '',
-      openingHours: '',
-      role: 'student',
+      fullName: user?.user_metadata?.full_name || '',
+      email: user?.email || '',
+      handle: user?.user_metadata?.handle || '',
+      contactNumber: user?.user_metadata?.contact_number || '',
+      bio: user?.user_metadata?.bio || '',
+      openingHours: user?.user_metadata?.opening_hours || '',
+      role: user?.user_metadata?.role || 'student',
     },
   });
 
@@ -130,6 +128,7 @@ export default function SettingsContent() {
         .update({ 
             full_name: values.fullName,
             handle: values.handle,
+            bio: values.bio,
             role: values.role,
             opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
          })
@@ -354,7 +353,7 @@ export default function SettingsContent() {
                 name="role"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>User Type</FormLabel>
+                    <FormLabel>I am a...</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -366,7 +365,7 @@ export default function SettingsContent() {
                             <RadioGroupItem value="student" />
                           </FormControl>
                           <FormLabel className="font-normal">
-                            Student
+                            User as Student
                           </FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
@@ -374,7 +373,7 @@ export default function SettingsContent() {
                             <RadioGroupItem value="vendor" />
                           </FormControl>
                           <FormLabel className="font-normal">
-                            Vendor
+                            User as Vendor
                           </FormLabel>
                         </FormItem>
                       </RadioGroup>
@@ -517,3 +516,5 @@ export default function SettingsContent() {
     </div>
   );
 }
+
+    

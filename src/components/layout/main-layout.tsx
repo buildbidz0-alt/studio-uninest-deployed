@@ -29,9 +29,10 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith('/admin');
+  const isVendorPage = pathname.startsWith('/vendor');
   const isHomePage = pathname === '/';
 
-  if (isAdminPage) {
+  if (isAdminPage || isVendorPage) {
     return <>{children}</>;
   }
 
@@ -115,3 +116,5 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    
