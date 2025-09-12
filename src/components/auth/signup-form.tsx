@@ -91,7 +91,7 @@ export default function SignupForm() {
     }
     
     const role = values.userType;
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
@@ -103,39 +103,18 @@ export default function SignupForm() {
       }
     });
 
-    if (signUpError) {
+    if (error) {
        toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description: signUpError.message,
+        description: error.message,
       });
-      setIsLoading(false);
-      return;
-    }
-
-    if (signUpData.user) {
-        // Explicitly create a profile record
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({ 
-                id: signUpData.user.id,
-                full_name: values.fullName,
-                handle: `user${signUpData.user.id.substring(0, 8)}`,
-             });
-
-        if (profileError) {
-            toast({
-                variant: 'destructive',
-                title: 'Sign Up Incomplete',
-                description: `Your account was created, but we failed to create your profile. Please contact support. Error: ${profileError.message}`,
-            });
-        } else {
-            toast({
-                title: 'Success!',
-                description: 'Check your email for a verification link.',
-            });
-            router.push('/login');
-        }
+    } else {
+        toast({
+            title: 'Success!',
+            description: 'Check your email for a verification link.',
+        });
+        router.push('/login');
     }
     
     setIsLoading(false);
