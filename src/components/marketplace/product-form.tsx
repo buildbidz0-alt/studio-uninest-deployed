@@ -21,6 +21,7 @@ import { useRazorpay } from '@/hooks/use-razorpay';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const allCategories = ["Library Services", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
+const studentCategories = ["Books", "Other Products"];
 
 const formSchema = z.object({
   name: z.string().min(3, 'Product name must be at least 3 characters.'),
@@ -49,14 +50,22 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, supabase } = useAuth();
+  const { user, supabase, role } = useAuth();
   const { openCheckout, isLoaded } = useRazorpay();
   const isEditMode = !!product;
 
-  const vendorCategories = user?.user_metadata?.vendor_categories || [];
-  const availableCategories = isEditMode 
-    ? allCategories 
-    : [...vendorCategories, "Other Products"];
+  const getAvailableCategories = () => {
+    if (role === 'student') {
+        return studentCategories;
+    }
+    if (role === 'vendor') {
+        const vendorCategories = user?.user_metadata?.vendor_categories || [];
+        return isEditMode ? allCategories : [...vendorCategories, "Other Products"];
+    }
+    return allCategories; // For admin
+  }
+
+  const availableCategories = getAvailableCategories();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -117,7 +126,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         toast({ variant: 'destructive', title: 'Error creating product', description: error.message });
     } else {
         toast({ title: 'Success!', description: 'Your product has been listed.' });
-        router.push('/vendor/products');
+        const destination = role === 'vendor' ? '/vendor/products' : '/marketplace';
+        router.push(destination);
         router.refresh();
     }
 
@@ -153,7 +163,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         toast({ variant: 'destructive', title: 'Error updating product', description: error.message });
     } else {
         toast({ title: 'Success!', description: 'Your product has been updated.' });
-        router.push('/vendor/products');
+        const destination = role === 'vendor' ? '/vendor/products' : '/marketplace';
+        router.push(destination);
         router.refresh();
     }
 

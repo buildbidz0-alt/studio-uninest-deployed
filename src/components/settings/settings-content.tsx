@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
@@ -37,6 +38,7 @@ const profileFormSchema = z.object({
   contactNumber: z.string().optional(),
   bio: z.string().max(200, 'Bio must not exceed 200 characters.').optional(),
   openingHours: z.string().max(200, 'Opening hours must not exceed 200 characters.').optional(),
+  role: z.enum(['student', 'vendor']),
 });
 
 const passwordFormSchema = z.object({
@@ -72,6 +74,7 @@ export default function SettingsContent() {
       contactNumber: '',
       bio: '',
       openingHours: '',
+      role: 'student',
     },
   });
 
@@ -92,6 +95,7 @@ export default function SettingsContent() {
         contactNumber: user.user_metadata?.contact_number || '',
         bio: user.user_metadata?.bio || '',
         openingHours: user.user_metadata?.opening_hours || '',
+        role: user.user_metadata?.role || 'student',
       })
       if (user.user_metadata?.banner_url) {
         setBannerPreviewUrl(user.user_metadata.banner_url);
@@ -108,7 +112,8 @@ export default function SettingsContent() {
         handle: values.handle,
         contact_number: values.contactNumber,
         bio: values.bio,
-        opening_hours: role === 'vendor' ? values.openingHours : undefined,
+        role: values.role,
+        opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
     };
 
     const { data: authData, error: authError } = await supabase.auth.updateUser({ data: userData });
@@ -125,7 +130,8 @@ export default function SettingsContent() {
         .update({ 
             full_name: values.fullName,
             handle: values.handle,
-            opening_hours: role === 'vendor' ? values.openingHours : undefined,
+            role: values.role,
+            opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
          })
         .eq('id', user.id);
 
@@ -343,6 +349,40 @@ export default function SettingsContent() {
         <CardContent>
           <Form {...profileForm}>
             <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+               <FormField
+                control={profileForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>User Type</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex space-x-4"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="student" />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            Student
+                          </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="vendor" />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            Vendor
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={profileForm.control}
                 name="fullName"
@@ -408,7 +448,7 @@ export default function SettingsContent() {
                   </FormItem>
                 )}
               />
-              {role === 'vendor' && (
+              {profileForm.watch('role') === 'vendor' && (
                 <FormField
                     control={profileForm.control}
                     name="openingHours"
