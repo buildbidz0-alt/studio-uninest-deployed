@@ -13,7 +13,7 @@ import { Separator } from '../ui/separator';
 
 const mainNavItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/social', label: 'Social', icon: Users, roles: ['student', 'admin'] },
+  { href: '/social', label: 'Social', icon: Users, roles: ['student', 'guest', 'admin'] },
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
@@ -150,7 +150,7 @@ export function MobileBottomNav() {
   const defaultNavItems = [
       { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag, roles: ['student', 'vendor', 'guest', 'admin'] },
-      { href: '/social', label: 'Social', icon: Users, roles: ['student', 'admin'] },
+      { href: '/social', label: 'Social', icon: Users, roles: ['student', 'guest', 'admin'] },
       { href: '/workspace', label: 'Work', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
       { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
     ];
@@ -159,7 +159,7 @@ export function MobileBottomNav() {
   const getNavItems = () => {
     if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
       return [
-        { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'admin'] },
+        { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'guest', 'admin'] },
         { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'admin'] },
         { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'admin'] },
       ];
@@ -198,6 +198,7 @@ export function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => {}}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 p-1 transition-colors",
                 isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-primary"

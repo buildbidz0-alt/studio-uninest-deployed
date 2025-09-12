@@ -23,10 +23,10 @@ export default function FeedPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && role !== 'student' && role !== 'admin') {
+    if (!loading && role === 'vendor') {
       toast({
         title: 'Access Denied',
-        description: 'The social feed is for students only.',
+        description: 'The social feed is not available for vendors.',
         variant: 'destructive',
       });
       router.push('/');
@@ -41,19 +41,19 @@ export default function FeedPage() {
         description: 'Please log in to create a post.',
         action: <Button onClick={() => router.push('/login')}>Login</Button>
       });
-    } else {
-      const createPostElement = document.getElementById('create-post');
-      if (createPostElement) {
-        createPostElement.scrollIntoView({ behavior: 'smooth' });
-        const textarea = createPostElement.querySelector('textarea');
-        if (textarea) {
-          textarea.focus();
-        }
+      return;
+    }
+    const createPostElement = document.getElementById('create-post');
+    if (createPostElement) {
+      createPostElement.scrollIntoView({ behavior: 'smooth' });
+      const textarea = createPostElement.querySelector('textarea');
+      if (textarea) {
+        textarea.focus();
       }
     }
   };
 
-  if (loading || (role !== 'student' && role !== 'admin')) {
+  if (loading || role === 'vendor') {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="size-8 animate-spin" />
@@ -64,13 +64,15 @@ export default function FeedPage() {
   return (
     <>
       <FeedContent />
-      <Button 
-        onClick={handleCreatePostClick}
-        className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-40 h-16 w-16 rounded-full shadow-lg"
-      >
-        <Plus className="h-8 w-8" />
-        <span className="sr-only">Create Post</span>
-      </Button>
+      {user && role !== 'guest' && (
+        <Button 
+          onClick={handleCreatePostClick}
+          className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-40 h-16 w-16 rounded-full shadow-lg"
+        >
+          <Plus className="h-8 w-8" />
+          <span className="sr-only">Create Post</span>
+        </Button>
+      )}
     </>
   );
 }

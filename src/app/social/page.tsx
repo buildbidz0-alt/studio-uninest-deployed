@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 // export const metadata: Metadata = {
 //   title: 'Social Hub | UniNest',
@@ -19,16 +20,22 @@ import { useRouter } from 'next/navigation';
 // };
 
 export default function SocialPage() {
-  const { role, loading } = useAuth();
+  const { user, role, loading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && role !== 'student' && role !== 'admin') {
+    if (!loading && role === 'vendor') {
+      toast({
+        title: 'Access Denied',
+        description: 'The social hub is not available for vendors.',
+        variant: 'destructive',
+      });
       router.push('/');
     }
-  }, [loading, role, router]);
+  }, [loading, role, router, toast]);
 
-  if (loading || (role !== 'student' && role !== 'admin')) {
+  if (loading || role === 'vendor') {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="size-8 animate-spin" />
@@ -79,9 +86,10 @@ export default function SocialPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full">
+            <Button asChild className="w-full" disabled={!user}>
               <Link href="/chat">Open Chats</Link>
             </Button>
+             {!user && <p className="text-xs text-center text-muted-foreground mt-2">Login to access your chats.</p>}
           </CardContent>
         </Card>
       </div>
