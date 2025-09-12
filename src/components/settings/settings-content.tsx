@@ -16,6 +16,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -142,7 +143,6 @@ export default function SettingsContent() {
             handle: values.handle,
             bio: values.bio,
             role: values.role,
-            opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
          })
         .eq('id', user.id);
 
