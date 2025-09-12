@@ -34,7 +34,14 @@ function getRole(user: any): UserRole {
 export function SidebarNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
   const role = getRole(user);
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }
 
   const renderNavItems = (items: typeof mainNavItems) => {
     return items
@@ -45,6 +52,7 @@ export function SidebarNav() {
             asChild
             isActive={pathname.startsWith(item.href) && item.href !== '/'}
             className="font-headline"
+            onClick={handleLinkClick}
           >
             <Link href={item.href}>
               <item.icon className="size-5" />
@@ -62,6 +70,7 @@ export function SidebarNav() {
             asChild
             isActive={pathname === '/'}
             className="font-headline"
+            onClick={handleLinkClick}
           >
             <Link href={'/'}>
               <Home className="size-5" />
@@ -75,6 +84,7 @@ export function SidebarNav() {
             asChild
             isActive={pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')}
             className="font-headline"
+            onClick={handleLinkClick}
           >
             <Link href={'/social'}>
               <Users className="size-5" />
@@ -88,6 +98,7 @@ export function SidebarNav() {
             asChild
             isActive={pathname.startsWith('/marketplace')}
             className="font-headline"
+            onClick={handleLinkClick}
           >
             <Link href={'/marketplace'}>
               <ShoppingBag className="size-5" />
@@ -101,6 +112,7 @@ export function SidebarNav() {
             asChild
             isActive={pathname.startsWith('/workspace')}
             className="font-headline"
+            onClick={handleLinkClick}
           >
             <Link href={'/workspace'}>
               <LayoutGrid className="size-5" />
@@ -114,6 +126,7 @@ export function SidebarNav() {
             asChild
             isActive={pathname.startsWith('/notes')}
             className="font-headline"
+            onClick={handleLinkClick}
           >
             <Link href={'/notes'}>
               <BookOpen className="size-5" />
@@ -133,7 +146,7 @@ export function SidebarNav() {
         <div className='flex-grow' />
 
          <SidebarMenuItem>
-            <SidebarMenuButton asChild variant="secondary" className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 font-bold border-amber-200 dark:border-amber-800 border-2">
+            <SidebarMenuButton asChild variant="secondary" className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 font-bold border-amber-200 dark:border-amber-800 border-2" onClick={handleLinkClick}>
                 <Link href="/donate">
                     <Heart className="size-5" />
                     <span>Donate</span>
@@ -147,6 +160,7 @@ export function SidebarNav() {
                     asChild
                     isActive={pathname.startsWith('/admin')}
                     className="font-headline"
+                    onClick={handleLinkClick}
                 >
                     <Link href="/admin/dashboard">
                     <UserCog className="size-5" />
@@ -159,7 +173,7 @@ export function SidebarNav() {
         {user && (
             <>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/settings'} className="font-headline">
+                    <SidebarMenuButton asChild isActive={pathname === '/settings'} className="font-headline" onClick={handleLinkClick}>
                          <Link href="/settings">
                             <Settings className="size-5" />
                             <span>Settings</span>
@@ -167,7 +181,7 @@ export function SidebarNav() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={signOut} className="font-headline text-red-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/50 dark:hover:text-red-400">
+                    <SidebarMenuButton onClick={() => { handleLinkClick(); signOut(); }} className="font-headline text-red-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/50 dark:hover:text-red-400">
                         <LogOut className="size-5" />
                         <span>Logout</span>
                     </SidebarMenuButton>
