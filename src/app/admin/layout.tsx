@@ -53,9 +53,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  // TODO: Fetch notifications from your backend
-  const notifications: any[] = [];
-
   return (
     <SidebarProvider>
       <Sidebar>
@@ -89,30 +86,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                <h1 className="text-lg font-semibold">UniNest Admin</h1>
             </div>
           <div className="flex flex-1 items-center justify-end gap-4">
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Bell className="h-5 w-5" />
-                    <span className="sr-only">Toggle notifications</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <DropdownMenuItem key={notification.id} className="flex-col items-start">
-                          <p className="font-medium">{notification.title}</p>
-                          <p className="text-xs text-muted-foreground">{notification.description}</p>
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                       <DropdownMenuItem disabled>
-                         <p className="text-sm text-muted-foreground">No new notifications</p>
-                       </DropdownMenuItem>
-                    )}
-                </DropdownMenuContent>
-              </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
