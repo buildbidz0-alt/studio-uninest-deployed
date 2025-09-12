@@ -198,7 +198,7 @@ export function MobileBottomNav() {
 
   const handleLinkClick = () => {
     setOpenMobile(false);
-  }
+  };
 
   const getNavItems = () => {
     if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
@@ -209,11 +209,11 @@ export function MobileBottomNav() {
       ];
     }
     if (pathname.startsWith('/workspace')) {
-        return [
-            { href: '/workspace/competitions', label: 'Competitions', icon: Trophy },
-            { href: '/workspace/internships', label: 'Internships', icon: Briefcase },
-            { href: '/profile', label: 'Profile', icon: 'avatar' },
-        ];
+      return [
+        { href: '/workspace/competitions', label: 'Competitions', icon: Trophy },
+        { href: '/workspace/internships', label: 'Internships', icon: Briefcase },
+        { href: '/profile', label: 'Profile', icon: 'avatar' },
+      ];
     }
     // Default main navigation
     return [
@@ -230,40 +230,39 @@ export function MobileBottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
-        <div className={cn("grid h-full w-full", gridColsClass)}>
-            {navItems.map(item => {
-                let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
+      <div className={cn("grid h-full w-full", gridColsClass)}>
+        {navItems.map(item => {
+          let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
 
-                 // Special case for profile to avoid being active on other users' profiles unless it's the dedicated nav item
-                if (item.href === '/profile') {
-                    isActive = pathname === '/profile' || pathname === '/settings';
-                }
+          if (item.href === '/profile') {
+            isActive = pathname === '/profile' || pathname.startsWith('/settings');
+          }
 
-                return (
-                    <Link 
-                        key={item.href} 
-                        href={item.href} 
-                        onClick={handleLinkClick}
-                        className={cn(
-                            "flex flex-col items-center justify-center gap-1 p-1 transition-colors",
-                            isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
-                        )}
-                    >
-                        {item.icon === 'avatar' ? (
-                             <Avatar className="size-6">
-                                {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
-                                <AvatarFallback className="text-xs">
-                                    {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-4" />}
-                                </AvatarFallback>
-                            </Avatar>
-                        ) : (
-                            <item.icon className="size-5" />
-                        )}
-                        <span className="text-xs font-medium">{item.label}</span>
-                    </Link>
-                )
-            })}
-        </div>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={handleLinkClick}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 p-1 transition-colors",
+                isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              {item.icon === 'avatar' ? (
+                <Avatar className="size-6">
+                  {user && <AvatarImage src={user.user_metadata?.avatar_url} />}
+                  <AvatarFallback className="text-xs">
+                    {user ? user.email?.[0].toUpperCase() : <UserIcon className="size-4" />}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <item.icon className="size-5" />
+              )}
+              <span className="text-xs">{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
-  )
+  );
 }
