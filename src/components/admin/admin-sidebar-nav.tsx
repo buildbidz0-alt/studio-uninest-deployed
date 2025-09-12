@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, CreditCard, ScrollText, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, CreditCard, ScrollText, Settings, Briefcase, Trophy } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import Link from 'next/link';
 
@@ -11,6 +11,8 @@ const navItems = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/listings', label: 'Listings', icon: ShoppingCart },
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
+  { href: '/admin/competitions', label: 'Competitions', icon: Trophy },
+  { href: '/admin/internships', label: 'Internships', icon: Briefcase },
   { href: '/admin/logs', label: 'Audit Logs', icon: ScrollText },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];

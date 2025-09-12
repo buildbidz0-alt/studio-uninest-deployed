@@ -152,7 +152,7 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
               {isDeleting ? 'Deleting...' : 'Continue'}
             </AlertDialogAction>
           </AlertDialogFooter>
