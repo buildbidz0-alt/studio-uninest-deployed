@@ -34,13 +34,13 @@ export default function LibraryDashboard() {
 
             // Fetch bookings (orders for library services)
             const { data: ordersData } = await supabase
-                .from('donations')
+                .from('orders')
                 .select(`
                     *,
-                    order_items:donations(products:id(name, category)),
-                    profiles!user_id(full_name)
+                    order_items(*, products(name, category)),
+                    profiles!buyer_id(full_name)
                 `)
-                .eq('user_id', user.id)
+                .eq('vendor_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (ordersData) {
@@ -114,7 +114,7 @@ export default function LibraryDashboard() {
                                 <TableBody>
                                     {recentBookings.map(booking => (
                                         <TableRow key={booking.id}>
-                                            <TableCell className="font-medium">{booking.buyer.full_name}</TableCell>
+                                            <TableCell className="font-medium">{booking.buyer?.full_name || 'N/A'}</TableCell>
                                             <TableCell>{booking.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
                                             <TableCell><CheckCircle className="size-5 text-green-500"/></TableCell>
                                         </TableRow>
