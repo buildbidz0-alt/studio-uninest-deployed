@@ -33,7 +33,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar className="hidden md:block">
+      <Sidebar className="hidden md:flex flex-col">
         <SidebarHeader>
           <Link href="/" className="flex items-center gap-2">
             <div className="p-2 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg">
@@ -90,7 +90,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
               {user && <NotificationsDropdown />}
             </div>
         </header>
-        <main className={cn("flex-1 overflow-y-auto p-4 md:p-8", isMobile && "pb-24")}>
+        <main className={cn("flex-1 overflow-y-auto md:p-8", isMobile ? "p-0" : "p-8", isMobile && "pb-24")}>
           {children}
         </main>
       </SidebarInset>
