@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, PlusCircle, Users, IndianRupee, ChefHat, Drumstick, Leaf, Loader2 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Utensils, PlusCircle, Users, IndianRupee, ChefHat, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Order, Product } from "@/lib/types";
 import { useEffect, useState } from "react";
@@ -50,7 +49,7 @@ export default function FoodMessDashboard() {
 
             if (ordersData) {
                 const foodOrders = (ordersData as any[]).filter(order => 
-                    order.order_items.some((oi: any) => oi.products.category === 'Food Mess')
+                    order.order_items.some((oi: any) => oi.products?.category === 'Food Mess')
                 );
 
                 const totalRevenue = foodOrders.reduce((sum, order) => sum + order.total_amount, 0);
@@ -63,13 +62,6 @@ export default function FoodMessDashboard() {
         };
         fetchData();
     }, [user, supabase]);
-
-    const liveOrderStats = {
-        pending: recentOrders.filter(o => o.status === 'Pending').length,
-        cooking: recentOrders.filter(o => o.status === 'Cooking').length,
-        ready: recentOrders.filter(o => o.status === 'Ready').length,
-        total: recentOrders.length
-    };
     
     return (
         <div className="space-y-8">
@@ -95,7 +87,7 @@ export default function FoodMessDashboard() {
                                     {recentOrders.map(order => (
                                         <TableRow key={order.id}>
                                             <TableCell className="font-medium">{order.buyer?.full_name || 'N/A'}</TableCell>
-                                            <TableCell>{order.order_items.map(oi => oi.products.name).join(', ')}</TableCell>
+                                            <TableCell>{order.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
                                             <TableCell>
                                                 <Badge variant={order.status === 'Ready' ? 'default' : order.status === 'Pending' ? 'destructive' : 'secondary'}>
                                                     {order.status || 'Pending'}
@@ -114,7 +106,7 @@ export default function FoodMessDashboard() {
                  <div className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><IndianRupee className="text-primary"/> Today's Sales</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><IndianRupee className="text-primary"/> Total Sales</CardTitle>
                         </CardHeader>
                         <CardContent>
                              {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>}

@@ -3,15 +3,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Computer, IndianRupee, Clock, PlusCircle, Gamepad2, Printer, Check, X, Calendar } from "lucide-react";
+import { Computer, IndianRupee, PlusCircle, Check, Loader2 } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Product } from "@/lib/types";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
 
 // Mock data for charts, as we don't have time-series data
 const usageData = [
@@ -52,7 +49,7 @@ export default function CybercafeDashboard() {
 
             if (ordersData) {
                 const cybercafeOrders = ordersData.filter(order => 
-                    order.order_items.some((oi: any) => oi.products.category === 'Cyber Café')
+                    order.order_items.some((oi: any) => oi.products?.category === 'Cyber Café')
                 );
                 const totalRevenue = cybercafeOrders.reduce((sum, order) => sum + order.total_amount, 0);
                 setStats({ revenue: totalRevenue, orders: cybercafeOrders.length });
@@ -140,7 +137,7 @@ export default function CybercafeDashboard() {
                             services.map(plan => (
                                 <div key={plan.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
                                     <div className="flex items-center gap-3">
-                                        {plan.name.toLowerCase().includes('gaming') ? <Gamepad2 className="size-5 text-primary" /> : <Computer className="size-5 text-primary" />}
+                                        <Computer className="size-5 text-primary" />
                                         <span className="font-semibold">{plan.name}</span>
                                     </div>
                                     <span className="font-bold">₹{plan.price.toLocaleString()}/hr</span>

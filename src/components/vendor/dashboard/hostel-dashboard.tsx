@@ -4,9 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import type { Order, Product } from "@/lib/types";
@@ -49,7 +47,7 @@ export default function HostelDashboard() {
 
             if (ordersData) {
                 const hostelOrders = (ordersData as any[]).filter(order =>
-                    order.order_items.some((oi: any) => oi.products.category === 'Hostels')
+                    order.order_items.some((oi: any) => oi.products?.category === 'Hostels')
                 );
 
                 const totalRevenue = hostelOrders.reduce((sum, order) => sum + order.total_amount, 0);
@@ -156,7 +154,7 @@ export default function HostelDashboard() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-medium">{activity.buyer.full_name}</TableCell>
-                                        <TableCell>{activity.order_items.map(oi => oi.products.name).join(', ')}</TableCell>
+                                        <TableCell>{activity.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
                                         <TableCell>{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</TableCell>
                                     </TableRow>
                                 ))}

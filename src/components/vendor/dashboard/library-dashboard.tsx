@@ -45,7 +45,7 @@ export default function LibraryDashboard() {
 
             if (ordersData) {
                 const libraryOrders = (ordersData as any[]).filter(order =>
-                    order.order_items.some((oi: any) => oi.products.category === 'Library Services')
+                    order.order_items.some((oi: any) => oi.products?.category === 'Library Services')
                 );
                 setRecentBookings(libraryOrders.slice(0, 3) as Order[]);
             }
@@ -115,7 +115,7 @@ export default function LibraryDashboard() {
                                     {recentBookings.map(booking => (
                                         <TableRow key={booking.id}>
                                             <TableCell className="font-medium">{booking.buyer.full_name}</TableCell>
-                                            <TableCell>{booking.order_items.map(oi => oi.products.name).join(', ')}</TableCell>
+                                            <TableCell>{booking.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
                                             <TableCell><CheckCircle className="size-5 text-green-500"/></TableCell>
                                         </TableRow>
                                     ))}
