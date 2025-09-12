@@ -2,7 +2,6 @@
 
 import type { Metadata } from 'next';
 import VendorDashboardContent from '@/components/vendor/dashboard/page';
-import VendorLayout from '../layout';
 
 export const metadata: Metadata = {
   title: 'Vendor Dashboard | Uninest',
@@ -11,9 +10,7 @@ export const metadata: Metadata = {
 
 export default function VendorDashboardPage() {
   return (
-    <VendorLayout>
-        <VendorDashboardContent />
-    </VendorLayout>
+    <VendorDashboardContent />
   );
 }
 

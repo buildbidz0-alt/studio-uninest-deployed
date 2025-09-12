@@ -1,7 +1,6 @@
 
 import type { Metadata } from 'next';
 import VendorOrdersContent from '@/components/vendor/orders/page';
-import VendorLayout from '../layout';
 
 export const metadata: Metadata = {
   title: 'My Orders | Uninest',
@@ -10,8 +9,6 @@ export const metadata: Metadata = {
 
 export default function VendorOrdersPage() {
     return (
-        <VendorLayout>
-            <VendorOrdersContent />
-        </VendorLayout>
+        <VendorOrdersContent />
     )
 }

@@ -4,7 +4,6 @@ import type { Metadata } from 'next';
 import VendorProductsContent from '@/components/vendor/products/page';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import VendorLayout from '../layout';
 
 export const metadata: Metadata = {
   title: 'My Products | Uninest',
@@ -31,9 +30,7 @@ export default async function VendorProductsPage() {
   }
 
   return (
-    <VendorLayout>
-        <VendorProductsContent initialProducts={products || []} />
-    </VendorLayout>
+    <VendorProductsContent initialProducts={products || []} />
     );
 }
 
