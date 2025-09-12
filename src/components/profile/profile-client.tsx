@@ -9,8 +9,7 @@ import { Award, Edit, Loader2, BookCopy, Package, Newspaper, UserPlus, Users } f
 import Link from 'next/link';
 import { redirect, useSearchParams, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import type { Note, PostWithAuthor, Product, Profile } from '@/lib/types';
-import NoteCard from '../notes/note-card';
+import type { PostWithAuthor, Product, Profile } from '@/lib/types';
 import ProductCard from '../marketplace/product-card';
 import PostCard from '../feed/post-card';
 import { useToast } from '@/hooks/use-toast';
@@ -29,12 +28,11 @@ export default function ProfileClient() {
 
   const [profile, setProfile] = useState<ProfileWithCounts | null>(null);
   const [profileContent, setProfileContent] = useState<{
-    notes: Note[],
     listings: Product[],
     posts: PostWithAuthor[],
     followers: Profile[],
     following: Profile[],
-  }>({ notes: [], listings: [], posts: [], followers: [], following: [] });
+  }>({ listings: [], posts: [], followers: [], following: [] });
   
   const [contentLoading, setContentLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -74,7 +72,6 @@ export default function ProfileClient() {
 
       // Fetch content associated with the profile
       const userId = profileData.id;
-      const { data: notesData } = await supabase.from('notes').select('*, profiles:user_id(full_name, avatar_url)').eq('user_id', userId);
       const { data: listingsData } = await supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', userId);
       const { data: postsData } = await supabase.from('posts').select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`).eq('user_id', userId);
       
@@ -88,7 +85,6 @@ export default function ProfileClient() {
       }
       
       setProfileContent({
-          notes: (notesData as Note[]) || [],
           listings: (listingsData as Product[]) || [],
           posts: (postsData || []).map(p => ({ ...p, isLiked: likedPostIds.has(p.id) })) as PostWithAuthor[],
           followers: (followersData?.map((f: any) => f.follower) as Profile[]) || [],
@@ -191,9 +187,8 @@ export default function ProfileClient() {
       </Card>
       
       <Tabs defaultValue="activity" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 bg-card shadow-sm rounded-full">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-card shadow-sm rounded-full">
           <TabsTrigger value="activity" className="rounded-full py-2"><Newspaper className="mr-2 size-4" />Feed</TabsTrigger>
-          <TabsTrigger value="notes" className="rounded-full py-2"><BookCopy className="mr-2 size-4" />Notes</TabsTrigger>
           <TabsTrigger value="listings" className="rounded-full py-2"><Package className="mr-2 size-4" />Listings</TabsTrigger>
           <TabsTrigger value="followers" className="rounded-full py-2"><Users className="mr-2 size-4" />Followers</TabsTrigger>
           <TabsTrigger value="following" className="rounded-full py-2"><Users className="mr-2 size-4" />Following</TabsTrigger>
@@ -222,15 +217,6 @@ export default function ProfileClient() {
                     ))
                 ) : (
                     <p className="text-center text-muted-foreground p-8">No posts yet.</p>
-                )}
-                </div>
-            </TabsContent>
-            <TabsContent value="notes" className="mt-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {profileContent.notes.length > 0 ? (
-                    profileContent.notes.map(note => <NoteCard key={note.id} note={note} />)
-                ) : (
-                    <p className="text-center text-muted-foreground p-8 sm:col-span-2">No notes uploaded yet.</p>
                 )}
                 </div>
             </TabsContent>
