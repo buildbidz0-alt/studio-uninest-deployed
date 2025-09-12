@@ -42,7 +42,7 @@ export default function FoodMessDashboard() {
                     order_items (
                         products ( name, category )
                     ),
-                    buyer:profiles!buyer_id(full_name)
+                    profiles!buyer_id(full_name)
                 `)
                 .eq('vendor_id', user.id)
                 .order('created_at', { ascending: false });
@@ -50,7 +50,7 @@ export default function FoodMessDashboard() {
             if (ordersData) {
                 const foodOrders = (ordersData as any[]).filter(order => 
                     order.order_items.some((oi: any) => oi.products?.category === 'Food Mess')
-                );
+                ).map(o => ({...o, buyer: o.profiles}));
 
                 const totalRevenue = foodOrders.reduce((sum, order) => sum + order.total_amount, 0);
                 

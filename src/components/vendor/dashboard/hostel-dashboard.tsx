@@ -40,7 +40,7 @@ export default function HostelDashboard() {
                 .select(`
                     *,
                     order_items(products(name, category)),
-                    buyer:profiles!buyer_id(full_name)
+                    profiles!buyer_id(full_name)
                 `)
                 .eq('vendor_id', user.id)
                 .order('created_at', { ascending: false });
@@ -48,7 +48,7 @@ export default function HostelDashboard() {
             if (ordersData) {
                 const hostelOrders = (ordersData as any[]).filter(order =>
                     order.order_items.some((oi: any) => oi.products?.category === 'Hostels')
-                );
+                ).map(o => ({...o, buyer: o.profiles}));
 
                 const totalRevenue = hostelOrders.reduce((sum, order) => sum + order.total_amount, 0);
                 const uniqueTenants = new Set(hostelOrders.map(o => o.buyer_id)).size;

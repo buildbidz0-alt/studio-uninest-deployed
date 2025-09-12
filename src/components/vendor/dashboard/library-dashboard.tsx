@@ -38,7 +38,7 @@ export default function LibraryDashboard() {
                 .select(`
                     *,
                     order_items(products(name, category)),
-                    buyer:profiles!buyer_id(full_name)
+                    profiles!buyer_id(full_name)
                 `)
                 .eq('vendor_id', user.id)
                 .order('created_at', { ascending: false });
@@ -46,7 +46,7 @@ export default function LibraryDashboard() {
             if (ordersData) {
                 const libraryOrders = (ordersData as any[]).filter(order =>
                     order.order_items.some((oi: any) => oi.products?.category === 'Library Services')
-                );
+                ).map(o => ({...o, buyer: o.profiles}));
                 setRecentBookings(libraryOrders.slice(0, 3) as Order[]);
             }
 
