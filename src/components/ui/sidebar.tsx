@@ -175,6 +175,9 @@ const Sidebar = React.forwardRef<
           }
           side="left"
         >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Main Menu</SheetTitle>
+          </SheetHeader>
           {children}
         </SheetContent>
       </Sheet>
