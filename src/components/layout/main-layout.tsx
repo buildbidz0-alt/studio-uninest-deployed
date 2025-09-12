@@ -82,7 +82,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+        <header className="flex md:hidden h-14 items-center justify-between border-b bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center gap-1">
               <SidebarTrigger />
                <Link href="/" className="flex items-center gap-2">
@@ -102,7 +102,8 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         </header>
         <main className={cn(
             "flex-1 overflow-y-auto p-8", 
-            isMobile && (isHomePage ? "px-0 py-4" : "p-4"),
+            isMobile && isHomePage && "p-0 py-4",
+            isMobile && !isHomePage && "p-4",
             isMobile && "pb-24"
         )}>
           {children}

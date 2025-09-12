@@ -107,7 +107,7 @@ export default function HomeClient() {
   return (
     <>
       <DonationModal isOpen={isDonationModalOpen} onOpenChange={setIsDonationModalOpen} />
-      <div className="container px-0 md:px-4 space-y-16 md:space-y-24">
+      <div className="space-y-16 md:space-y-24">
         
         {/* Welcome and Search Section */}
         <section className="text-left px-4 md:px-0">
@@ -146,7 +146,7 @@ export default function HomeClient() {
         </section>
 
         {/* Hero Banner (Top) */}
-        <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl mx-0 md:mx-auto">
+        <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl -mx-4 md:mx-auto">
           <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight">
             Join <span className="primary-gradient bg-clip-text text-transparent">10,000+ Students</span> Already on UniNest 🎓
           </h1>
@@ -173,7 +173,7 @@ export default function HomeClient() {
         </section>
         
         {/* Testimonials Section */}
-        <section>
+        <section className="px-4 md:px-0">
             <h2 className="text-3xl font-headline font-bold text-center mb-12">Loved by Students Everywhere</h2>
             <Carousel
               opts={{ align: "start", loop: true }}
@@ -224,7 +224,7 @@ export default function HomeClient() {
         </section>
 
         {/* Closing CTA */}
-          <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl mx-0 md:mx-auto">
+          <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl -mx-4 md:mx-auto">
             <h2 className="text-3xl font-bold font-headline primary-gradient bg-clip-text text-transparent">Don’t Miss Out.</h2>
             <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
               Be part of the fastest-growing student movement and supercharge your campus life.
@@ -240,5 +240,3 @@ export default function HomeClient() {
     </>
   );
 }
-
-    
