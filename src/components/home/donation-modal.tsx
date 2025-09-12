@@ -96,7 +96,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
       });
       
       const order = await response.json();
-      if (!response.ok) throw new Error(order.error || 'Failed to create order');
+      if (!response.ok) throw new Error(order.error || 'Failed to create payment order.');
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
@@ -125,6 +125,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
         theme: { color: '#4A90E2' },
       };
       openCheckout(options);
+
     } catch (error) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Donation Failed', description: error instanceof Error ? error.message : 'Could not connect to the payment gateway.'});
@@ -190,3 +191,5 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
     </Dialog>
   );
 }
+
+    
