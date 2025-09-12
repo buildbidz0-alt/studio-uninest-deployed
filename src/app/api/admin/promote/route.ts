@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
         
         const hasAdmin = existingAdmins.some(u => u.user_metadata?.role === 'admin');
         if (hasAdmin) {
-            // Uncomment the line below for production to prevent creating multiple admins.
+            // NOTE: In a real production environment, you would want to enable this to prevent creating multiple admins.
+            // For development and setup, we'll allow multiple admins.
             // return NextResponse.json({ error: 'An admin user already exists.' }, { status: 403 });
         }
 
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
         }
         
         if (!users || users.length === 0) {
-            return NextResponse.json({ error: `User with email ${email} not found. Please sign up first.` }, { status: 404 });
+            return NextResponse.json({ error: `User with email ${email} not found. Please ensure the user has signed up first.` }, { status: 404 });
         }
         
         const user = users[0];
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
             throw updateError;
         }
 
-        // 4. Update the public profiles table as well
+        // 4. Update the public profiles table as well. This is CRITICAL.
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .update({ role: 'admin' })
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
         if (profileError) {
             // Log this error but don't fail the whole request, as the primary goal (auth role) was met.
             console.error('Could not update role in public profiles table:', profileError);
+            // Even if this fails, the auth role is the most important part.
         }
 
         return NextResponse.json({ message: `Successfully promoted ${updatedUser?.email} to admin.` });

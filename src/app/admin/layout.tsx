@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AdminSidebarNav } from '@/components/admin/admin-sidebar-nav';
 import { Logo } from '@/components/icons';
-import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +36,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   
   useEffect(() => {
     if (!loading) {
+      // The `role` from the useAuth hook is the single source of truth.
+      // It's derived directly from the user's authentication token.
       if (role === 'admin') {
         setIsAuthorized(true);
       } else {
