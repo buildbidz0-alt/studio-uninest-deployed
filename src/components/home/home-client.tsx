@@ -19,6 +19,7 @@ import { ArrowRight, BookOpen, GraduationCap, Rocket, Users, Building, Sparkles,
 import { useAuth } from '@/hooks/use-auth';
 import StatCard from '@/components/home/stat-card';
 import DonationModal from './donation-modal';
+import { cn } from '@/lib/utils';
 
 const stats = [
   { value: 10000, label: 'Students Connected', icon: GraduationCap, isPlus: true },
@@ -106,10 +107,10 @@ export default function HomeClient() {
   return (
     <>
       <DonationModal isOpen={isDonationModalOpen} onOpenChange={setIsDonationModalOpen} />
-      <div className="space-y-16 md:space-y-24">
+      <div className="container px-0 md:px-4 space-y-16 md:space-y-24">
         
         {/* Welcome and Search Section */}
-        <section className="text-left">
+        <section className="text-left px-4 md:px-0">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
                 Welcome to <span className="primary-gradient bg-clip-text text-transparent">UniNest!</span>
             </h1>
@@ -124,7 +125,7 @@ export default function HomeClient() {
         </section>
 
         {/* Feature Cards Section */}
-        <section id="features">
+        <section id="features" className="px-4 md:px-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature) => (
               <Link key={feature.title} href={feature.href}>
@@ -145,7 +146,7 @@ export default function HomeClient() {
         </section>
 
         {/* Hero Banner (Top) */}
-        <section className="text-center bg-card p-8 md:p-12 rounded-2xl shadow-xl">
+        <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl mx-0 md:mx-auto">
           <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight">
             Join <span className="primary-gradient bg-clip-text text-transparent">10,000+ Students</span> Already on UniNest 🎓
           </h1>
@@ -163,7 +164,7 @@ export default function HomeClient() {
         </section>
 
         {/* Impact Numbers */}
-        <section>
+        <section className="px-4 md:px-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {stats.map((stat, index) => (
               <StatCard key={index} {...stat} />
@@ -179,9 +180,9 @@ export default function HomeClient() {
               plugins={[Autoplay({ delay: 5000 })]}
               className="w-full max-w-4xl mx-auto"
             >
-              <CarouselContent>
+              <CarouselContent className="-ml-2 md:-ml-4">
                 {testimonials.map((testimonial, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                  <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
                     <div className="p-1">
                       <Card className="h-full">
                         <CardContent className="flex flex-col items-center text-center justify-center p-6">
@@ -204,7 +205,7 @@ export default function HomeClient() {
         </section>
 
         {/* Growth Timeline Section */}
-        <section>
+        <section className="px-4 md:px-0">
           <h2 className="text-3xl font-headline font-bold text-center mb-12">Our Journey So Far</h2>
           <div className="grid md:grid-cols-4 gap-x-6 gap-y-10 max-w-5xl mx-auto">
               {timeline.map((item, index) => (
@@ -223,7 +224,7 @@ export default function HomeClient() {
         </section>
 
         {/* Closing CTA */}
-          <section className="text-center bg-card p-8 md:p-12 rounded-2xl shadow-xl max-w-4xl mx-auto">
+          <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl mx-0 md:mx-auto">
             <h2 className="text-3xl font-bold font-headline primary-gradient bg-clip-text text-transparent">Don’t Miss Out.</h2>
             <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
               Be part of the fastest-growing student movement and supercharge your campus life.
@@ -239,3 +240,5 @@ export default function HomeClient() {
     </>
   );
 }
+
+    
