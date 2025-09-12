@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { type ReactNode } from 'react';
@@ -20,6 +21,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import NotificationsDropdown from './notifications-dropdown';
+import { Button } from '../ui/button';
+import { Heart } from 'lucide-react';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -86,11 +89,17 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                  <h1 className="text-lg font-semibold">UniNest</h1>
               </Link>
             </div>
-             <div className="flex items-center gap-2">
+             <div className="flex items-center gap-1">
+               <Button asChild size="sm" variant="secondary" className="rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900">
+                  <Link href="/donate">
+                    <Heart className="size-4" />
+                    <span className="ml-1 font-bold">Donate</span>
+                  </Link>
+               </Button>
               {user && <NotificationsDropdown />}
             </div>
         </header>
-        <main className={cn("flex-1 overflow-y-auto md:p-8", isMobile ? "p-0" : "p-8", isMobile && "pb-24")}>
+        <main className={cn("flex-1 overflow-y-auto", isMobile ? "p-4" : "p-8", isMobile && "pb-24")}>
           {children}
         </main>
       </SidebarInset>

@@ -21,7 +21,6 @@ const mainNavItems = [
 ];
 
 const secondaryNavItems = [
-  { href: '/donate', label: 'Donate', icon: Heart, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/about', label: 'About Us', icon: Info, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
 
@@ -132,6 +131,15 @@ export function SidebarNav() {
 
 
         <div className='flex-grow' />
+
+         <SidebarMenuItem>
+            <SidebarMenuButton asChild variant="secondary" className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 font-bold border-amber-200 dark:border-amber-800 border-2">
+                <Link href="/donate">
+                    <Heart className="size-5" />
+                    <span>Donate</span>
+                </Link>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
 
         {role === 'admin' && (
              <SidebarMenuItem>
