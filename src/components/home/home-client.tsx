@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -90,6 +91,8 @@ const features = [
 export default function HomeClient() {
   const { user } = useAuth();
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     // Show the donation modal once per session
@@ -103,11 +106,17 @@ export default function HomeClient() {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
   
   return (
     <>
       <DonationModal isOpen={isDonationModalOpen} onOpenChange={setIsDonationModalOpen} />
-      <div className="space-y-16 md:space-y-24">
+      <div className="container px-0 md:px-4 space-y-16 md:space-y-24">
         
         {/* Welcome and Search Section */}
         <section className="text-left px-4 md:px-0">
@@ -120,6 +129,9 @@ export default function HomeClient() {
                 <Input
                     placeholder="Search for notes, products, or people..."
                     className="w-full rounded-full bg-card py-6 pl-12 text-base border-2"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearch}
                 />
             </div>
         </section>
@@ -146,7 +158,7 @@ export default function HomeClient() {
         </section>
 
         {/* Hero Banner (Top) */}
-        <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl -mx-4 md:mx-auto">
+        <section className="text-center bg-card p-8 md:p-12 rounded-2xl shadow-xl">
           <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight">
             Join <span className="primary-gradient bg-clip-text text-transparent">10,000+ Students</span> Already on UniNest 🎓
           </h1>
@@ -224,7 +236,7 @@ export default function HomeClient() {
         </section>
 
         {/* Closing CTA */}
-          <section className="text-center bg-card p-8 md:p-12 rounded-none md:rounded-2xl shadow-xl -mx-4 md:mx-auto">
+          <section className="text-center bg-card p-8 md:p-12 rounded-2xl shadow-xl">
             <h2 className="text-3xl font-bold font-headline primary-gradient bg-clip-text text-transparent">Don’t Miss Out.</h2>
             <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
               Be part of the fastest-growing student movement and supercharge your campus life.
@@ -240,3 +252,5 @@ export default function HomeClient() {
     </>
   );
 }
+
+    
