@@ -4,9 +4,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, PlusCircle, Users, IndianRupee, ChefHat, Bell, Drumstick, Leaf } from "lucide-react";
+import { Utensils, PlusCircle, Users, IndianRupee, ChefHat, Drumstick, Leaf } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 // Mock data, replace with actual data from your backend

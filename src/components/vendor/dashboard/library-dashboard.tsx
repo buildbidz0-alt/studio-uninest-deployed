@@ -4,8 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Armchair, Book, CheckCircle, Clock, PlusCircle, User, Users } from "lucide-react";
-import Link from 'next/link';
+import { Armchair, Book, CheckCircle, PlusCircle, Users } from "lucide-react";
 
 // Mock data, replace with actual data from your backend
 const liveBookingStatus = {
@@ -124,4 +123,3 @@ export default function LibraryDashboard() {
         </div>
     );
 }
-
