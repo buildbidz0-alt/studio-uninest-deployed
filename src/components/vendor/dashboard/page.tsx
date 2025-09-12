@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -12,9 +13,9 @@ import { subDays, format, startOfDay } from 'date-fns';
 import LibraryDashboard from './library-dashboard';
 import PageHeader from '@/components/admin/page-header';
 import FoodMessDashboard from './food-mess-dashboard';
+import HostelDashboard from './hostel-dashboard';
 
 // Placeholder components for other vendor types
-const HostelDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Hostel Dashboard Coming Soon</div>;
 const CybercafeDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Cybercafé Dashboard Coming Soon</div>;
 
 
@@ -90,7 +91,10 @@ export default function VendorDashboardContent() {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
-  const hasGeneralProductFeatures = vendorCategories.length > 0 && !vendorCategories.every(cat => ['library', 'food mess', 'hostels', 'cybercafe'].includes(cat));
+  const hasGeneralProductFeatures = useMemo(() => 
+    vendorCategories.some(cat => !['library', 'food mess', 'hostels', 'cybercafe'].includes(cat))
+  , [vendorCategories]);
+
 
   return (
     <div className="space-y-8">
