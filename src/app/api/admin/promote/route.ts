@@ -2,6 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+
 export async function POST(request: NextRequest) {
     const { email } = await request.json();
 
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
         }
         
         if (!users || users.length === 0) {
-            throw new Error(`User with email ${email} not found.`);
+            return NextResponse.json({ error: `User with email ${email} not found.` }, { status: 404 });
         }
         
         const user = users[0];
