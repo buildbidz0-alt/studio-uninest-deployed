@@ -23,13 +23,21 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User as UserIcon } from 'lucide-react';
+import { Loader2, User as UserIcon, Book, Utensils, Laptop, Bed } from 'lucide-react';
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Checkbox } from '../ui/checkbox';
+
+const vendorCategoriesList = [
+    { id: "library", label: "Library", icon: Book },
+    { id: "food mess", label: "Food Mess", icon: Utensils },
+    { id: "cybercafe", label: "Cyber Café", icon: Laptop },
+    { id: "hostels", label: "Hostels", icon: Bed },
+] as const;
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
@@ -39,6 +47,7 @@ const profileFormSchema = z.object({
   bio: z.string().max(200, 'Bio must not exceed 200 characters.').optional(),
   openingHours: z.string().max(200, 'Opening hours must not exceed 200 characters.').optional(),
   role: z.enum(['student', 'vendor']),
+  vendorCategories: z.array(z.string()).optional(),
 });
 
 const passwordFormSchema = z.object({
@@ -73,6 +82,7 @@ export default function SettingsContent() {
       bio: user?.user_metadata?.bio || '',
       openingHours: user?.user_metadata?.opening_hours || '',
       role: user?.user_metadata?.role || 'student',
+      vendorCategories: user?.user_metadata?.vendor_categories || [],
     },
   });
 
@@ -94,6 +104,7 @@ export default function SettingsContent() {
         bio: user.user_metadata?.bio || '',
         openingHours: user.user_metadata?.opening_hours || '',
         role: user.user_metadata?.role || 'student',
+        vendorCategories: user.user_metadata?.vendor_categories || [],
       })
       if (user.user_metadata?.banner_url) {
         setBannerPreviewUrl(user.user_metadata.banner_url);
@@ -112,6 +123,7 @@ export default function SettingsContent() {
         bio: values.bio,
         role: values.role,
         opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
+        vendor_categories: values.role === 'vendor' ? values.vendorCategories : [],
     };
 
     const { data: authData, error: authError } = await supabase.auth.updateUser({ data: userData });
@@ -382,6 +394,61 @@ export default function SettingsContent() {
                   </FormItem>
                 )}
               />
+
+              {profileForm.watch('role') === 'vendor' && (
+                <FormField
+                  control={profileForm.control}
+                  name="vendorCategories"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel className="text-base">Services Provided</FormLabel>
+                        <FormDescription>
+                          Select the categories that apply to your business.
+                        </FormDescription>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {vendorCategoriesList.map((item) => (
+                          <FormField
+                            key={item.id}
+                            control={profileForm.control}
+                            name="vendorCategories"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={item.id}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(item.id)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), item.id])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== item.id
+                                              )
+                                            )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal flex items-center gap-2">
+                                      <item.icon className="size-4" />
+                                      {item.label}
+                                  </FormLabel>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
                 control={profileForm.control}
                 name="fullName"
@@ -516,5 +583,3 @@ export default function SettingsContent() {
     </div>
   );
 }
-
-    
