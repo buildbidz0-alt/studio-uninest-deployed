@@ -29,6 +29,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith('/admin');
+  const isHomePage = pathname === '/';
 
   if (isAdminPage) {
     return <>{children}</>;
@@ -99,7 +100,11 @@ export default function MainLayout({ children }: { children: ReactNode }) {
               {user && <NotificationsDropdown />}
             </div>
         </header>
-        <main className={cn("flex-1 overflow-y-auto", isMobile ? "p-4" : "p-8", isMobile && "pb-24")}>
+        <main className={cn(
+            "flex-1 overflow-y-auto p-8", 
+            isMobile && (isHomePage ? "px-0 py-4" : "p-4"),
+            isMobile && "pb-24"
+        )}>
           {children}
         </main>
       </SidebarInset>
