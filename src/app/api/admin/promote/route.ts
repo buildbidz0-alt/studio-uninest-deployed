@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-        return NextResponse.json({ error: 'Supabase credentials are not configured on the server.' }, { status: 500 });
+        return NextResponse.json({ error: 'Supabase credentials are not configured on the server. Please set SUPABASE_SERVICE_KEY.' }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -26,7 +26,21 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-        // 1. Get the user by email
+        // 1. Check if an admin already exists.
+        const { data: { users: existingAdmins }, error: adminCheckError } = await supabaseAdmin.auth.admin.listUsers();
+        if (adminCheckError) {
+             console.error('Error checking for existing admins:', adminCheckError);
+             throw new Error(`Error checking for existing admins: ${adminCheckError.message}`);
+        }
+        
+        const hasAdmin = existingAdmins.some(u => u.user_metadata?.role === 'admin');
+        if (hasAdmin) {
+            // Uncomment the line below for production to prevent creating multiple admins.
+            // return NextResponse.json({ error: 'An admin user already exists.' }, { status: 403 });
+        }
+
+
+        // 2. Get the user by email
         const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1, email: email as string });
         
         if (listError) {
@@ -35,12 +49,12 @@ export async function POST(request: NextRequest) {
         }
         
         if (!users || users.length === 0) {
-            return NextResponse.json({ error: `User with email ${email} not found.` }, { status: 404 });
+            return NextResponse.json({ error: `User with email ${email} not found. Please sign up first.` }, { status: 404 });
         }
         
         const user = users[0];
 
-        // 2. Update the user's metadata with the admin role
+        // 3. Update the user's metadata with the admin role
         const { data: { user: updatedUser }, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             user.id,
             { user_metadata: { ...user.user_metadata, role: 'admin' } }
@@ -50,7 +64,7 @@ export async function POST(request: NextRequest) {
             throw updateError;
         }
 
-        // 3. Update the public profiles table as well
+        // 4. Update the public profiles table as well
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .update({ role: 'admin' })
@@ -66,6 +80,6 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
         console.error('Admin promotion error:', errorMessage);
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        return NextResponse.json({ error: `Server error: ${errorMessage}` }, { status: 500 });
     }
 }
