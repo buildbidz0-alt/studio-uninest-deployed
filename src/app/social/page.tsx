@@ -1,48 +1,16 @@
 
-'use client';
-
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Newspaper, MessageSquare, Camera, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/use-auth';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { Newspaper, MessageSquare, Camera, Search } from 'lucide-react';
 
-// export const metadata: Metadata = {
-//   title: 'Social Hub | UniNest',
-//   description: 'Connect with the UniNest community through the social feed and direct messages.',
-// };
+export const metadata: Metadata = {
+  title: 'Social Hub | UniNest',
+  description: 'Connect with the UniNest community through the social feed and direct messages.',
+};
 
 export default function SocialPage() {
-  const { user, role, loading } = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!loading && role === 'vendor') {
-      toast({
-        title: 'Access Denied',
-        description: 'The social hub is not available for vendors.',
-        variant: 'destructive',
-      });
-      router.push('/');
-    }
-  }, [loading, role, router, toast]);
-
-  if (loading || role === 'vendor') {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="size-8 animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
@@ -86,10 +54,10 @@ export default function SocialPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full" disabled={!user}>
+            <Button asChild className="w-full">
               <Link href="/chat">Open Chats</Link>
             </Button>
-             {!user && <p className="text-xs text-center text-muted-foreground mt-2">Login to access your chats.</p>}
+             <p className="text-xs text-center text-muted-foreground mt-2">Login to access your chats.</p>
           </CardContent>
         </Card>
       </div>
