@@ -5,31 +5,65 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight, ArrowLeft } from "lucide-react";
+import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Mock data, replace with actual data from your backend
-const quickStats = {
-    tenants: 88,
-    revenue: 440000,
-    maintenance: 3,
-};
-
-const rooms = [
-    { id: 101, status: 'occupied', capacity: 2, tenants: ['Rohan', 'Arjun'] },
-    { id: 102, status: 'available', capacity: 3, tenants: [] },
-    { id: 103, status: 'maintenance', capacity: 2, tenants: [] },
-    { id: 104, status: 'occupied', capacity: 2, tenants: ['Priya', 'Sana'] },
-    { id: 201, status: 'available', capacity: 1, tenants: [] },
-    { id: 202, status: 'occupied', capacity: 4, tenants: ['Amit', 'Kabir', 'Meera', 'Ravi'] },
-];
-
-const recentActivity = [
-    { type: 'check-in', name: 'Kabir Ahmed', room: '202', date: '2 days ago' },
-    { type: 'check-out', name: 'Vikram Singh', room: '101', date: '5 days ago' },
-];
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect, useState } from "react";
+import type { Order, Product } from "@/lib/types";
+import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
 
 export default function HostelDashboard() {
+    const { supabase, user } = useAuth();
+    const [rooms, setRooms] = useState<Product[]>([]);
+    const [recentActivity, setRecentActivity] = useState<Order[]>([]);
+    const [stats, setStats] = useState({ revenue: 0, tenants: 0, maintenance: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!user || !supabase) return;
+            setLoading(true);
+
+            // Fetch rooms (products in "Hostels" category)
+            const { data: productsData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('seller_id', user.id)
+                .eq('category', 'Hostels');
+
+            if (productsData) {
+                setRooms(productsData as Product[]);
+            }
+            
+            // Fetch orders for revenue and activity
+            const { data: ordersData } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    order_items(products(name, category)),
+                    buyer:profiles!buyer_id(full_name)
+                `)
+                .eq('vendor_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (ordersData) {
+                const hostelOrders = (ordersData as any[]).filter(order =>
+                    order.order_items.some((oi: any) => oi.products.category === 'Hostels')
+                );
+
+                const totalRevenue = hostelOrders.reduce((sum, order) => sum + order.total_amount, 0);
+                const uniqueTenants = new Set(hostelOrders.map(o => o.buyer_id)).size;
+
+                setRecentActivity(hostelOrders.slice(0, 5) as Order[]);
+                setStats(prev => ({ ...prev, revenue: totalRevenue, tenants: uniqueTenants }));
+            }
+
+            setLoading(false);
+        };
+        fetchData();
+    }, [user, supabase]);
+
     return (
         <div className="space-y-8">
             <h2 className="text-2xl font-bold tracking-tight">Hostel Management</h2>
@@ -41,16 +75,18 @@ export default function HostelDashboard() {
                         <Users className="text-primary"/>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold">{quickStats.tenants}</p>
+                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">{stats.tenants}</p>}
+                        <p className="text-sm text-muted-foreground">based on unique orders</p>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Monthly Revenue</CardTitle>
+                        <CardTitle>Total Revenue</CardTitle>
                         <IndianRupee className="text-green-500"/>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold">₹{quickStats.revenue.toLocaleString()}</p>
+                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>}
+                        <p className="text-sm text-muted-foreground">from all bookings</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -59,7 +95,8 @@ export default function HostelDashboard() {
                         <Wrench className="text-red-500"/>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold">{quickStats.maintenance}</p>
+                        <p className="text-3xl font-bold">{stats.maintenance}</p>
+                        <p className="text-sm text-muted-foreground">requests open</p>
                     </CardContent>
                 </Card>
             </div>
@@ -67,68 +104,67 @@ export default function HostelDashboard() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle className="flex items-center gap-2"><Bed className="text-primary"/> Room Availability</CardTitle>
-                        <CardDescription>Live overview of all hostel rooms.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><Bed className="text-primary"/> Room Listings</CardTitle>
+                        <CardDescription>Overview of your hostel room listings.</CardDescription>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline"><Calendar className="mr-2"/> Manage Bookings</Button>
-                        <Button><PlusCircle className="mr-2"/> Add Room</Button>
+                        <Button variant="outline" disabled><Calendar className="mr-2"/> Manage Bookings</Button>
+                        <Button asChild><Link href="/marketplace/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
                     </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {rooms.map(room => (
-                        <div key={room.id} className={cn(
-                            "p-4 rounded-lg border-2",
-                            room.status === 'occupied' && 'bg-red-100 dark:bg-red-900/50 border-red-200 dark:border-red-800',
-                            room.status === 'available' && 'bg-green-100 dark:bg-green-900/50 border-green-200 dark:border-green-800',
-                            room.status === 'maintenance' && 'bg-yellow-100 dark:bg-yellow-900/50 border-yellow-200 dark:border-yellow-800'
-                        )}>
-                            <div className="flex justify-between items-center">
-                                <p className="font-bold text-lg">Room {room.id}</p>
-                                <Badge variant="secondary" className="capitalize">{room.status}</Badge>
+                     {loading ? <Loader2 className="animate-spin" /> : rooms.length > 0 ? (
+                        rooms.map(room => (
+                            <div key={room.id} className="p-4 rounded-lg border-2 bg-green-100 dark:bg-green-900/50 border-green-200 dark:border-green-800">
+                                <div className="flex justify-between items-center">
+                                    <p className="font-bold text-lg truncate" title={room.name}>{room.name}</p>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 text-sm">
+                                    <IndianRupee className="size-4"/>
+                                    <span>{room.price.toLocaleString()}</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 mt-2 text-sm">
-                                <Users className="size-4"/>
-                                <span>{room.tenants.length} / {room.capacity}</span>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                         <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet.</p>
+                    )}
                 </CardContent>
             </Card>
 
             <Card>
                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
+                    <CardTitle>Recent Bookings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Activity</TableHead>
-                                <TableHead>Student</TableHead>
-                                <TableHead>Room</TableHead>
-                                <TableHead>Date</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {recentActivity.map(activity => (
-                                <TableRow key={activity.name}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            {activity.type === 'check-in' ? 
-                                                <ArrowRight className="size-4 text-green-500"/> :
-                                                <ArrowLeft className="size-4 text-red-500"/>
-                                            }
-                                            <span className="capitalize">{activity.type}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="font-medium">{activity.name}</TableCell>
-                                    <TableCell>{activity.room}</TableCell>
-                                    <TableCell>{activity.date}</TableCell>
+                     {loading ? <Loader2 className="animate-spin" /> : recentActivity.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Activity</TableHead>
+                                    <TableHead>Student</TableHead>
+                                    <TableHead>Room</TableHead>
+                                    <TableHead>Date</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {recentActivity.map(activity => (
+                                    <TableRow key={activity.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <ArrowRight className="size-4 text-green-500"/>
+                                                <span className="capitalize">New Booking</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-medium">{activity.buyer.full_name}</TableCell>
+                                        <TableCell>{activity.order_items.map(oi => oi.products.name).join(', ')}</TableCell>
+                                        <TableCell>{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                     ) : (
+                        <p className="text-muted-foreground text-center py-10">No recent bookings.</p>
+                     )}
                 </CardContent>
             </Card>
 

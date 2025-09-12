@@ -7,21 +7,13 @@ import { Computer, IndianRupee, Clock, PlusCircle, Gamepad2, Printer, Check, X, 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
+import { Product } from "@/lib/types";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
-// Mock data, replace with actual data from your backend
-const systemStats = {
-    total: 25,
-    available: 10,
-    inUse: 15,
-};
-
-const systems = Array.from({ length: systemStats.total }, (_, i) => ({
-  id: `PC-${String(i + 1).padStart(2, '0')}`,
-  status: i < systemStats.inUse ? 'in-use' : 'available',
-  user: i < systemStats.inUse ? 'Rohan V.' : null,
-  startTime: i < systemStats.inUse ? Date.now() - Math.random() * 2 * 3600 * 1000 : null,
-}));
-
+// Mock data for charts, as we don't have time-series data
 const usageData = [
   { time: '10 AM', users: 5 }, { time: '11 AM', users: 8 },
   { time: '12 PM', users: 12 }, { time: '1 PM', users: 15 },
@@ -30,13 +22,47 @@ const usageData = [
   { time: '6 PM', users: 16 },
 ];
 
-const ratePlans = [
-    { name: 'Standard Usage', price: '₹30/hr', icon: Computer },
-    { name: 'Gaming Zone', price: '₹50/hr', icon: Gamepad2 },
-    { name: 'Printing/Scanning', price: '₹5/page', icon: Printer },
-]
-
 export default function CybercafeDashboard() {
+    const { supabase, user } = useAuth();
+    const [services, setServices] = useState<Product[]>([]);
+    const [stats, setStats] = useState({ revenue: 0, orders: 0 });
+    const [loading, setLoading] = useState(true);
+    
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!user || !supabase) return;
+            setLoading(true);
+
+            // Fetch services/rate plans
+            const { data: productsData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('seller_id', user.id)
+                .eq('category', 'Cyber Café');
+
+            if (productsData) {
+                setServices(productsData as Product[]);
+            }
+
+            // Fetch orders for stats
+            const { data: ordersData } = await supabase
+                .from('orders')
+                .select('total_amount, order_items(products(category))')
+                .eq('vendor_id', user.id)
+
+            if (ordersData) {
+                const cybercafeOrders = ordersData.filter(order => 
+                    order.order_items.some((oi: any) => oi.products.category === 'Cyber Café')
+                );
+                const totalRevenue = cybercafeOrders.reduce((sum, order) => sum + order.total_amount, 0);
+                setStats({ revenue: totalRevenue, orders: cybercafeOrders.length });
+            }
+
+            setLoading(false);
+        };
+        fetchData();
+    }, [user, supabase]);
+
     return (
         <div className="space-y-8">
             <h2 className="text-2xl font-bold tracking-tight">Cybercafé Management</h2>
@@ -44,95 +70,85 @@ export default function CybercafeDashboard() {
             <div className="grid lg:grid-cols-3 gap-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Available Systems</CardTitle>
+                        <CardTitle>Total Plans/Services</CardTitle>
+                        <Computer className="text-primary"/>
+                    </CardHeader>
+                    <CardContent>
+                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">{services.length}</p>}
+                        <p className="text-sm text-muted-foreground">Active service listings</p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Total Orders</CardTitle>
                         <Check className="text-green-500"/>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold">{systemStats.available}</p>
-                        <p className="text-sm text-muted-foreground">out of {systemStats.total} total</p>
+                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">{stats.orders}</p>}
+                         <p className="text-sm text-muted-foreground">Across all services</p>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Systems In Use</CardTitle>
-                        <X className="text-red-500"/>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-3xl font-bold">{systemStats.inUse}</p>
-                         <p className="text-sm text-muted-foreground">currently active sessions</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Today's Revenue</CardTitle>
+                        <CardTitle>Total Revenue</CardTitle>
                         <IndianRupee className="text-primary"/>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold">₹4,500</p>
-                         <p className="text-sm text-muted-foreground">from active sessions</p>
+                         {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>}
+                         <p className="text-sm text-muted-foreground">from all-time sales</p>
                     </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="flex items-center gap-2"><Computer className="text-primary"/> Live System Status</CardTitle>
-                        <CardDescription>Overview of all systems and their current status.</CardDescription>
-                    </div>
-                     <Button variant="outline"><Calendar className="mr-2"/> Manage Bookings</Button>
-                </CardHeader>
-                <CardContent className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-4">
-                    {systems.map(system => (
-                        <div key={system.id} className={cn(
-                            "p-3 rounded-lg border-2 text-center",
-                            system.status === 'in-use' ? 'bg-red-100 dark:bg-red-900/50 border-red-200 dark:border-red-800' : 'bg-green-100 dark:bg-green-900/50 border-green-200 dark:border-green-800'
-                        )}>
-                            <p className="font-bold">{system.id}</p>
-                            <Badge variant={system.status === 'in-use' ? 'destructive' : 'default'} className="capitalize mt-1">{system.status}</Badge>
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
 
             <div className="grid lg:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Peak Usage Hours</CardTitle>
-                        <CardDescription>Identify when your café is busiest.</CardDescription>
+                        <CardDescription>Identify when your café is busiest (demo data).</CardDescription>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={usageData}>
                                 <XAxis dataKey="time" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`}/>
                                 <Tooltip
                                     contentStyle={{ 
                                         backgroundColor: 'hsl(var(--background))', 
                                         border: '1px solid hsl(var(--border))' 
                                     }}
+                                    label="Users"
                                 />
-                                <Bar dataKey="users" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="users" name="Users" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Rate Plans</CardTitle>
-                        <CardDescription>Manage your service pricing.</CardDescription>
+                    <CardHeader className="flex flex-row justify-between items-start">
+                        <div>
+                            <CardTitle>Rate Plans</CardTitle>
+                            <CardDescription>Manage your service pricing.</CardDescription>
+                        </div>
+                        <Button asChild>
+                           <Link href="/marketplace/new">
+                             <PlusCircle className="mr-2"/> Add New Plan
+                           </Link>
+                        </Button>
                     </CardHeader>
                      <CardContent className="space-y-4">
-                        {ratePlans.map(plan => (
-                            <div key={plan.name} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                                <div className="flex items-center gap-3">
-                                    <plan.icon className="size-5 text-primary"/>
-                                    <span className="font-semibold">{plan.name}</span>
+                        {loading ? <Loader2 className="animate-spin" /> : services.length > 0 ? (
+                            services.map(plan => (
+                                <div key={plan.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                                    <div className="flex items-center gap-3">
+                                        {plan.name.toLowerCase().includes('gaming') ? <Gamepad2 className="size-5 text-primary" /> : <Computer className="size-5 text-primary" />}
+                                        <span className="font-semibold">{plan.name}</span>
+                                    </div>
+                                    <span className="font-bold">₹{plan.price.toLocaleString()}/hr</span>
                                 </div>
-                                <span className="font-bold">{plan.price}</span>
-                            </div>
-                        ))}
-                         <Button className="w-full"><PlusCircle className="mr-2"/> Add New Plan</Button>
+                            ))
+                         ) : (
+                            <p className="text-muted-foreground text-center py-10">No service plans found.</p>
+                         )}
                     </CardContent>
                 </Card>
             </div>

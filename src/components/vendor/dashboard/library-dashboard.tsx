@@ -4,56 +4,72 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Armchair, Book, CheckCircle, PlusCircle, Users } from "lucide-react";
-
-// Mock data, replace with actual data from your backend
-const liveBookingStatus = {
-    totalSeats: 100,
-    occupied: 67,
-    available: 33,
-    nextAvailable: '3:00 PM',
-};
-
-const recentBookings = [
-    { id: 1, name: 'Ananya Sharma', seat: 'A12', time: '2:00 PM - 4:00 PM' },
-    { id: 2, name: 'Rohan Verma', seat: 'C5', time: '2:30 PM - 5:00 PM' },
-    { id: 3, name: 'Priya Singh', seat: 'B8', time: '1:00 PM - 3:00 PM' },
-];
-
-const catalogStats = {
-    totalBooks: 5420,
-    booksIssued: 312,
-    overdue: 15,
-};
-
+import { Armchair, Book, CheckCircle, PlusCircle, Users, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Order, Product } from "@/lib/types";
+import { useEffect, useState } from "react";
+import Link from 'next/link';
 
 export default function LibraryDashboard() {
-    const occupiedPercentage = (liveBookingStatus.occupied / liveBookingStatus.totalSeats) * 100;
-    
+    const { supabase, user } = useAuth();
+    const [books, setBooks] = useState<Product[]>([]);
+    const [recentBookings, setRecentBookings] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!user || !supabase) return;
+            setLoading(true);
+
+            // Fetch books (products in "Library Services" category)
+            const { data: productsData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('seller_id', user.id)
+                .eq('category', 'Library Services');
+
+            if (productsData) {
+                setBooks(productsData as Product[]);
+            }
+
+            // Fetch bookings (orders for library services)
+            const { data: ordersData } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    order_items(products(name, category)),
+                    buyer:profiles!buyer_id(full_name)
+                `)
+                .eq('vendor_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (ordersData) {
+                const libraryOrders = (ordersData as any[]).filter(order =>
+                    order.order_items.some((oi: any) => oi.products.category === 'Library Services')
+                );
+                setRecentBookings(libraryOrders.slice(0, 3) as Order[]);
+            }
+
+            setLoading(false);
+        };
+        fetchData();
+    }, [user, supabase]);
+
     return (
         <div className="space-y-8">
             <h2 className="text-2xl font-bold tracking-tight">Library Management</h2>
             
-            {/* Live Booking & Catalog Stats */}
             <div className="grid lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2">
                      <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Armchair className="text-primary"/> Live Booking Status</CardTitle>
                         <CardDescription>Real-time overview of library seat occupation.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between text-lg font-bold">
-                            <span>Occupied: {liveBookingStatus.occupied}</span>
-                            <span>Available: {liveBookingStatus.available}</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-4">
-                            <div className="bg-primary h-4 rounded-full" style={{ width: `${occupiedPercentage}%` }}></div>
-                        </div>
-                         <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <span>Total Seats: {liveBookingStatus.totalSeats}</span>
-                            <span>Next Slot: {liveBookingStatus.nextAvailable}</span>
-                        </div>
-                         <Button className="w-full mt-4">Manage Bookings</Button>
+                    <CardContent className="space-y-4 flex flex-col items-center justify-center h-48">
+                         <p className="text-muted-foreground">Live seat booking feature is coming soon!</p>
+                         <Button asChild>
+                            <Link href="/booking">View Booking Page</Link>
+                         </Button>
                     </CardContent>
                 </Card>
 
@@ -65,48 +81,49 @@ export default function LibraryDashboard() {
                     <CardContent className="space-y-3">
                          <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Total Books</span>
-                            <span className="font-bold">{catalogStats.totalBooks.toLocaleString()}</span>
+                             {loading ? <Loader2 className="animate-spin size-4" /> : <span className="font-bold">{books.length}</span>}
                          </div>
                          <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Books Issued</span>
-                            <span className="font-bold">{catalogStats.booksIssued}</span>
+                             <span className="font-bold">0</span>
                          </div>
                          <div className="flex items-center justify-between">
                             <span className="text-red-500 font-bold">Overdue</span>
-                            <span className="font-bold text-red-500">{catalogStats.overdue}</span>
+                            <span className="font-bold text-red-500">0</span>
                          </div>
-                         <Button className="w-full mt-2" variant="outline">Manage Catalog</Button>
+                         <Button asChild className="w-full mt-2" variant="outline"><Link href="/vendor/products">Manage Catalog</Link></Button>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Recent Activity & Membership */}
             <div className="grid lg:grid-cols-5 gap-6">
                 <Card className="lg:col-span-3">
                      <CardHeader>
                         <CardTitle>Recent Seat Bookings</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                             <TableHeader>
-                                <TableRow>
-                                    <TableHead>Student</TableHead>
-                                    <TableHead>Seat</TableHead>
-                                    <TableHead>Time Slot</TableHead>
-                                    <TableHead>Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recentBookings.map(booking => (
-                                    <TableRow key={booking.id}>
-                                        <TableCell className="font-medium">{booking.name}</TableCell>
-                                        <TableCell>{booking.seat}</TableCell>
-                                        <TableCell>{booking.time}</TableCell>
-                                        <TableCell><CheckCircle className="size-5 text-green-500"/></TableCell>
+                        {loading ? <Loader2 className="animate-spin mx-auto my-10" /> : recentBookings.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Student</TableHead>
+                                        <TableHead>Service</TableHead>
+                                        <TableHead>Status</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentBookings.map(booking => (
+                                        <TableRow key={booking.id}>
+                                            <TableCell className="font-medium">{booking.buyer.full_name}</TableCell>
+                                            <TableCell>{booking.order_items.map(oi => oi.products.name).join(', ')}</TableCell>
+                                            <TableCell><CheckCircle className="size-5 text-green-500"/></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <p className="text-muted-foreground text-center py-10">No recent bookings found.</p>
+                        )}
                     </CardContent>
                 </Card>
                  <Card className="lg:col-span-2">
