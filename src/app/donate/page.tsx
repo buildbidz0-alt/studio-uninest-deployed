@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 type AggregatedDonor = {
-    name: string;
+    name: string | null;
     avatar: string | null;
     amount: number;
     email: string | null;
@@ -20,8 +20,7 @@ export default async function DonatePage() {
     // Fetch initial data for SSR
     // Use the RPC function to get aggregated donor data efficiently
     const { data: aggregatedDonors, error: donorsError } = await supabase
-        .rpc('get_aggregated_donors')
-        .returns<AggregatedDonor[]>();
+        .rpc('get_aggregated_donors');
 
     const { data: goalData, error: goalError } = await supabase
         .from('app_config')
@@ -40,7 +39,7 @@ export default async function DonatePage() {
     const initialRaisedAmount = (raisedData || []).reduce((sum, d) => sum + d.amount, 0);
 
     return <DonateContent 
-        initialDonors={aggregatedDonors || []}
+        initialDonors={aggregatedDonors as AggregatedDonor[] || []}
         initialGoal={goalAmount}
         initialRaised={initialRaisedAmount}
     />
