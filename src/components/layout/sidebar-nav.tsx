@@ -13,7 +13,7 @@ import { Separator } from '../ui/separator';
 
 const mainNavItems = [
   { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/social', label: 'Social', icon: Users, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/social', label: 'Social', icon: Users, roles: ['student', 'admin'] },
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
@@ -32,9 +32,9 @@ function getRole(user: any): UserRole {
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, signOut, role } = useAuth();
   const { setOpenMobile } = useSidebar();
-  const role = getRole(user);
+  const userRole = getRole(user);
 
   const handleLinkClick = () => {
     setOpenMobile(false);
@@ -42,22 +42,28 @@ export function SidebarNav() {
 
   const renderNavItems = (items: typeof mainNavItems) => {
     return items
-      .filter(item => item.roles.includes(role))
-      .map(item => (
-        <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith(item.href) && item.href !== '/'}
-            className="font-headline"
-            onClick={handleLinkClick}
-          >
-            <Link href={item.href}>
-              <item.icon className="size-5" />
-              <span>{item.label}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ));
+      .filter(item => item.roles.includes(userRole))
+      .map(item => {
+        let isActive = pathname.startsWith(item.href) && item.href !== '/';
+        if (item.href === '/social') {
+            isActive = pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat');
+        }
+        return (
+            <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+                asChild
+                isActive={isActive}
+                className="font-headline"
+                onClick={handleLinkClick}
+            >
+                <Link href={item.href}>
+                <item.icon className="size-5" />
+                <span>{item.label}</span>
+                </Link>
+            </SidebarMenuButton>
+            </SidebarMenuItem>
+        )
+      });
   };
   
   return (
@@ -76,61 +82,7 @@ export function SidebarNav() {
           </SidebarMenuButton>
         </SidebarMenuItem>
 
-      <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')}
-            className="font-headline"
-            onClick={handleLinkClick}
-          >
-            <Link href={'/social'}>
-              <Users className="size-5" />
-              <span>Social</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      
-      <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith('/marketplace')}
-            className="font-headline"
-            onClick={handleLinkClick}
-          >
-            <Link href={'/marketplace'}>
-              <ShoppingBag className="size-5" />
-              <span>Marketplace</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-
-      <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith('/workspace')}
-            className="font-headline"
-            onClick={handleLinkClick}
-          >
-            <Link href={'/workspace'}>
-              <LayoutGrid className="size-5" />
-              <span>Workspace</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      
-      <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith('/notes')}
-            className="font-headline"
-            onClick={handleLinkClick}
-          >
-            <Link href={'/notes'}>
-              <BookOpen className="size-5" />
-              <span>Study Hub</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+      {renderNavItems(mainNavItems.filter(i => i.href !== '/'))}
       
 
       <SidebarMenuItem>
@@ -193,38 +145,44 @@ export function SidebarNav() {
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { setOpenMobile } = useSidebar();
+  const role = getRole(user);
 
-  const handleLinkClick = () => {
-    setOpenMobile(false);
-  };
+  const defaultNavItems = [
+      { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
+      { href: '/marketplace', label: 'Market', icon: ShoppingBag, roles: ['student', 'vendor', 'guest', 'admin'] },
+      { href: '/social', label: 'Social', icon: Users, roles: ['student', 'admin'] },
+      { href: '/workspace', label: 'Work', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
+      { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
+    ];
+
 
   const getNavItems = () => {
     if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
       return [
-        { href: '/feed', label: 'Feed', icon: Newspaper },
-        { href: '/chat', label: 'Messages', icon: MessageSquare },
-        { href: '/profile', label: 'Profile', icon: 'avatar' },
+        { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'admin'] },
+        { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'admin'] },
+        { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'admin'] },
       ];
     }
     if (pathname.startsWith('/workspace')) {
       return [
-        { href: '/workspace/competitions', label: 'Competitions', icon: Trophy },
-        { href: '/workspace/internships', label: 'Internships', icon: Briefcase },
-        { href: '/profile', label: 'Profile', icon: 'avatar' },
+        { href: '/workspace/competitions', label: 'Competitions', icon: Trophy, roles: ['student', 'vendor', 'guest', 'admin'] },
+        { href: '/workspace/internships', label: 'Internships', icon: Briefcase, roles: ['student', 'vendor', 'guest', 'admin'] },
+        { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
       ];
     }
     // Default main navigation
-    return [
-      { href: '/', label: 'Home', icon: Home },
-      { href: '/marketplace', label: 'Market', icon: ShoppingBag },
-      { href: '/social', label: 'Social', icon: Users },
-      { href: '/workspace', label: 'Work', icon: LayoutGrid },
-      { href: '/profile', label: 'Profile', icon: 'avatar' },
-    ];
+    return defaultNavItems;
   };
 
-  const navItems = getNavItems();
+  const navItems = getNavItems().filter(item => item.roles.includes(role));
+  
+  if (!user && !navItems.some(item => item.href === '/login')) {
+      const profileItemIndex = navItems.findIndex(item => item.href === '/profile');
+      if (profileItemIndex !== -1) {
+          navItems[profileItemIndex] = { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] };
+      }
+  }
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
@@ -240,7 +198,6 @@ export function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              onClick={handleLinkClick}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 p-1 transition-colors",
                 isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-primary"

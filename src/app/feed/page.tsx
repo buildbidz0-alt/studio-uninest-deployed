@@ -5,10 +5,11 @@ import type { Metadata } from 'next';
 import FeedContent from '@/components/feed/feed-content';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 // We can't export metadata from a client component.
 // export const metadata: Metadata = {
@@ -17,9 +18,21 @@ import { useRouter } from 'next/navigation';
 // };
 
 export default function FeedPage() {
-  const { user } = useAuth();
+  const { user, role, loading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && role !== 'student' && role !== 'admin') {
+      toast({
+        title: 'Access Denied',
+        description: 'The social feed is for students only.',
+        variant: 'destructive',
+      });
+      router.push('/');
+    }
+  }, [loading, role, router, toast]);
+
 
   const handleCreatePostClick = () => {
     if (!user) {
@@ -39,6 +52,14 @@ export default function FeedPage() {
       }
     }
   };
+
+  if (loading || (role !== 'student' && role !== 'admin')) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
