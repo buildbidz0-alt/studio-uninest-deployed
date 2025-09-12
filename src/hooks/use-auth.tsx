@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode, useCallback } from 'react';
@@ -24,6 +25,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 type AuthProviderProps = {
   children: ReactNode;
 };
+
+const determineRole = (user: User | null): UserRole => {
+    if (!user) {
+        return 'guest';
+    }
+    return user.user_metadata?.role || 'student';
+}
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
@@ -73,7 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { data: { session } } = await supabase.auth.getSession();
       const currentUser = session?.user || null;
       setUser(currentUser);
-      setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
+      setRole(determineRole(currentUser));
       if (currentUser) {
           await fetchNotifications(currentUser.id);
       }
@@ -85,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      setRole(currentUser?.user_metadata?.role || (currentUser ? 'student' : 'guest'));
+      setRole(determineRole(currentUser));
       
       if (currentUser) {
           fetchNotifications(currentUser.id);
