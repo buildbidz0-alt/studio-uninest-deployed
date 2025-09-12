@@ -28,7 +28,7 @@ export default function VendorDashboardContent() {
     const fetchData = async () => {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const { data: ordersData, error } = await supabase
         .from('orders')
         .select(`
             *,
@@ -40,7 +40,7 @@ export default function VendorDashboardContent() {
       if (error) {
         console.error("Error fetching vendor data:", error);
       } else {
-        setOrders(data as unknown as Order[]);
+        setOrders(ordersData as unknown as Order[]);
       }
 
       setLoading(false);
