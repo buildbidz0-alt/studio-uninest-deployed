@@ -4,7 +4,7 @@ import PageHeader from "@/components/admin/page-header";
 import ProductForm from "@/components/marketplace/product-form";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from 'next/navigation';
-import VendorLayout from "../../layout";
+import VendorLayout from "../../../layout";
 
 type EditProductPageProps = {
     params: {
