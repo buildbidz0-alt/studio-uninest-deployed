@@ -9,5 +9,3 @@ import AdminUsersContent from "@/components/admin/users/page";
 export default function AdminUsersPage() {
     return <AdminUsersContent />;
 }
-
-    
