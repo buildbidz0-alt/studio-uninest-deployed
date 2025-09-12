@@ -11,9 +11,9 @@ import type { Order } from '@/lib/types';
 import { subDays, format, startOfDay } from 'date-fns';
 import LibraryDashboard from './library-dashboard';
 import PageHeader from '@/components/admin/page-header';
+import FoodMessDashboard from './food-mess-dashboard';
 
 // Placeholder components for other vendor types
-const FoodMessDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Food Mess Dashboard Coming Soon</div>;
 const HostelDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Hostel Dashboard Coming Soon</div>;
 const CybercafeDashboard = () => <div className="text-center p-8 bg-card rounded-xl">Cybercafé Dashboard Coming Soon</div>;
 
