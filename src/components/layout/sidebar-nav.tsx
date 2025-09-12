@@ -34,7 +34,7 @@ export function SidebarNav() {
   const pathname = usePathname();
   const { user, signOut, role } = useAuth();
   const { setOpenMobile } = useSidebar();
-  const userRole = getRole(user);
+  const userRole = role;
 
   const handleLinkClick = () => {
     setOpenMobile(false);
