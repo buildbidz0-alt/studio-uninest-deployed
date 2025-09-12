@@ -42,17 +42,15 @@ export default function CybercafeDashboard() {
             }
 
             // Fetch orders for stats
-            const { data: ordersData } = await supabase
-                .from('orders')
-                .select('total_amount, order_items(products(category))')
-                .eq('vendor_id', user.id)
+             const { data: ordersData, error } = await supabase
+              .from('orders')
+              .select('total_amount, order_items!inner(products!inner(category))')
+              .eq('vendor_id', user.id)
+              .eq('order_items.products.category', 'Cyber Café');
 
             if (ordersData) {
-                const cybercafeOrders = ordersData.filter(order => 
-                    order.order_items.some((oi: any) => oi.products?.category === 'Cyber Café')
-                );
-                const totalRevenue = cybercafeOrders.reduce((sum, order) => sum + order.total_amount, 0);
-                setStats({ revenue: totalRevenue, orders: cybercafeOrders.length });
+                const totalRevenue = ordersData.reduce((sum, order) => sum + order.total_amount, 0);
+                setStats({ revenue: totalRevenue, orders: ordersData.length });
             }
 
             setLoading(false);

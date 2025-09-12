@@ -35,23 +35,22 @@ export default function FoodMessDashboard() {
             }
 
             // Fetch orders for stats and recent activity
-            const { data: ordersData } = await supabase
+            const { data: ordersData, error } = await supabase
                 .from('orders')
                 .select(`
                     *,
-                    order_items (
-                        products ( name, category )
+                    order_items!inner(
+                        products!inner(name, category)
                     ),
                     profiles!buyer_id(full_name)
                 `)
                 .eq('vendor_id', user.id)
+                .eq('order_items.products.category', 'Food Mess')
                 .order('created_at', { ascending: false });
 
-            if (ordersData) {
-                const foodOrders = (ordersData as any[]).filter(order => 
-                    order.order_items.some((oi: any) => oi.products?.category === 'Food Mess')
-                ).map(o => ({...o, buyer: o.profiles}));
 
+            if (ordersData) {
+                const foodOrders = (ordersData as any[]).map(o => ({...o, buyer: o.profiles, order_items: o.order_items.map((oi:any) => ({products: oi.products})) }));
                 const totalRevenue = foodOrders.reduce((sum, order) => sum + order.total_amount, 0);
                 
                 setRecentOrders(foodOrders.slice(0, 3) as Order[]);
