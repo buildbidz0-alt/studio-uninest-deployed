@@ -98,7 +98,10 @@ export default function MarketplaceContent() {
             body: JSON.stringify({ amount: product.price * 100, currency: 'INR' }),
         });
 
-        if (!response.ok) throw new Error('Failed to create Razorpay order.');
+        if (!response.ok) {
+            const orderError = await response.json();
+            throw new Error(orderError.error || 'Failed to create Razorpay order.');
+        }
         
         const order = await response.json();
 
@@ -123,6 +126,7 @@ export default function MarketplaceContent() {
 
             if (orderError || !newOrder) {
                 toast({ variant: 'destructive', title: 'Error Saving Order', description: 'Payment received, but failed to save your order. Please contact support.' });
+                setPurchasingProductId(null);
                 return;
             }
 
@@ -139,7 +143,11 @@ export default function MarketplaceContent() {
                 toast({ variant: 'destructive', title: 'Error Saving Order Item', description: 'Your order was processed but had an issue. Please contact support.' });
              } else {
                 toast({ title: 'Payment Successful!', description: `${product.name} has been purchased.` });
+                router.push('/vendor/orders');
              }
+          },
+          modal: {
+            ondismiss: () => setPurchasingProductId(null),
           },
           prefill: {
             name: user.user_metadata?.full_name || '',
@@ -162,10 +170,9 @@ export default function MarketplaceContent() {
             title: 'Purchase Failed',
             description: error instanceof Error ? error.message : 'Could not connect to the payment gateway.',
         });
-    } finally {
         setPurchasingProductId(null);
     }
-  }, [user, supabase, toast, openCheckout]);
+  }, [user, supabase, toast, openCheckout, router]);
 
   const handleChat = useCallback(async (sellerId: string) => {
     if (!user || !supabase) {
