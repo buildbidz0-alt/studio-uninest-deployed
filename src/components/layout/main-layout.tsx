@@ -1,9 +1,8 @@
 
-
 'use client';
 
-import React, { type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import React, { type ReactNode, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -22,12 +21,24 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import NotificationsDropdown from './notifications-dropdown';
 import { Button } from '../ui/button';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, role, loading } = useAuth();
   const isMobile = useIsMobile();
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (role === 'admin' && !pathname.startsWith('/admin')) {
+        router.push('/admin/dashboard');
+      } else if (role === 'vendor' && !pathname.startsWith('/vendor')) {
+        router.push('/vendor/dashboard');
+      }
+    }
+  }, [loading, role, pathname, router]);
+
   const isAdminPage = pathname.startsWith('/admin');
   const isVendorPage = pathname.startsWith('/vendor');
   const isHomePage = pathname === '/';
@@ -35,6 +46,15 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   if (isAdminPage || isVendorPage) {
     return <>{children}</>;
   }
+
+  if (loading) {
+      return (
+          <div className="flex h-screen items-center justify-center">
+              <Loader2 className="size-8 animate-spin" />
+          </div>
+      )
+  }
+
 
   return (
     <SidebarProvider>
@@ -116,5 +136,3 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    

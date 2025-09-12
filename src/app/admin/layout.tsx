@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { type ReactNode, useEffect } from 'react';
+import React, { type ReactNode, useEffect, useState } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -27,23 +27,28 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, signOut, role, loading } = useAuth();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
   
   useEffect(() => {
     if (!loading) {
-      if (role !== 'admin') {
+      if (role === 'admin') {
+        setIsAuthorized(true);
+      } else {
         router.push('/');
       }
     }
   }, [role, loading, router]);
   
-  if (loading || role !== 'admin') {
+  if (loading || !isAuthorized) {
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Loading...</p>
+            <Loader2 className="size-8 animate-spin" />
+            <p className="ml-2">Verifying administrative access...</p>
         </div>
     )
   }

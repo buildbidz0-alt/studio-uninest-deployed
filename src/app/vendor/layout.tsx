@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { type ReactNode, useEffect } from 'react';
+import React, { type ReactNode, useEffect, useState } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VendorSidebarNav } from '@/components/vendor/vendor-sidebar-nav';
 import { Logo } from '@/components/icons';
-import { Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,23 +27,28 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 export default function VendorLayout({ children }: { children: ReactNode }) {
   const { user, signOut, role, loading } = useAuth();
   const router = useRouter();
-  
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
   useEffect(() => {
     if (!loading) {
-      if (role !== 'vendor') {
+      if (role === 'vendor') {
+        setIsAuthorized(true);
+      } else {
         router.push('/');
       }
     }
   }, [role, loading, router]);
   
-  if (loading || role !== 'vendor') {
+  if (loading || !isAuthorized) {
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Loading...</p>
+            <Loader2 className="size-8 animate-spin" />
+            <p className="ml-2">Verifying vendor access...</p>
         </div>
     )
   }
@@ -118,5 +123,3 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
