@@ -179,7 +179,7 @@ export default function MarketplaceContent() {
         p_user_id2: sellerId
     });
 
-    if (fetchError || !existingRoom) {
+    if (fetchError) {
         console.error('Error getting or creating chat room:', fetchError);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
         return;
