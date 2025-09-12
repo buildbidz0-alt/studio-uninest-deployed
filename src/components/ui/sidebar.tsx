@@ -156,18 +156,16 @@ const Sidebar = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
   
-  const finalClassName = cn(
-    "bg-card text-card-foreground border-r",
-    className
-  );
-
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className={cn("w-[--sidebar-width] p-0 flex flex-col", finalClassName)}
+          className={cn(
+            "w-[--sidebar-width] p-0 flex flex-col bg-card text-card-foreground border-r",
+            className
+          )}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -187,7 +185,7 @@ const Sidebar = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("hidden md:flex flex-col h-screen z-10 transition-[width]", finalClassName, state === 'expanded' ? 'w-[--sidebar-width]' : 'w-[--sidebar-width-icon]')}
+      className={cn("hidden md:flex flex-col h-screen z-10 transition-[width] bg-card text-card-foreground border-r", className, state === 'expanded' ? 'w-[--sidebar-width]' : 'w-[--sidebar-width-icon]')}
       data-state={state}
       {...props}
     >
@@ -209,7 +207,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn("h-10 w-10 md:hidden", className)}
+      className={cn("h-10 w-10", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
@@ -373,7 +371,7 @@ const SidebarMenuButton = React.forwardRef<
         className={cn(sidebarMenuButtonVariants({ isActive }), state === 'collapsed' && 'justify-center', className)}
         {...props}
       >
-        {state === 'expanded' ? (
+        {state === 'expanded' || isMobile ? (
             children
         ) : (
             // In collapsed state, only render the icon (the first child)
