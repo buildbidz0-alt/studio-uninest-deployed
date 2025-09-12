@@ -6,15 +6,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Package, BookCopy, Users, Frown } from 'lucide-react';
-import type { Product, Note, Profile } from '@/lib/types';
+import type { Product, Profile } from '@/lib/types';
 
 import ProductCard from '@/components/marketplace/product-card';
-import NoteCard from '@/components/notes/note-card';
 import UserListCard from '@/components/profile/user-list-card';
 
 type SearchResults = {
   products: Product[];
-  notes: Note[];
   profiles: Profile[];
 };
 
@@ -24,7 +22,7 @@ export default function SearchResults() {
   const { supabase } = useAuth();
   const { toast } = useToast();
 
-  const [results, setResults] = useState<SearchResults>({ products: [], notes: [], profiles: [] });
+  const [results, setResults] = useState<SearchResults>({ products: [], profiles: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,20 +35,18 @@ export default function SearchResults() {
       setLoading(true);
       
       // We'll perform searches in parallel
-      const [productRes, noteRes, profileRes] = await Promise.all([
+      const [productRes, profileRes] = await Promise.all([
         supabase.from('products').select('*, profiles:seller_id(full_name)').textSearch('name', query, { type: 'websearch' }),
-        supabase.from('notes').select('*, profiles:user_id(full_name, avatar_url)').textSearch('title', query, { type: 'websearch' }),
         supabase.from('profiles').select('*').textSearch('full_name', query, { type: 'websearch' })
       ]);
 
-      if (productRes.error || noteRes.error || profileRes.error) {
+      if (productRes.error || profileRes.error) {
         toast({ variant: 'destructive', title: 'Search Error', description: 'Could not perform search.' });
-        console.error('Search errors:', { p: productRes.error, n: noteRes.error, u: profileRes.error });
+        console.error('Search errors:', { p: productRes.error, u: profileRes.error });
       }
 
       setResults({
         products: (productRes.data as any[] || []).map(p => ({ ...p, seller: p.profiles })) as Product[],
-        notes: noteRes.data as Note[] || [],
         profiles: profileRes.data as Profile[] || [],
       });
 
@@ -61,7 +57,7 @@ export default function SearchResults() {
   }, [query, supabase, toast]);
 
   const totalResults = useMemo(() => {
-      return results.products.length + results.notes.length + results.profiles.length;
+      return results.products.length + results.profiles.length;
   }, [results]);
 
   if (loading) {
@@ -109,15 +105,6 @@ export default function SearchResults() {
             </section>
         )}
 
-        {results.notes.length > 0 && (
-             <section>
-                <h2 className="text-2xl font-bold tracking-tight mb-6 flex items-center gap-2"><BookCopy/> Study Notes</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {results.notes.map(n => <NoteCard key={`note-${n.id}`} note={n} />)}
-                </div>
-            </section>
-        )}
-
         {results.profiles.length > 0 && (
             <section>
                 <h2 className="text-2xl font-bold tracking-tight mb-6 flex items-center gap-2"><Users /> People</h2>
@@ -127,5 +114,3 @@ export default function SearchResults() {
     </div>
   );
 }
-
-    
