@@ -34,73 +34,18 @@ export default function ChatLayout() {
 
     setLoadingRooms(true);
 
-    const { data: participantData, error: participantError } = await supabase
-      .from('chat_participants')
-      .select('room_id')
-      .eq('user_id', user.id);
+    const { data: roomsData, error } = await supabase.rpc('get_user_chat_rooms');
 
-    if (participantError) {
-      console.error('Error fetching user rooms:', participantError);
-      toast({ variant: 'destructive', title: 'Error loading chats', description: participantError.message });
+    if (error) {
+      console.error('Error fetching user rooms:', error);
+      toast({ variant: 'destructive', title: 'Error loading chats', description: error.message });
       setLoadingRooms(false);
       return;
-    }
-
-    const roomIds = participantData.map(p => p.room_id);
-    if (roomIds.length === 0) {
-      setRooms([]);
-      setLoadingRooms(false);
-      return;
-    }
-
-    const { data: allParticipants, error: allParticipantsError } = await supabase
-      .from('chat_participants')
-      .select('room_id, profiles:user_id(*)')
-      .in('room_id', roomIds);
-
-    if (allParticipantsError) {
-      console.error('Error fetching participants:', allParticipantsError);
-      toast({ variant: 'destructive', title: 'Error loading chat details' });
-      setLoadingRooms(false);
-      return;
-    }
-
-    const { data: lastMessages, error: messagesError } = await supabase
-      .rpc('get_last_messages_for_rooms', { p_room_ids: roomIds });
-
-
-    if (messagesError) {
-      console.error('Error fetching last messages', messagesError);
     }
     
-    const lastMessageMap = new Map<string, { content: string, created_at: string }>();
-    if (lastMessages) {
-      for (const msg of lastMessages) {
-        lastMessageMap.set(msg.room_id, { content: msg.content, created_at: msg.created_at });
-      }
-    }
-
-    const roomsData: Room[] = roomIds.map(roomId => {
-      const participantsInRoom = allParticipants.filter(p => p.room_id === roomId);
-      const otherParticipant = participantsInRoom.find(p => p.profiles?.id !== user.id);
-
-      return {
-        id: roomId,
-        created_at: '', // Not strictly needed for this view
-        name: otherParticipant?.profiles?.full_name || 'Chat',
-        avatar: otherParticipant?.profiles?.avatar_url,
-        last_message: lastMessageMap.get(roomId)?.content || 'No messages yet',
-        last_message_timestamp: lastMessageMap.get(roomId)?.created_at || new Date().toISOString(),
-        unreadCount: 0 // Placeholder
-      };
-    }).sort((a, b) => {
-      if (!a.last_message_timestamp) return 1;
-      if (!b.last_message_timestamp) return -1;
-      return new Date(b.last_message_timestamp).getTime() - new Date(a.last_message_timestamp).getTime();
-    });
-
-    setRooms(roomsData);
+    setRooms(roomsData as Room[]);
     setLoadingRooms(false);
+
   }, [user, supabase, toast]);
   
   useEffect(() => {
@@ -139,17 +84,17 @@ export default function ChatLayout() {
 
   // Real-time message subscription
   useEffect(() => {
-    if (!selectedRoom || !supabase) return;
+    if (!supabase || !user) return;
 
     const channel = supabase
-      .channel(`chat_room_${selectedRoom.id}`)
+      .channel('public:chat_messages')
       .on<Message>(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${selectedRoom.id}` },
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
         async (payload) => {
           const newMessage = payload.new as Message;
-          // Fetch profile for the new message if it doesn't exist
-          if (!newMessage.profile) {
+          // If the message is for the currently selected room, add it to the view
+          if (selectedRoom && newMessage.room_id === selectedRoom.id) {
               const { data: profileData, error } = await supabase
                 .from('profiles')
                 .select('*')
@@ -159,10 +104,9 @@ export default function ChatLayout() {
               if (!error) {
                   newMessage.profile = profileData;
               }
+             setMessages((prevMessages) => [...prevMessages, newMessage]);
           }
-
-          setMessages((prevMessages) => [...prevMessages, newMessage]);
-          // Refetch rooms to update last message and order
+          // In all cases, refetch the room list to update last message and order
           fetchRooms();
         }
       )
@@ -171,7 +115,7 @@ export default function ChatLayout() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedRoom, supabase, fetchRooms]);
+  }, [selectedRoom, supabase, fetchRooms, user]);
   
 
   const handleSendMessage = async (content: string) => {
