@@ -41,9 +41,16 @@ export default async function InternshipDetailPage({ params }: InternshipDetailP
         notFound();
     }
     
-    // In a real app, you would have an 'internship_applications' table.
-    // For now, we will return an empty array as a placeholder.
-    const applicants: any[] = [];
+    const { data: applicants } = await supabase
+        .from('internship_applications')
+        .select(`
+            user_id,
+            profiles (
+                full_name,
+                avatar_url
+            )
+        `)
+        .eq('internship_id', internship.id);
 
-    return <InternshipDetailClient internship={internship} initialApplicants={applicants} />;
+    return <InternshipDetailClient internship={internship} initialApplicants={applicants || []} />;
 }

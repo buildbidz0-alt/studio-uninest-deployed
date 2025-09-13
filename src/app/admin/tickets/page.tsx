@@ -54,9 +54,9 @@ export default async function AdminTicketsPage() {
                                 <TableHead>User</TableHead>
                                 <TableHead>Subject</TableHead>
                                 <TableHead>Category</TableHead>
-                                <TableHead>Screenshot</TableHead>
                                 <TableHead>Submitted</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -82,20 +82,16 @@ export default async function AdminTicketsPage() {
                                         </TableCell>
                                         <TableCell className="font-medium max-w-xs truncate">{ticket.subject}</TableCell>
                                         <TableCell><Badge variant="outline">{ticket.category}</Badge></TableCell>
-                                        <TableCell>
-                                            {ticket.screenshot_url ? (
-                                                <Button variant="outline" size="sm" asChild>
-                                                    <a href={ticket.screenshot_url} target="_blank" rel="noopener noreferrer">
-                                                        View <ExternalLink className="ml-2 size-3" />
-                                                    </a>
-                                                </Button>
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">None</span>
-                                            )}
-                                        </TableCell>
                                         <TableCell>{format(new Date(ticket.created_at), 'PPP')}</TableCell>
                                         <TableCell>
                                             <TicketStatusChanger ticketId={ticket.id} currentStatus={ticket.status} />
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                           <Button variant="outline" size="sm" asChild>
+                                                <Link href={`/admin/tickets/${ticket.id}`}>
+                                                    View Details
+                                                </Link>
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))
