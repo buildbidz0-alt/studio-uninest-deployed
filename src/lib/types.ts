@@ -14,14 +14,11 @@ export type Profile = {
 export type Room = {
   id: string;
   created_at: string;
-  // Computed properties from DB function
   name: string | null;
   avatar: string | null;
   last_message: string | null;
   last_message_timestamp: string | null;
-  // Computed on client
-  unreadCount?: number;
-  participants?: { profile: Profile }[]; // Keep for compatibility if needed elsewhere
+  unread_count: number | null;
 };
 
 export type Message = {

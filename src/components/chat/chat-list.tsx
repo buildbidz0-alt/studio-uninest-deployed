@@ -47,16 +47,16 @@ export default function ChatList({ rooms, selectedRoom, onSelectRoom }: ChatList
                     <p className="font-semibold text-lg truncate">{room.name}</p>
                     <p className={cn(
                         "text-xs flex-shrink-0 ml-2",
-                        room.unreadCount && room.unreadCount > 0 ? "text-primary font-bold" : "text-muted-foreground"
+                        room.unread_count && room.unread_count > 0 ? "text-primary font-bold" : "text-muted-foreground"
                     )}>
                         {formatTimestamp(room.last_message_timestamp)}
                     </p>
                   </div>
                    <div className="flex justify-between items-center mt-1">
                         <p className="text-sm text-muted-foreground truncate">{room.last_message || 'Select to view messages'}</p>
-                        {room.unreadCount && room.unreadCount > 0 && (
+                        {room.unread_count && room.unread_count > 0 && (
                             <div className="flex-shrink-0 ml-2 size-5 primary-gradient rounded-full flex items-center justify-center text-xs text-white font-bold">
-                                {room.unreadCount}
+                                {room.unread_count}
                             </div>
                         )}
                    </div>
