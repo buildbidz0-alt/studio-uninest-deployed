@@ -146,19 +146,20 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         }
     
         try {
-            const { data, error } = await supabase.rpc('get_chat_room_with_user', {
+            // Step 1: Check if a room already exists.
+            const { data, error: rpcError } = await supabase.rpc('get_chat_room_with_user', {
                 p_user_id: hostel.seller_id
             });
     
-            if (error) throw error;
+            if (rpcError) throw rpcError;
     
+            // If room exists, just navigate to chat
             if (data && data.length > 0) {
-                // Room exists
                 router.push('/chat');
                 return;
             }
     
-            // Room does not exist, create it
+            // Step 2: If no room, create it.
             const { data: newRoom, error: createError } = await supabase
                 .from('chat_rooms')
                 .insert({})
@@ -169,6 +170,7 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
     
             const roomId = newRoom.id;
     
+            // Step 3: Add both users as participants.
             const { error: participantError } = await supabase
                 .from('chat_room_participants')
                 .insert([
@@ -178,6 +180,7 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
     
             if (participantError) throw participantError;
     
+            // Step 4: Navigate to chat page.
             router.push('/chat');
     
         } catch (error) {
