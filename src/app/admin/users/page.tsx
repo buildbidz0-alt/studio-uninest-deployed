@@ -18,11 +18,11 @@ export default async function AdminUsersPage() {
     } else {
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
         
-        const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+        const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
         
         if (authError) {
             console.error("Error fetching auth users:", authError);
-            error = "Could not fetch users from authentication service.";
+            error = "Could not fetch users from authentication service. Ensure your SUPABASE_SERVICE_KEY is correct.";
         } else {
             const { data: profiles, error: profileError } = await supabaseAdmin
                 .from('profiles')

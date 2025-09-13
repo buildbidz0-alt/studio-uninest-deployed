@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from 'date-fns';
 import { useAuth } from "@/hooks/use-auth";
@@ -36,30 +36,13 @@ type AdminUsersContentProps = {
 
 export default function AdminUsersContent({ initialUsers, initialError }: AdminUsersContentProps) {
     const [users, setUsers] = useState<UserProfile[]>(initialUsers);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false); // Used for actions now, not initial fetch
     const { supabase } = useAuth();
     const { toast } = useToast();
-
-    // The fetchUsers logic is now primarily for re-fetching after an update
-    // The initial load is handled by the server component
-    const fetchUsers = async () => {
-        if (!supabase) return;
-        setLoading(true);
-        // This is a client-side call to a serverless function that securely fetches users
-        // This pattern is okay but let's stick to SSR for initial load
-        // Re-implementing a secure way to refetch if needed. For now, we'll just update state locally.
-        
-        // This is a placeholder as direct admin calls are not secure on client
-        // A proper implementation would use an edge function.
-        // For now, we refresh the page to get the new list.
-        window.location.reload();
-    };
 
     const makeAdmin = async (userId: string) => {
         if (!supabase) return;
         
-        // The API route pattern is more secure for client-side initiated admin actions
-        // Let's create and call an API route.
         try {
             const response = await fetch('/api/admin/promote-user', {
                 method: 'POST',
@@ -99,13 +82,7 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">
-                                    <Loader2 className="mx-auto animate-spin" />
-                                </TableCell>
-                            </TableRow>
-                        ) : users.length === 0 ? (
+                        {users.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center h-24">
                                     No users found.
