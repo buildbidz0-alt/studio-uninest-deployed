@@ -142,7 +142,6 @@ export default function SettingsContent() {
             full_name: values.fullName,
             handle: values.handle,
             bio: values.bio,
-            // DO NOT update role here, as it's protected by RLS
          })
         .eq('id', user.id);
 
