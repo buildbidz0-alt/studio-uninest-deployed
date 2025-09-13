@@ -1,5 +1,4 @@
 
-
 import PageHeader from "@/components/admin/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +25,7 @@ export default async function AdminTicketsPage() {
             status,
             priority,
             screenshot_url,
-            user:user_id (
+            profiles (
                 id,
                 full_name,
                 avatar_url
@@ -67,11 +66,11 @@ export default async function AdminTicketsPage() {
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="size-9">
-                                                    <AvatarImage src={ticket.user?.avatar_url || undefined} alt={ticket.user?.full_name || 'User'} />
-                                                    <AvatarFallback>{ticket.user?.full_name?.[0]}</AvatarFallback>
+                                                    <AvatarImage src={ticket.profiles?.avatar_url || undefined} alt={ticket.profiles?.full_name || 'User'} />
+                                                    <AvatarFallback>{ticket.profiles?.full_name?.[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <p className="font-medium">{ticket.user?.full_name}</p>
+                                                    <p className="font-medium">{ticket.profiles?.full_name}</p>
                                                 </div>
                                             </div>
                                         </TableCell>
