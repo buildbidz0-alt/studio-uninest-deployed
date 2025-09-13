@@ -50,7 +50,7 @@ export default function FoodMessDashboard() {
 
 
             if (ordersData) {
-                const foodOrders = (ordersData as any[]).map(o => ({...o, buyer: o.profiles, order_items: o.order_items.map((oi:any) => ({products: oi.products})) }));
+                const foodOrders = (ordersData as any[]).map(o => ({...o, buyer: o.profiles || { full_name: 'N/A' }, order_items: o.order_items.map((oi:any) => ({products: oi.products})) }));
                 const totalRevenue = foodOrders.reduce((sum, order) => sum + order.total_amount, 0);
                 
                 setRecentOrders(foodOrders.slice(0, 3) as Order[]);
