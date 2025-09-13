@@ -25,8 +25,18 @@ export default async function ConnectionsPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // The redirect here was incorrect. If no user, the rest of the page will handle it gracefully
+    // by either showing an empty state or being caught by other auth boundaries.
     if (!user) {
-        redirect('/login?redirect=/social/connections');
+        return (
+            <div className="max-w-2xl mx-auto space-y-8">
+                <PageHeader 
+                    title="My Connections"
+                    description="Log in to manage your followers and who you're following."
+                />
+                <p className="text-center text-muted-foreground">Please log in to see your connections.</p>
+            </div>
+        );
     }
 
     const { followers, following } = await getConnectionsData(user.id);
