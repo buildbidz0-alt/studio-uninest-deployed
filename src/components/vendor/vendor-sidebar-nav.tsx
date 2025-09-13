@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, ShoppingCart, Settings, Library, Utensils, Bed, Laptop, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Settings, Library, Utensils, Bed, Laptop, MessageSquare, PlusCircle } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -11,7 +11,7 @@ import { Separator } from '../ui/separator';
 const generalNavItems = [
   { href: '/vendor/products', label: 'All Products', icon: Package },
   { href: '/vendor/orders', label: 'All Orders', icon: ShoppingCart },
-  { href: '/chat', label: 'Messages', icon: MessageSquare },
+  { href: '/vendor/chat', label: 'Messages', icon: MessageSquare },
 ];
 
 const categoryDashboards = [
@@ -42,6 +42,16 @@ export function VendorSidebarNav() {
           </SidebarMenuButton>
         </SidebarMenuItem>
 
+        <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === '/vendor/products/new'}>
+                <Link href="/vendor/products/new">
+                    <PlusCircle className="size-4"/>
+                    <span>Add New Product</span>
+                </Link>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
+
+
         {vendorSpecificDashboards.length > 0 && (
             <>
                 <SidebarMenuItem>
@@ -61,11 +71,14 @@ export function VendorSidebarNav() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 ))}
-                <SidebarMenuItem>
-                    <Separator className="my-2" />
-                </SidebarMenuItem>
             </>
         )}
+        
+        <SidebarMenuItem>
+            <Separator className="my-2" />
+        </SidebarMenuItem>
+        <li className="px-4 py-2 text-xs font-semibold text-muted-foreground">General</li>
+
 
       {generalNavItems.map((item) => (
         <SidebarMenuItem key={item.href}>
