@@ -28,14 +28,14 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // This is the correct location for this logic.
+  // We only want to redirect an admin AWAY from the main site if they land on it.
   useEffect(() => {
-    if (!loading) {
-      if (role === 'admin' && !pathname.startsWith('/admin')) {
-        router.push('/admin/dashboard');
-      } else if (role === 'vendor' && !pathname.startsWith('/vendor')) {
-        router.push('/vendor/dashboard');
-      }
+    if (!loading && role === 'admin' && !pathname.startsWith('/admin')) {
+      router.push('/admin/dashboard');
     }
+    // The vendor redirection logic was here, and has been removed.
+    // The logic to protect vendor pages is correctly located in /app/vendor/layout.tsx.
   }, [loading, role, pathname, router]);
 
   const isAdminPage = pathname.startsWith('/admin');
