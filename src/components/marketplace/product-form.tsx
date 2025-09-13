@@ -27,7 +27,7 @@ const formSchema = z.object({
   description: z.string().min(10, 'Please provide a more detailed description.'),
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
   category: z.string({ required_error: "Please select a category." }),
-  image: z.any().optional(), // Allow optional image for edit mode
+  image: z.any().optional(),
   location: z.string().optional(),
   total_seats: z.coerce.number().optional(),
 });
@@ -62,13 +62,18 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         return studentCategories;
     }
     if (role === 'vendor') {
-        const vendorCategories = (user?.user_metadata?.vendor_categories || []).map((c: string) => c === 'library' ? 'Library' : c);
-        // A vendor can edit a product to be any category, but can only create new ones for their assigned categories
+        const vendorCategories = (user?.user_metadata?.vendor_categories || []).map((c: string) => {
+            if (c === 'library') return 'Library';
+            if (c === 'food mess') return 'Food Mess';
+            if (c === 'cybercafe') return 'Cyber Café';
+            if (c === 'hostels') return 'Hostels';
+            return c;
+        });
         const categories = [...vendorCategories];
         categories.push("Other Products");
-        return isEditMode ? allCategories : [...new Set(categories)]; // Use Set to avoid duplicates
+        return isEditMode ? allCategories : [...new Set(categories)];
     }
-    return allCategories; // For admin
+    return allCategories;
   }
 
   const availableCategories = getAvailableCategories();
@@ -81,7 +86,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
       price: product?.price || 0,
       category: product?.category || '',
       location: product?.location || '',
-      total_seats: product?.total_seats || 0,
+      total_seats: product?.total_seats || undefined,
     },
   });
   
@@ -129,7 +134,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         seller_id: user.id,
         image_url: imageUrl,
         location: values.location,
-        total_seats: values.total_seats,
+        total_seats: values.category === 'Library' ? values.total_seats : undefined,
     });
 
      if (error) {
@@ -167,7 +172,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
             category: values.category,
             image_url: imageUrl,
             location: values.location,
-            total_seats: values.total_seats,
+            total_seats: values.category === 'Library' ? values.total_seats : null,
         })
         .eq('id', product.id);
 
@@ -214,7 +219,6 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                 description: `One-time fee for posting "${values.name}"`,
                 order_id: order.id,
                 handler: async function (response: any) {
-                    // On successful payment, create the listing
                     await handleCreateListing(values, response.razorpay_payment_id);
                 },
                 modal: { ondismiss: () => setIsLoading(false) },
@@ -232,7 +236,6 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         }
 
     } else {
-        // Post for free if charging is disabled or price is 0
         await handleCreateListing(values);
     }
   }
@@ -271,7 +274,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                     )} />
 
                     <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Library Name' : 'Product Name'}</FormLabel><FormControl><Input placeholder="e.g., Central City Library" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Library Name' : 'Product Name'}</FormLabel><FormControl><Input placeholder={selectedCategory === 'Library' ? "e.g., Central City Library" : "e.g., Gently Used Physics Textbook"} {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
                     <FormField control={form.control} name="description" render={({ field }) => (
@@ -279,29 +282,29 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                     )} />
                     
                     <div className="grid md:grid-cols-2 gap-6">
-                        <FormField control={form.control} name="price" render={({ field }) => (
+                         <FormField control={form.control} name="price" render={({ field }) => (
                             <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Price per Seat (INR)' : 'Price (INR)'}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
 
                         {selectedCategory === 'Library' && (
                             <FormField control={form.control} name="total_seats" render={({ field }) => (
-                                <FormItem><FormLabel>Total Seats</FormLabel><FormControl><Input type="number" placeholder="50" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Total Seats</FormLabel><FormControl><Input type="number" placeholder="50" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                             )} />
                         )}
-                         {selectedCategory !== 'Library' && <div />}
                     </div>
 
                     {selectedCategory === 'Library' && (
                         <FormField control={form.control} name="location" render={({ field }) => (
-                                <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g., Near Main Campus" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g., Near Main Campus" {...field} value={field.value || ''}/></FormControl><FormMessage /></FormItem>
                         )} />
                     )}
                    
                      <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
                         <FormItem>
                             <FormLabel>{selectedCategory === 'Library' ? 'Library Image' : 'Product Image'}</FormLabel>
-                            {isEditMode && product.image_url && (
+                            {isEditMode && product.image_url && !value && (
                                 <div className="mb-4">
+                                    <p className="text-sm text-muted-foreground mb-2">Current image:</p>
                                     <Image src={product.image_url} alt="Current product image" width={100} height={100} className="rounded-md" />
                                 </div>
                             )}

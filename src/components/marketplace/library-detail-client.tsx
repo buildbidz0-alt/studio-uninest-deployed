@@ -35,6 +35,7 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
     const [seats, setSeats] = useState<Seat[]>([]);
     const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
     const [isBooking, setIsBooking] = useState(false);
+    const [currentOrders, setCurrentOrders] = useState(initialOrders);
 
     const totalSeats = library.total_seats || 50;
     const pricePerSeat = library.price || 10;
@@ -42,8 +43,9 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
     const generateSeats = useCallback((orders: any[]) => {
         const seatStatusMap = new Map<string, 'booked' | 'pending'>();
         orders.forEach(order => {
-            if (order.order_items[0]?.seat_number) {
-                 const seatNumber = order.order_items[0].seat_number.toString();
+            const seatNumberItem = order.order_items.find((item: any) => item.seat_number);
+            if (seatNumberItem) {
+                 const seatNumber = seatNumberItem.seat_number.toString();
                  if (order.status === 'approved') {
                     seatStatusMap.set(seatNumber, 'booked');
                 } else if (order.status === 'pending_approval') {
@@ -63,34 +65,32 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
     }, [totalSeats]);
 
     useEffect(() => {
-        generateSeats(initialOrders);
-    }, [initialOrders, generateSeats]);
+        generateSeats(currentOrders);
+    }, [currentOrders, generateSeats]);
 
     useEffect(() => {
         if (!supabase) return;
+
+        const fetchAndSetOrders = async () => {
+             const { data: newOrdersData } = await supabase
+                .from('orders')
+                .select('id, status, order_items(seat_number)')
+                .eq('vendor_id', library.seller_id)
+                .eq('order_items.library_id', library.id)
+                .in('status', ['pending_approval', 'approved']);
+            
+            if (newOrdersData) {
+                setCurrentOrders(newOrdersData);
+            }
+        };
+
         const channel = supabase
           .channel(`library_${library.id}_orders`)
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'orders', filter: `vendor_id=eq.${library.seller_id}` },
             (payload) => {
-                const updatedOrder = payload.new as any;
-                if (updatedOrder && updatedOrder.order_items && updatedOrder.order_items[0].library_id === library.id) {
-                   const currentOrders = initialOrders.filter(o => o.id !== updatedOrder.id);
-                   generateSeats([...currentOrders, updatedOrder]);
-                } else {
-                   // Fallback to refetch all orders for this library
-                   const fetchUpdatedOrders = async () => {
-                       const { data: orders } = await supabase
-                        .from('orders')
-                        .select('id, status, order_items(seat_number)')
-                        .eq('vendor_id', library.seller_id)
-                        .eq('order_items.library_id', library.id)
-                        .in('status', ['pending_approval', 'approved']);
-                       if (orders) generateSeats(orders);
-                   }
-                   fetchUpdatedOrders();
-                }
+                fetchAndSetOrders();
             }
           )
           .subscribe();
@@ -98,7 +98,7 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
         return () => {
           supabase.removeChannel(channel);
         };
-    }, [supabase, library.id, library.seller_id, generateSeats, initialOrders]);
+    }, [supabase, library.id, library.seller_id]);
 
 
     const handleSeatClick = (seat: Seat) => {
@@ -137,7 +137,7 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
 
         const { error: itemError } = await supabase.from('order_items').insert({
             order_id: newOrder.id,
-            product_id: library.id, // The library itself is the product
+            product_id: library.id,
             quantity: 1,
             price: pricePerSeat,
             seat_number: parseInt(selectedSeat.id),
@@ -153,9 +153,6 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
                 description: `Your request for seat ${selectedSeat.id} has been sent for approval.`,
             });
             setSelectedSeat(null);
-            // Optimistic update
-            const updatedOrders = [...initialOrders, { id: newOrder.id, status: 'pending_approval', order_items: [{ seat_number: parseInt(selectedSeat.id) }] }];
-            generateSeats(updatedOrders);
         }
         setIsBooking(false);
     }
@@ -163,7 +160,6 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-8">
             <div className="grid md:grid-cols-5 gap-8">
-                {/* Left Side */}
                 <div className="md:col-span-2 space-y-6">
                      <Card className="overflow-hidden">
                         <div className="relative aspect-[4/3]">
@@ -199,7 +195,6 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
                     </Card>
                 </div>
 
-                {/* Right Side - Seat Booking */}
                 <div className="md:col-span-3">
                     <Card>
                         <CardHeader>
