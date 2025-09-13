@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -34,7 +35,9 @@ export default function ChatLayout() {
 
     setLoadingRooms(true);
 
-    const { data: roomsData, error } = await supabase.rpc('get_user_chat_rooms');
+    const { data: roomsData, error } = await supabase.rpc('get_user_chat_rooms', {
+        p_user_id: user.id
+    });
 
     if (error) {
       console.error('Error fetching user rooms:', error);
