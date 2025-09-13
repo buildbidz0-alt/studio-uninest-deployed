@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -10,6 +11,39 @@ import { Loader2, Play, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const setupQueries = `
+-- Run this query to create the support tickets table.
+CREATE TABLE support_tickets (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    category TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Open',
+    priority TEXT NOT NULL DEFAULT 'Medium',
+    screenshot_url TEXT
+);
+
+-- Enable Row-Level Security
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for RLS
+CREATE POLICY "Users can insert their own tickets"
+ON support_tickets FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own tickets"
+ON support_tickets FOR SELECT
+TO authenticated
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all tickets"
+ON support_tickets FOR ALL
+TO service_role; -- Or use a custom admin role if you have one
+
+
+-- The queries below have already been run. You can delete them after running the one above.
 -- Creates a function to get or create a chat room between two users
 CREATE OR REPLACE FUNCTION get_or_create_chat_room(p_user_id1 uuid, p_user_id2 uuid)
 RETURNS TABLE(id uuid) AS $$
