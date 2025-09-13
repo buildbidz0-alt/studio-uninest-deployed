@@ -61,6 +61,7 @@ TO service_role;
 
 
 -- The queries below have already been run. You can delete them.
+
 -- **REVISED AND FIXED** Creates a function to get all chat rooms for a specific user
 CREATE OR REPLACE FUNCTION get_user_chat_rooms(p_user_id uuid)
 RETURNS TABLE(
@@ -74,17 +75,15 @@ RETURNS TABLE(
 ) AS $$
 BEGIN
     RETURN QUERY
-    WITH user_rooms AS (
-      SELECT room_id FROM chat_participants WHERE user_id = p_user_id
-    ),
-    other_participants AS (
-      SELECT
-        ur.room_id,
-        p.full_name,
-        p.avatar_url
-      FROM user_rooms ur
-      JOIN chat_participants cp ON ur.room_id = cp.room_id AND cp.user_id != p_user_id
-      JOIN profiles p ON cp.user_id = p.id
+    WITH room_participants AS (
+        SELECT
+            cp.room_id,
+            p.full_name,
+            p.avatar_url
+        FROM chat_participants cp
+        JOIN profiles p ON p.id = cp.user_id
+        WHERE cp.room_id IN (SELECT room_id FROM chat_participants WHERE user_id = p_user_id)
+          AND cp.user_id != p_user_id
     ),
     last_messages AS (
       SELECT DISTINCT ON (room_id)
@@ -92,7 +91,6 @@ BEGIN
         content,
         created_at
       FROM chat_messages
-      WHERE room_id IN (SELECT room_id FROM user_rooms)
       ORDER BY room_id, created_at DESC
     ),
     unread_counts AS (
@@ -100,27 +98,26 @@ BEGIN
         room_id,
         count(*) as unread
       FROM chat_messages
-      WHERE room_id IN (SELECT room_id FROM user_rooms)
-        AND user_id != p_user_id
-        AND is_read = false
+      WHERE user_id != p_user_id AND is_read = false
       GROUP BY room_id
     )
     SELECT
       cr.id,
       cr.created_at,
-      op.full_name AS name,
-      op.avatar_url AS avatar,
-      lm.content AS last_message,
-      lm.created_at AS last_message_timestamp,
-      COALESCE(uc.unread, 0) AS unread_count
+      rp.full_name,
+      rp.avatar_url,
+      lm.content,
+      lm.created_at,
+      COALESCE(uc.unread, 0)
     FROM chat_rooms cr
-    JOIN other_participants op ON cr.id = op.room_id
+    JOIN room_participants rp ON cr.id = rp.room_id
     LEFT JOIN last_messages lm ON cr.id = lm.room_id
     LEFT JOIN unread_counts uc ON cr.id = uc.room_id
-    WHERE cr.id IN (SELECT room_id FROM user_rooms)
+    WHERE cr.id IN (SELECT room_id FROM chat_participants WHERE user_id = p_user_id)
     ORDER BY lm.created_at DESC NULLS LAST;
 END;
 $$ LANGUAGE plpgsql;
+
 
 -- Creates a function to get or create a chat room between two users
 CREATE OR REPLACE FUNCTION get_or_create_chat_room(p_user_id1 uuid, p_user_id2 uuid)
