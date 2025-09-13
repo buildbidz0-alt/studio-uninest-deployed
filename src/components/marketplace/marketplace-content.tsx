@@ -186,48 +186,16 @@ export default function MarketplaceContent() {
         }
 
         try {
-            // Find existing private rooms with both users
-            const { data: existingRooms, error: existingRoomsError } = await supabase.rpc('get_mutual_private_room', {
-                p_user1_id: user.id,
-                p_user2_id: sellerId,
+            const { data, error } = await supabase.rpc('get_or_create_private_chat', {
+                user1_id: user.id,
+                user2_id: sellerId
             });
 
-            if (existingRoomsError) {
-                throw existingRoomsError;
-            }
-            
-            if (existingRooms && existingRooms.length > 0) {
-                // If a room already exists, just navigate to the chat page
-                router.push('/chat');
-                return;
+            if (error) {
+                throw error;
             }
 
-            // If no room exists, create a new one
-            const { data: newRoomData, error: createError } = await supabase
-                .from('chat_rooms')
-                .insert({ is_private: true })
-                .select('id')
-                .single();
-
-            if (createError) {
-                throw createError;
-            }
-
-            const newRoomId = newRoomData.id;
-
-            // Add both users as participants
-            const { error: participantsError } = await supabase
-                .from('chat_room_participants')
-                .insert([
-                    { room_id: newRoomId, user_id: user.id },
-                    { room_id: newRoomId, user_id: sellerId },
-                ]);
-
-            if (participantsError) {
-                throw participantsError;
-            }
-
-            // Navigate to chat page, which will now find the new room
+            // The function returns the room_id, so now we just navigate.
             router.push('/chat');
 
         } catch (error) {
