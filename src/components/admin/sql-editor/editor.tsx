@@ -23,7 +23,7 @@ BEGIN
     RETURN result_json;
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE EXCEPTION '{"error": "%" }', SQLERRM;
+        RETURN json_build_object('error', SQLERRM);
 END;
 $$;
 
@@ -169,7 +169,12 @@ export default function SQLEditor() {
     if (queryError) {
       setError(queryError);
     } else {
-      setResults(data);
+      // Check if the returned data contains a database error
+      if (Array.isArray(data) && data.length > 0 && data[0].error) {
+        setError(data[0].error);
+      } else {
+        setResults(data);
+      }
     }
     setIsLoading(false);
   };
