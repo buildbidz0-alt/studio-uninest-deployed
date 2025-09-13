@@ -4,7 +4,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, BookOpen, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users, Trophy, Briefcase, User as UserIcon, LifeBuoy } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users, Trophy, Briefcase, User as UserIcon, LifeBuoy, Sparkles } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -18,6 +18,7 @@ const mainNavItems = [
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
+  { href: '/ai/chat', label: 'AI Assistant', icon: Sparkles, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
 
 const secondaryNavItems = [
@@ -49,6 +50,9 @@ export function SidebarNav() {
         let isActive = pathname.startsWith(item.href) && item.href !== '/';
         if (item.href === '/social') {
             isActive = pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat');
+        }
+        if (item.href === '/ai/chat') {
+            isActive = pathname.startsWith('/ai/chat');
         }
         return (
             <SidebarMenuItem key={item.href}>
@@ -177,6 +181,9 @@ export function MobileBottomNav() {
 
           if (item.label === 'Profile') {
             isActive = pathname.startsWith('/profile') || pathname.startsWith('/settings');
+          }
+           if (item.href === '/social') {
+            isActive = pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat');
           }
 
           return (
