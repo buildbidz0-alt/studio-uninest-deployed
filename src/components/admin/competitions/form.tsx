@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { createCompetition } from '@/app/admin/competitions/actions';
 
 const formSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -22,15 +22,14 @@ const formSchema = z.object({
   prize: z.coerce.number().min(0, 'Prize must be a positive number.'),
   entry_fee: z.coerce.number().min(0, 'Entry fee must be a positive number.'),
   deadline: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
-  image: z.instanceof(File).optional(),
-  details_pdf: z.instanceof(File).optional(),
+  image: z.any().optional(),
+  details_pdf: z.any().optional(),
 });
 
 export default function CompetitionForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { supabase, user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,64 +41,20 @@ export default function CompetitionForm() {
     },
   });
 
-  const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
-    if (!supabase || !user) return null;
-    const filePath = `${user.id}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file);
-    
-    if (uploadError) {
-      console.error('Upload Error:', uploadError);
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
-      
-    return publicUrl;
-  }
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!supabase) return;
     setIsLoading(true);
-    
-    let imageUrl: string | undefined = undefined;
-    let pdfUrl: string | undefined = undefined;
 
-    if (values.image) {
-        const url = await uploadFile(values.image, 'competitions');
-        if (!url) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload image.' });
-            setIsLoading(false);
-            return;
+    const formData = new FormData();
+    Object.entries(values).forEach(([key, value]) => {
+        if (value) {
+            formData.append(key, value);
         }
-        imageUrl = url;
-    }
-
-    if (values.details_pdf) {
-        const url = await uploadFile(values.details_pdf, 'competitions');
-        if (!url) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload PDF.' });
-            setIsLoading(false);
-            return;
-        }
-        pdfUrl = url;
-    }
-
-    const { error } = await supabase.from('competitions').insert({
-      title: values.title,
-      description: values.description,
-      prize: values.prize,
-      entry_fee: values.entry_fee,
-      deadline: new Date(values.deadline).toISOString(),
-      image_url: imageUrl,
-      details_pdf_url: pdfUrl,
     });
 
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    const result = await createCompetition(formData);
+
+    if (result.error) {
+      toast({ variant: 'destructive', title: 'Error', description: result.error });
     } else {
       toast({ title: 'Success!', description: 'Competition created successfully.' });
       router.refresh();
