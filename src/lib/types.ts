@@ -42,8 +42,13 @@ export type Product = {
   category: string;
   seller_id: string;
   description: string;
+  location: string | null;
+  total_seats: number | null;
   seller: {
+    id: string;
     full_name: string;
+    avatar_url: string;
+    handle: string;
   };
   // This field is for the raw query result
   profiles?: {
@@ -87,7 +92,9 @@ export type OrderItem = {
     products: {
         name: string;
         image_url: string | null;
-    }
+    },
+    seat_number?: number;
+    library_id?: number;
 }
 
 export type Notification = {

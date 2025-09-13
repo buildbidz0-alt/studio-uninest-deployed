@@ -20,7 +20,7 @@ const categories = [
   { name: 'Hostels', icon: Bed },
   { name: 'Food Mess', icon: Utensils },
   { name: 'Cyber Café', icon: Laptop },
-  { name: 'Library Booking', icon: Armchair, href: '/booking' },
+  { name: 'Library', icon: Library },
   { name: 'Other Products', icon: Package },
 ];
 
@@ -244,7 +244,7 @@ export default function MarketplaceContent() {
                         size="sm"
                         className="rounded-full gap-2"
                      >
-                        <Link href={category.href || createCategoryLink(category.name)}>
+                        <Link href={createCategoryLink(category.name)}>
                            <category.icon className="size-4" />
                            {category.name}
                            {selectedCategory === category.name && <X className="size-4 -mr-1" />}

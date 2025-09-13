@@ -1,5 +1,6 @@
+
 import type { Metadata } from 'next';
-import SeatSelectionClient from '@/components/booking/seat-selection-client';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Book a Seat | UniNest',
@@ -7,5 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function BookingPage() {
-  return <SeatSelectionClient />;
+  // This page is now deprecated in favor of library-specific booking pages.
+  // We redirect to the marketplace where users can discover libraries.
+  redirect('/marketplace?category=Library');
 }

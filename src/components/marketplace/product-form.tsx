@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -20,7 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const allCategories = ["Library Services", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
+const allCategories = ["Library", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
 const studentCategories = ["Books", "Other Products"];
 
 const formSchema = z.object({
@@ -29,6 +28,8 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
   category: z.string({ required_error: "Please select a category." }),
   image: z.any().optional(), // Allow optional image for edit mode
+  location: z.string().optional(),
+  total_seats: z.coerce.number().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,6 +42,8 @@ type ProductFormProps = {
     price: number;
     category: string;
     image_url: string | null;
+    location: string | null;
+    total_seats: number | null;
   };
   chargeForPosts?: boolean;
   postPrice?: number;
@@ -59,12 +62,9 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         return studentCategories;
     }
     if (role === 'vendor') {
-        const vendorCategories = user?.user_metadata?.vendor_categories || [];
+        const vendorCategories = (user?.user_metadata?.vendor_categories || []).map((c: string) => c === 'library' ? 'Library' : c);
         // A vendor can edit a product to be any category, but can only create new ones for their assigned categories
         const categories = [...vendorCategories];
-        if (categories.includes('library')) {
-            categories.push('Library Services');
-        }
         categories.push("Other Products");
         return isEditMode ? allCategories : [...new Set(categories)]; // Use Set to avoid duplicates
     }
@@ -80,8 +80,12 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
       description: product?.description || '',
       price: product?.price || 0,
       category: product?.category || '',
+      location: product?.location || '',
+      total_seats: product?.total_seats || 0,
     },
   });
+  
+  const selectedCategory = form.watch('category');
 
   const uploadFile = async (file: File): Promise<string | null> => {
     if (!supabase || !user) return null;
@@ -124,8 +128,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         category: values.category,
         seller_id: user.id,
         image_url: imageUrl,
-        // You could also store the payment ID if needed
-        // listing_payment_id: paymentId,
+        location: values.location,
+        total_seats: values.total_seats,
     });
 
      if (error) {
@@ -162,6 +166,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
             price: values.price,
             category: values.category,
             image_url: imageUrl,
+            location: values.location,
+            total_seats: values.total_seats,
         })
         .eq('id', product.id);
 
@@ -234,7 +240,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   return (
     <Card>
         <CardHeader>
-            <CardTitle>{isEditMode ? 'Edit Product' : 'Product Details'}</CardTitle>
+            <CardTitle>{isEditMode ? 'Edit Listing' : 'Create New Listing'}</CardTitle>
             <CardDescription>{isEditMode ? 'Update the details below.' : 'All fields are required.'}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -249,34 +255,51 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
             )}
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Gently Used Physics Textbook" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormField control={form.control} name="category" render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {availableCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                            <FormMessage />
+                        </FormItem>
                     )} />
+
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Library Name' : 'Product Name'}</FormLabel><FormControl><Input placeholder="e.g., Central City Library" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your product, its condition, etc." {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
+                    
                     <div className="grid md:grid-cols-2 gap-6">
                         <FormField control={form.control} name="price" render={({ field }) => (
-                            <FormItem><FormLabel>Price (INR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Price per Seat (INR)' : 'Price (INR)'}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <FormField control={form.control} name="category" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Category</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {availableCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                             <FormMessage />
-                          </FormItem>
-                        )} />
+
+                        {selectedCategory === 'Library' && (
+                            <FormField control={form.control} name="total_seats" render={({ field }) => (
+                                <FormItem><FormLabel>Total Seats</FormLabel><FormControl><Input type="number" placeholder="50" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        )}
+                         {selectedCategory !== 'Library' && <div />}
                     </div>
+
+                    {selectedCategory === 'Library' && (
+                        <FormField control={form.control} name="location" render={({ field }) => (
+                                <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g., Near Main Campus" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    )}
+                   
                      <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
                         <FormItem>
-                            <FormLabel>Product Image</FormLabel>
+                            <FormLabel>{selectedCategory === 'Library' ? 'Library Image' : 'Product Image'}</FormLabel>
                             {isEditMode && product.image_url && (
                                 <div className="mb-4">
                                     <Image src={product.image_url} alt="Current product image" width={100} height={100} className="rounded-md" />
