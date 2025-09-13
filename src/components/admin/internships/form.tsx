@@ -106,8 +106,8 @@ export default function InternshipForm() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } else {
       toast({ title: 'Success!', description: 'Internship created successfully.' });
-      router.push('/admin/dashboard');
       router.refresh();
+      router.push('/admin/internships');
     }
     
     setIsLoading(false);

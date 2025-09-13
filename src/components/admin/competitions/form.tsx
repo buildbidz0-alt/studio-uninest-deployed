@@ -102,8 +102,8 @@ export default function CompetitionForm() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } else {
       toast({ title: 'Success!', description: 'Competition created successfully.' });
-      router.push('/admin/dashboard');
       router.refresh();
+      router.push('/admin/competitions');
     }
     
     setIsLoading(false);
