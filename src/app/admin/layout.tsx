@@ -84,8 +84,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6">
             <div className="flex items-center gap-2 md:hidden">
               <SidebarTrigger className="-ml-2" />
-               <Logo className="size-7 text-primary" />
-               <h1 className="text-lg font-semibold">UniNest Admin</h1>
+               <div className="flex items-center gap-2">
+                 <Logo className="size-7 text-primary" />
+                 <h1 className="text-lg font-semibold">UniNest Admin</h1>
+              </div>
             </div>
           <div className="flex flex-1 items-center justify-end gap-4">
               <DropdownMenu>

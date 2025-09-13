@@ -103,7 +103,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
       <SidebarInset>
         <header className="flex md:hidden h-14 items-center justify-between border-b bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center gap-1">
-              <SidebarTrigger />
+              <SidebarTrigger className="-ml-1" />
                <Link href="/" className="flex items-center gap-2">
                  <Logo className="size-7 text-primary" />
                  <h1 className="text-lg font-semibold">UniNest</h1>
