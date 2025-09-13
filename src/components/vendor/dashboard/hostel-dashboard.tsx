@@ -47,8 +47,10 @@ export default function HostelDashboard() {
                 .eq('vendor_id', user.id)
                 .eq('order_items.products.category', 'Hostels')
                 .order('created_at', { ascending: false });
-
-            if (ordersData) {
+            
+            if (ordersError) {
+                console.error("Error fetching hostel orders:", ordersError);
+            } else if (ordersData) {
                 const hostelOrders = (ordersData as any[]).map(o => ({
                     ...o,
                     buyer: o.profiles || { full_name: 'N/A' },
