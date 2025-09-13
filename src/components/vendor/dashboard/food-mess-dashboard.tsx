@@ -14,7 +14,7 @@ import Link from 'next/link';
 export default function FoodMessDashboard() {
     const { supabase, user } = useAuth();
     const [menuItems, setMenuItems] = useState<Product[]>([]);
-    const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+    const [recentOrders, setRecentOrders] = useState<any[]>([]); // Use any for safety
     const [stats, setStats] = useState({ revenue: 0, orders: 0, subscriptions: 0 });
     const [loading, setLoading] = useState(true);
 
@@ -38,11 +38,12 @@ export default function FoodMessDashboard() {
             const { data: ordersData, error } = await supabase
                 .from('orders')
                 .select(`
-                    *,
-                    order_items!inner(
-                        products!inner(name, category)
-                    ),
-                    profiles!buyer_id(full_name)
+                    id,
+                    created_at,
+                    total_amount,
+                    status,
+                    buyer:profiles!buyer_id(full_name),
+                    order_items!inner(products!inner(name, category))
                 `)
                 .eq('vendor_id', user.id)
                 .eq('order_items.products.category', 'Food Mess')
@@ -50,11 +51,9 @@ export default function FoodMessDashboard() {
 
 
             if (ordersData) {
-                const foodOrders = (ordersData as any[]).map(o => ({...o, buyer: o.profiles || { full_name: 'N/A' }, order_items: o.order_items.map((oi:any) => ({products: oi.products})) }));
-                const totalRevenue = foodOrders.reduce((sum, order) => sum + order.total_amount, 0);
-                
-                setRecentOrders(foodOrders.slice(0, 3) as Order[]);
-                setStats(prev => ({ ...prev, revenue: totalRevenue, orders: foodOrders.length }));
+                const totalRevenue = ordersData.reduce((sum, order) => sum + order.total_amount, 0);
+                setRecentOrders(ordersData.slice(0, 3));
+                setStats(prev => ({ ...prev, revenue: totalRevenue, orders: ordersData.length }));
             }
 
             setLoading(false);
@@ -86,7 +85,7 @@ export default function FoodMessDashboard() {
                                     {recentOrders.map(order => (
                                         <TableRow key={order.id}>
                                             <TableCell className="font-medium">{order.buyer?.full_name || 'N/A'}</TableCell>
-                                            <TableCell>{order.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
+                                            <TableCell>{order.order_items.map((oi: any) => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
                                             <TableCell>
                                                 <Badge variant={order.status === 'Ready' ? 'default' : order.status === 'Pending' ? 'destructive' : 'secondary'}>
                                                     {order.status || 'Pending'}

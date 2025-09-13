@@ -13,7 +13,7 @@ import Link from "next/link";
 export default function LibraryDashboard() {
     const { supabase, user } = useAuth();
     const [books, setBooks] = useState<Product[]>([]);
-    const [recentBookings, setRecentBookings] = useState<Order[]>([]);
+    const [recentBookings, setRecentBookings] = useState<any[]>([]); // Use any to be safe with joins
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -32,29 +32,24 @@ export default function LibraryDashboard() {
                 setBooks(productsData as Product[]);
             }
 
-            // Fetch bookings (orders for library services) - CORRECTED QUERY
+            // Fetch bookings (orders for library services)
             const { data: ordersData, error } = await supabase
                 .from('orders')
                 .select(`
-                    *,
-                    order_items!inner(
-                        products!inner(name, category)
-                    ),
-                    profiles!buyer_id(full_name)
+                    id,
+                    created_at,
+                    status,
+                    buyer:profiles!buyer_id(full_name),
+                    order_items!inner(products!inner(name, category))
                 `)
                 .eq('vendor_id', user.id)
                 .eq('order_items.products.category', 'Library Services')
                 .order('created_at', { ascending: false });
-
+            
             if (error) {
                 console.error("Error fetching library orders:", error);
             } else if (ordersData) {
-                const libraryOrders = (ordersData as any[]).map(o => ({
-                    ...o, 
-                    buyer: o.profiles || { full_name: 'N/A' },
-                    order_items: Array.isArray(o.order_items) ? o.order_items.map((oi: any) => ({products: oi.products})) : []
-                }));
-                setRecentBookings(libraryOrders.slice(0, 3) as Order[]);
+                setRecentBookings(ordersData.slice(0,3));
             }
 
             setLoading(false);
@@ -122,7 +117,9 @@ export default function LibraryDashboard() {
                                     {recentBookings.map(booking => (
                                         <TableRow key={booking.id}>
                                             <TableCell className="font-medium">{booking.buyer?.full_name || 'N/A'}</TableCell>
-                                            <TableCell>{booking.order_items?.map(oi => oi.products?.name || 'Unknown Item').join(', ') || 'N/A'}</TableCell>
+                                            <TableCell>
+                                                {booking.order_items?.map((oi: any) => oi.products?.name || 'Unknown').join(', ') || 'N/A'}
+                                            </TableCell>
                                             <TableCell><CheckCircle className="size-5 text-green-500"/></TableCell>
                                         </TableRow>
                                     ))}

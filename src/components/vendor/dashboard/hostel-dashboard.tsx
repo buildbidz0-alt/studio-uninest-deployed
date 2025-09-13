@@ -14,7 +14,7 @@ import { formatDistanceToNow } from "date-fns";
 export default function HostelDashboard() {
     const { supabase, user } = useAuth();
     const [rooms, setRooms] = useState<Product[]>([]);
-    const [recentActivity, setRecentActivity] = useState<Order[]>([]);
+    const [recentActivity, setRecentActivity] = useState<any[]>([]); // Use any for safety
     const [stats, setStats] = useState({ revenue: 0, tenants: 0, maintenance: 0 });
     const [loading, setLoading] = useState(true);
 
@@ -38,11 +38,12 @@ export default function HostelDashboard() {
             const { data: ordersData, error: ordersError } = await supabase
                 .from('orders')
                 .select(`
-                    *,
-                    order_items!inner(
-                        products!inner(name, category)
-                    ),
-                    profiles!buyer_id(full_name)
+                    id,
+                    created_at,
+                    total_amount,
+                    buyer_id,
+                    buyer:profiles!buyer_id(full_name),
+                    order_items!inner(products!inner(name, category))
                 `)
                 .eq('vendor_id', user.id)
                 .eq('order_items.products.category', 'Hostels')
@@ -51,16 +52,10 @@ export default function HostelDashboard() {
             if (ordersError) {
                 console.error("Error fetching hostel orders:", ordersError);
             } else if (ordersData) {
-                const hostelOrders = (ordersData as any[]).map(o => ({
-                    ...o,
-                    buyer: o.profiles || { full_name: 'N/A' },
-                    order_items: Array.isArray(o.order_items) ? o.order_items.map((oi:any) => ({products: oi.products})) : []
-                }));
+                const totalRevenue = ordersData.reduce((sum, order) => sum + order.total_amount, 0);
+                const uniqueTenants = new Set(ordersData.map(o => o.buyer_id)).size;
 
-                const totalRevenue = hostelOrders.reduce((sum, order) => sum + order.total_amount, 0);
-                const uniqueTenants = new Set(hostelOrders.map(o => o.buyer_id)).size;
-
-                setRecentActivity(hostelOrders.slice(0, 5) as Order[]);
+                setRecentActivity(ordersData.slice(0, 5));
                 setStats(prev => ({ ...prev, revenue: totalRevenue, tenants: uniqueTenants }));
             }
 
@@ -161,7 +156,7 @@ export default function HostelDashboard() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-medium">{activity.buyer?.full_name || 'N/A'}</TableCell>
-                                        <TableCell>{activity.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
+                                        <TableCell>{activity.order_items.map((oi: any) => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
                                         <TableCell>{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</TableCell>
                                     </TableRow>
                                 ))}
