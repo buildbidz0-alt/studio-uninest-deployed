@@ -84,36 +84,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [supabase, user, notifications]);
 
+  const updateUserState = useCallback((user: User | null) => {
+    setUser(user);
+    const newRole = determineRole(user);
+    const newCategories = getVendorCategories(user);
+    setRole(newRole);
+    setVendorCategories(newCategories);
+    if (user) {
+      fetchNotifications(user.id);
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+    setLoading(false);
+  }, [fetchNotifications]);
+
 
   useEffect(() => {
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const currentUser = session?.user || null;
-      setUser(currentUser);
-      setRole(determineRole(currentUser));
-      setVendorCategories(getVendorCategories(currentUser));
-      if (currentUser) {
-          await fetchNotifications(currentUser.id);
-      }
-      setLoading(false);
+      updateUserState(session?.user || null);
     };
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      setRole(determineRole(currentUser));
-      setVendorCategories(getVendorCategories(currentUser));
-      
-      if (currentUser) {
-          fetchNotifications(currentUser.id);
-      } else {
-          setNotifications([]);
-          setUnreadCount(0);
-      }
-
-      if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+      updateUserState(session?.user ?? null);
+      if (['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'].includes(event)) {
         router.refresh();
       }
     });
@@ -121,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [router, fetchNotifications, supabase.auth]);
+  }, [router, supabase.auth, updateUserState]);
 
 
   // Realtime subscription for new notifications
@@ -156,12 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setUser(null);
-    setRole('guest');
-    setVendorCategories([]);
-    setNotifications([]);
-    setUnreadCount(0);
-    router.push('/login');
+    // The onAuthStateChange listener will handle updating the state
   };
 
   const value = {

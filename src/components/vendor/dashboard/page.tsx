@@ -5,6 +5,7 @@ import PageHeader from '@/components/admin/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Library, Utensils, Bed, Laptop, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 const categoryDashboards = [
     { id: "library", label: "Library Hub", icon: Library, color: 'text-purple-500' },
@@ -31,7 +32,7 @@ export default function VendorDashboardContent({ userName, vendorCategories }: V
             <h2 className="text-2xl font-bold tracking-tight mb-4">Your Service Dashboards</h2>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {vendorSpecificDashboards.map(dash => (
-                     <Link key={dash.id} href={`/vendor/dashboard/${dash.id.replace(' ', '-')}`}>
+                     <Link key={dash.id} href={`/vendor/dashboard/${dash.id.replace(/\s+/g, '-')}`}>
                         <Card className="hover:shadow-lg transition-shadow h-full">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <div className="flex items-center gap-3">
