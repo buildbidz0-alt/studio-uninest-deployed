@@ -17,8 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import UserListCard from './user-list-card';
 
 type ProfileWithCounts = Profile & {
-    follower_count: { count: number }[];
-    following_count: { count: number }[];
+    follower_count: number;
+    following_count: number;
 }
 
 export default function ProfileClient() {
@@ -27,7 +27,7 @@ export default function ProfileClient() {
   const params = useParams();
   const handleFromParams = params.handle as string | undefined;
 
-  const [profile, setProfile] = useState<Profile & { follower_count: number, following_count: number } | null>(null);
+  const [profile, setProfile] = useState<ProfileWithCounts | null>(null);
   const [profileContent, setProfileContent] = useState<{
     listings: Product[],
     posts: PostWithAuthor[],
@@ -48,27 +48,34 @@ export default function ProfileClient() {
 
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select(`
-                *,
-                followers:followers!following_id(count),
-                following:followers!follower_id(count)
-            `)
+            .select(`*`)
             .eq('handle', handle)
             .single();
         
         if (profileError || !profileData) {
             toast({ variant: 'destructive', title: 'Error fetching profile' });
             console.error("Profile fetch error:", profileError);
-            redirect('/'); // Redirect if profile not found
+            redirect('/');
             return;
         }
         
         const userId = profileData.id;
 
+        // Separate, correct queries for follower/following counts
+        const { count: follower_count, error: followerError } = await supabase
+            .from('followers')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', userId);
+
+        const { count: following_count, error: followingError } = await supabase
+            .from('followers')
+            .select('*', { count: 'exact', head: true })
+            .eq('follower_id', userId);
+
         const finalProfile = {
             ...profileData,
-            follower_count: profileData.followers[0]?.count || 0,
-            following_count: profileData.following[0]?.count || 0,
+            follower_count: follower_count || 0,
+            following_count: following_count || 0,
         };
 
         setProfile(finalProfile);
@@ -79,8 +86,7 @@ export default function ProfileClient() {
                 .select('*', { count: 'exact', head: true })
                 .eq('follower_id', user.id)
                 .eq('following_id', userId);
-            if (!error && data) {
-                // `data` is null with `head: true`, so we use `count`
+            if (!error) {
                 const { count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', user.id).eq('following_id', userId);
                 if (count && count > 0) {
                     setIsFollowing(true);
