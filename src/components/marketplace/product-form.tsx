@@ -19,7 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const allCategories = ["Library", "Food Mess", "Cyber Café", "Books", "Hostels", "Other Products"];
+const allCategories = ["Library", "Hostels", "Hostel Room", "Food Mess", "Cyber Café", "Books", "Other Products"];
 const studentCategories = ["Books", "Other Products"];
 
 const formSchema = z.object({
@@ -63,14 +63,17 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
     }
     if (role === 'vendor') {
         const vendorCategories = (user?.user_metadata?.vendor_categories || []).map((c: string) => {
-            if (c === 'library') return 'Library';
+            if (c === 'library') return ['Library', 'Library Seat'];
             if (c === 'food mess') return 'Food Mess';
             if (c === 'cybercafe') return 'Cyber Café';
-            if (c === 'hostels') return 'Hostels';
+            if (c === 'hostels') return ['Hostels', 'Hostel Room'];
             return c;
-        });
+        }).flat();
+        
         const categories = [...vendorCategories];
-        categories.push("Other Products");
+        if (!categories.includes('Other Products')) {
+          categories.push("Other Products");
+        }
         return isEditMode ? allCategories : [...new Set(categories)];
     }
     return allCategories;
@@ -274,7 +277,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                     )} />
 
                     <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Library Name' : 'Product Name'}</FormLabel><FormControl><Input placeholder={selectedCategory === 'Library' ? "e.g., Central City Library" : "e.g., Gently Used Physics Textbook"} {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Library Name' : selectedCategory === 'Hostels' ? 'Hostel Name' : selectedCategory === 'Hostel Room' ? 'Room Name/Number' : 'Product Name'}</FormLabel><FormControl><Input placeholder={selectedCategory === 'Library' ? "e.g., Central City Library" : "e.g., Gently Used Physics Textbook"} {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
                     <FormField control={form.control} name="description" render={({ field }) => (
@@ -283,7 +286,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                     
                     <div className="grid md:grid-cols-2 gap-6">
                          <FormField control={form.control} name="price" render={({ field }) => (
-                            <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Price per Seat (INR)' : 'Price (INR)'}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Price per Seat (INR)' : selectedCategory === 'Hostel Room' ? 'Price per month (INR)' : 'Price (INR)'}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
 
                         {selectedCategory === 'Library' && (
@@ -293,7 +296,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                         )}
                     </div>
 
-                    {selectedCategory === 'Library' && (
+                    {(selectedCategory === 'Library' || selectedCategory === 'Hostels') && (
                         <FormField control={form.control} name="location" render={({ field }) => (
                                 <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g., Near Main Campus" {...field} value={field.value || ''}/></FormControl><FormMessage /></FormItem>
                         )} />
@@ -301,7 +304,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                    
                      <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
                         <FormItem>
-                            <FormLabel>{selectedCategory === 'Library' ? 'Library Image' : 'Product Image'}</FormLabel>
+                            <FormLabel>{selectedCategory === 'Library' ? 'Library Image' : selectedCategory === 'Hostels' ? 'Hostel Image' : 'Product Image'}</FormLabel>
                             {isEditMode && product.image_url && !value && (
                                 <div className="mb-4">
                                     <p className="text-sm text-muted-foreground mb-2">Current image:</p>

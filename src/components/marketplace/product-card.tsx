@@ -24,6 +24,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
   
   const canBuy = user && user.id !== product.seller_id;
   const isLibrary = product.category === 'Library';
+  const isHostel = product.category === 'Hostels';
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
     e.stopPropagation();
@@ -31,10 +32,14 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
     action();
   }
 
-  const cardLink = isLibrary ? `/marketplace/library/${product.id}` : `/marketplace/${product.id}`;
+  const getCardLink = () => {
+    if (isLibrary) return `/marketplace/library/${product.id}`;
+    if (isHostel) return `/hostels/${product.id}`;
+    return `/marketplace/${product.id}`;
+  }
 
   return (
-    <Link href={cardLink} className="flex flex-col h-full group">
+    <Link href={getCardLink()} className="flex flex-col h-full group">
         <Card className="overflow-hidden shadow-sm transition-shadow group-hover:shadow-lg flex flex-col flex-grow">
         <CardHeader className="p-0">
             <div className="relative aspect-[16/9]">
@@ -56,7 +61,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
         <CardFooter className="p-4 pt-0 mt-auto">
             <div className="flex items-center justify-between w-full gap-2">
                 <p className="text-xl font-bold text-primary">
-                    {isLibrary ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
+                    {isLibrary ? `₹${product.price.toLocaleString()}/seat` : isHostel ? 'View Details' : `₹${product.price.toLocaleString()}`}
                 </p>
                 <div className='flex gap-2'>
                 {canBuy && (
@@ -65,8 +70,8 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                         <span className="sr-only">Chat with seller</span>
                     </Button>
                 )}
-                {isLibrary ? (
-                    <Button>Book Seat</Button>
+                {isLibrary || isHostel ? (
+                    <Button>{isHostel ? 'View Rooms' : 'Book Seat'}</Button>
                 ) : (
                     <Button onClick={(e) => handleButtonClick(e, () => onBuyNow(product))} disabled={!canBuy || !isRazorpayLoaded || isBuying}>
                         {isBuying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

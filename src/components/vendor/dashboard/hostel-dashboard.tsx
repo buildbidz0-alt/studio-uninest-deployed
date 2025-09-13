@@ -4,29 +4,78 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight } from "lucide-react";
+import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight, ThumbsUp, X, Loader2 } from "lucide-react";
 import type { Product } from "@/lib/types";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 type HostelDashboardProps = {
     products: Product[];
     orders: any[];
 }
 
-export default function HostelDashboard({ products, orders }: HostelDashboardProps) {
-    const rooms = products;
-    const recentActivity = orders.slice(0, 5);
+export default function HostelDashboard({ products, orders: initialOrders }: HostelDashboardProps) {
+    const { supabase } = useAuth();
+    const { toast } = useToast();
+    const [orders, setOrders] = useState(initialOrders);
+    const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+    
+    const hostels = products.filter(p => p.category === 'Hostels');
+    const rooms = products.filter(p => p.category === 'Hostel Room');
+
+    const pendingApprovals = orders.filter(o => o.status === 'pending_approval' && o.order_items[0]?.products?.category === 'Hostel Room');
+
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     const uniqueTenants = new Set(orders.map(o => o.buyer_id)).size;
 
-    const stats = { revenue: totalRevenue, tenants: uniqueTenants, maintenance: 0 };
+    const stats = { revenue: totalRevenue, tenants: uniqueTenants };
+    
+    const handleApproval = async (orderId: number, newStatus: 'approved' | 'rejected') => {
+        if (!supabase) return;
+        setUpdatingOrderId(orderId);
+        
+        const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+        
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error', description: `Failed to ${newStatus === 'approved' ? 'approve' : 'reject'} booking.` });
+        } else {
+            toast({ title: 'Success', description: `Booking has been ${newStatus}.` });
+            setOrders(currentOrders => currentOrders.filter(o => o.id !== orderId));
+        }
+        setUpdatingOrderId(null);
+    }
+
+    if (hostels.length === 0) {
+       return (
+         <div className="text-center py-10">
+                <h2 className="text-2xl font-bold">No Hostel Found</h2>
+                <p className="text-muted-foreground mt-2">You haven't created a hostel listing yet.</p>
+                <Button asChild className="mt-4">
+                    <Link href="/marketplace/new"><PlusCircle className="mr-2"/> Create Hostel Listing</Link>
+                </Button>
+            </div>
+       )
+    }
+
+    // Assuming a vendor manages one hostel for simplicity
+    const hostel = hostels[0];
 
     return (
         <div className="space-y-8">
-            <h2 className="text-2xl font-bold tracking-tight">Hostel Management</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold tracking-tight">{hostel.name} - Dashboard</h2>
+                 <Button variant="outline" asChild>
+                    <Link href={`/vendor/products/${hostel.id}/edit`}>
+                        <Settings className="mr-2"/> Configure Hostel
+                    </Link>
+                </Button>
+            </div>
             
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Total Tenants</CardTitle>
@@ -34,7 +83,7 @@ export default function HostelDashboard({ products, orders }: HostelDashboardPro
                     </CardHeader>
                     <CardContent>
                         <p className="text-3xl font-bold">{stats.tenants}</p>
-                        <p className="text-sm text-muted-foreground">based on unique orders</p>
+                        <p className="text-sm text-muted-foreground">based on unique bookings</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -44,17 +93,7 @@ export default function HostelDashboard({ products, orders }: HostelDashboardPro
                     </CardHeader>
                     <CardContent>
                         <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground">from all bookings</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Maintenance</CardTitle>
-                        <Wrench className="text-red-500"/>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-3xl font-bold">{stats.maintenance}</p>
-                        <p className="text-sm text-muted-foreground">requests open</p>
+                        <p className="text-sm text-muted-foreground">from all-time bookings</p>
                     </CardContent>
                 </Card>
             </div>
@@ -63,28 +102,34 @@ export default function HostelDashboard({ products, orders }: HostelDashboardPro
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle className="flex items-center gap-2"><Bed className="text-primary"/> Room Listings</CardTitle>
-                        <CardDescription>Overview of your hostel room listings.</CardDescription>
+                        <CardDescription>Manage your available rooms.</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" disabled><Calendar className="mr-2"/> Manage Bookings</Button>
-                        <Button asChild><Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
-                    </div>
+                    <Button asChild><Link href="/marketplace/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                 <CardContent>
                      {rooms.length > 0 ? (
-                        rooms.map(room => (
-                             <Link key={room.id} href={`/vendor/products/${room.id}/edit`}>
-                                <div className="p-4 rounded-lg border-2 bg-green-100 dark:bg-green-900/50 border-green-200 dark:border-green-800 hover:border-primary hover:bg-primary/10 transition-colors">
-                                    <div className="flex justify-between items-center">
-                                        <p className="font-bold text-lg truncate" title={room.name}>{room.name}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-2 text-sm">
-                                        <IndianRupee className="size-4"/>
-                                        <span>{room.price.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Room Name/Number</TableHead>
+                                    <TableHead>Price</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {rooms.map(room => (
+                                    <TableRow key={room.id}>
+                                        <TableCell className="font-medium">{room.name}</TableCell>
+                                        <TableCell>₹{room.price.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="sm" asChild>
+                                                <Link href={`/vendor/products/${room.id}/edit`}>Edit</Link>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     ) : (
                          <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet.</p>
                     )}
@@ -93,37 +138,46 @@ export default function HostelDashboard({ products, orders }: HostelDashboardPro
 
             <Card>
                  <CardHeader>
-                    <CardTitle>Recent Bookings</CardTitle>
+                    <CardTitle>Pending Bookings ({pendingApprovals.length})</CardTitle>
+                    <CardDescription>Approve or reject new room booking requests.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     {recentActivity.length > 0 ? (
+                     {pendingApprovals.length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Activity</TableHead>
                                     <TableHead>Student</TableHead>
                                     <TableHead>Room</TableHead>
-                                    <TableHead>Date</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {recentActivity.map(activity => (
-                                    <TableRow key={activity.id}>
+                                {pendingApprovals.map(booking => (
+                                    <TableRow key={booking.id}>
+                                        <TableCell className="font-medium">{booking.buyer?.full_name || 'N/A'}</TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <ArrowRight className="size-4 text-green-500"/>
-                                                <span className="capitalize">New Booking</span>
-                                            </div>
+                                            {booking.order_items.map((oi: any) => oi.products?.name || 'N/A').join(', ')}
                                         </TableCell>
-                                        <TableCell className="font-medium">{activity.buyer?.full_name || 'N/A'}</TableCell>
-                                        <TableCell>{activity.order_items.map((oi: any) => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
-                                        <TableCell>{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary">{booking.status}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right space-x-2">
+                                            {updatingOrderId === booking.id ? (
+                                                <Loader2 className="size-5 animate-spin inline-flex" />
+                                            ) : (
+                                                <>
+                                                    <Button size="icon" variant="outline" className="text-green-500" onClick={() => handleApproval(booking.id, 'approved')}><ThumbsUp /></Button>
+                                                    <Button size="icon" variant="outline" className="text-red-500" onClick={() => handleApproval(booking.id, 'rejected')}><X /></Button>
+                                                </>
+                                            )}
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                      ) : (
-                        <p className="text-muted-foreground text-center py-10">No recent bookings.</p>
+                        <p className="text-muted-foreground text-center py-10">No pending bookings.</p>
                      )}
                 </CardContent>
             </Card>
