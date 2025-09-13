@@ -193,7 +193,6 @@ export default function MarketplaceContent() {
 
       if (error) throw error;
       
-      // If the function returns a room ID, it means it either found one or created one successfully.
       if (data) {
         router.push('/chat');
       } else {
