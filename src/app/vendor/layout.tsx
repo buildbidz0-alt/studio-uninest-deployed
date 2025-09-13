@@ -25,24 +25,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 export default function VendorLayout({ children }: { children: ReactNode }) {
   const { user, signOut, role, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Define paths outside the /vendor route that are still accessible to vendors
+  const allowedPaths = ['/settings', '/marketplace/new'];
 
   useEffect(() => {
     if (!loading) {
       if (role === 'vendor') {
         setIsAuthorized(true);
-      } else {
+      } else if (!pathname.startsWith('/vendor/') && !allowedPaths.includes(pathname)) {
+        // If not a vendor, only redirect if they are not on a vendor-specific page.
+        // This prevents kicking out admins or students from non-vendor pages.
         router.push('/');
       }
     }
-  }, [role, loading, router]);
+  }, [role, loading, router, pathname]);
   
   if (loading || !isAuthorized) {
     return (
