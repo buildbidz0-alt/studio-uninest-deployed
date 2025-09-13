@@ -73,6 +73,7 @@ export type Order = {
   vendor_id: string;
   total_amount: number;
   razorpay_payment_id: string;
+  status: 'pending_approval' | 'approved' | 'rejected' | 'completed' | null;
   order_items: OrderItem[];
   buyer: Profile;
 }
