@@ -1,17 +1,10 @@
 
 'use client';
 
-import { useMemo } from 'react';
-import StatsCard from '@/components/vendor/stats-card';
-import SalesChart from '@/components/vendor/sales-chart';
-import RecentOrdersTable from '@/components/vendor/recent-orders-table';
-import { DollarSign, ShoppingCart, Users, Library, Utensils, Bed, Laptop, ArrowRight } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import type { Order } from '@/lib/types';
-import { subDays, format } from 'date-fns';
 import PageHeader from '@/components/admin/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+import { Library, Utensils, Bed, Laptop, ArrowRight } from 'lucide-react';
 
 const categoryDashboards = [
     { id: "library", label: "Library Hub", icon: Library, color: 'text-purple-500' },
@@ -20,14 +13,18 @@ const categoryDashboards = [
     { id: "cybercafe", label: "Cybercafé Hub", icon: Laptop, color: 'text-green-500' },
 ];
 
-export default function VendorDashboardContent() {
-  const { user, vendorCategories } = useAuth();
+type VendorDashboardContentProps = {
+    userName: string;
+    vendorCategories: string[];
+}
+
+export default function VendorDashboardContent({ userName, vendorCategories }: VendorDashboardContentProps) {
 
   const vendorSpecificDashboards = categoryDashboards.filter(dash => vendorCategories.includes(dash.id));
   
   return (
     <div className="space-y-8">
-      <PageHeader title="Dashboard" description={`Welcome, ${user?.user_metadata?.full_name || 'Vendor'}. Here's your main hub.`} />
+      <PageHeader title="Dashboard" description={`Welcome, ${userName}. Here's your main hub.`} />
 
        {vendorSpecificDashboards.length > 0 && (
         <div>
