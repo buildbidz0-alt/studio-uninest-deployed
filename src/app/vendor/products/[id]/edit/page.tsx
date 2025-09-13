@@ -1,5 +1,4 @@
 
-
 import PageHeader from "@/components/admin/page-header";
 import ProductForm from "@/components/marketplace/product-form";
 import { createClient } from "@/lib/supabase/server";
@@ -42,5 +41,3 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
         </div>
     )
 }
-
-    
