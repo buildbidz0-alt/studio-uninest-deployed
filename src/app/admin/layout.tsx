@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { type ReactNode, useEffect, useState } from 'react';
@@ -25,19 +24,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, signOut, role, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // The /admin/setup page should be accessible without being an admin
+  if (pathname === '/admin/setup') {
+    return <>{children}</>;
+  }
   
   useEffect(() => {
     if (!loading) {
-      // The `role` from the useAuth hook is the single source of truth.
-      // It's derived directly from the user's authentication token.
       if (role === 'admin') {
         setIsAuthorized(true);
       } else {

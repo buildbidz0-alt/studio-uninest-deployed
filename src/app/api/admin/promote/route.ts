@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -26,18 +25,18 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-        // 1. Check if an admin already exists.
-        const { data: { users: existingAdmins }, error: adminCheckError } = await supabaseAdmin.auth.admin.listUsers();
+        // 1. Check if an admin already exists. In a production scenario, you might want to lock this down.
+        const { data: { users: existingUsers }, error: adminCheckError } = await supabaseAdmin.auth.admin.listUsers();
         if (adminCheckError) {
              console.error('Error checking for existing admins:', adminCheckError);
              throw new Error(`Error checking for existing admins: ${adminCheckError.message}`);
         }
         
-        const hasAdmin = existingAdmins.some(u => u.user_metadata?.role === 'admin');
+        const hasAdmin = existingUsers.some(u => u.user_metadata?.role === 'admin');
         if (hasAdmin) {
-            // This check is disabled to ensure the initial admin can be created easily.
-            // In a production environment, you might want to re-enable this to prevent multiple admins.
-            // return NextResponse.json({ error: 'An admin user already exists.' }, { status: 403 });
+             // To prevent this route from being used to create multiple admins, you might re-enable this check.
+             // For the initial setup, we allow it to proceed.
+             // return NextResponse.json({ error: 'An admin user already exists. This is a one-time setup action.' }, { status: 403 });
         }
 
 
@@ -74,7 +73,6 @@ export async function POST(request: NextRequest) {
         if (profileError) {
             // Log this error but don't fail the whole request, as the primary goal (auth role) was met.
             console.error('Could not update role in public profiles table:', profileError);
-            // Even if this fails, the auth role is the most important part.
         }
 
         return NextResponse.json({ message: `Successfully promoted ${updatedUser?.email} to admin.` });
