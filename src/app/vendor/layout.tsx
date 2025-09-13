@@ -37,20 +37,21 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loading) {
+      // Simple, robust authorization logic
       if (role === 'vendor') {
         setIsAuthorized(true);
-      } else if (pathname.startsWith('/vendor/')) {
-        // If the user is NOT a vendor but is trying to access a vendor route, redirect them.
+      } else if (pathname.startsWith('/vendor')) {
+        // If a non-vendor tries to access a vendor-specific page, redirect them.
         router.push('/');
       } else {
-        // If not a vendor and not on a vendor route, they are authorized to be on whatever page they are on (e.g. /settings)
-        // This case is handled by other layouts, but we can set authorized here too.
+        // For non-vendor pages (like /settings), let other layouts handle it.
         setIsAuthorized(true);
       }
     }
   }, [role, loading, router, pathname]);
   
-  if (loading || (role === 'vendor' && !isAuthorized)) {
+  // This loading state specifically protects the /vendor routes
+  if (pathname.startsWith('/vendor') && (loading || !isAuthorized)) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="size-8 animate-spin" />
@@ -59,10 +60,10 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  // If the user is not a vendor and is on a non-vendor page,
+  // If the user is authorized but not on a vendor page (e.g. /settings),
   // we just render the children without the vendor layout.
   // The main layout will handle these pages.
-  if (role !== 'vendor' && !pathname.startsWith('/vendor/')) {
+  if (!pathname.startsWith('/vendor/')) {
     return <>{children}</>;
   }
 
