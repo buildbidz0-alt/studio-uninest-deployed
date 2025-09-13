@@ -70,7 +70,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
 
                 if (orderError || !newOrder) {
                     toast({ variant: 'destructive', title: 'Error Saving Order', description: 'Payment received, but failed to save your order. Please contact support.' });
-                    setIsBuying(null);
+                    setIsBuying(false); // Corrected from setIsBuying(null)
                     return;
                 }
 
@@ -139,7 +139,8 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
 
     }, [currentUser, supabase, toast, router, product.seller_id]);
     
-    const canBuy = currentUser && currentUser.id !== product.seller_id;
+    const canInteract = currentUser && currentUser.id !== product.seller_id;
+    const isPhysicalProduct = ['Books', 'Other Products'].includes(product.category);
 
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-8">
@@ -181,16 +182,25 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
                         </CardContent>
                     </Card>
 
-                    {canBuy && (
+                    {canInteract && (
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Button size="lg" className="flex-1 text-lg" onClick={handleBuyNow} disabled={!isLoaded || isBuying}>
-                                {isBuying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingBag className="mr-2" />}
-                                Buy Now
-                            </Button>
-                             <Button size="lg" variant="outline" className="flex-1 text-lg" onClick={handleChat}>
-                                <MessageSquare className="mr-2" />
-                                Chat with Seller
-                            </Button>
+                            {isPhysicalProduct ? (
+                                <Button size="lg" className="flex-1 text-lg" onClick={handleChat}>
+                                    <MessageSquare className="mr-2" />
+                                    Contact Seller
+                                </Button>
+                            ) : (
+                                <>
+                                    <Button size="lg" className="flex-1 text-lg" onClick={handleBuyNow} disabled={!isLoaded || isBuying}>
+                                        {isBuying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingBag className="mr-2" />}
+                                        Buy Now
+                                    </Button>
+                                     <Button size="lg" variant="outline" className="flex-1 text-lg" onClick={handleChat}>
+                                        <MessageSquare className="mr-2" />
+                                        Chat with Seller
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     )}
                     {currentUser && currentUser.id === product.seller_id && (
