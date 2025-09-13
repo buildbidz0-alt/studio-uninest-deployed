@@ -1,12 +1,11 @@
-
 'use client';
 
+import ChatLayout from '@/components/chat/chat-layout';
 import { Suspense } from 'react';
-import AIChatView from '@/components/chat/ai-chat-view';
 import { Loader2 } from 'lucide-react';
 
 function ChatPageContent() {
-    return <AIChatView />;
+    return <ChatLayout />;
 }
 
 export default function ChatPage() {
