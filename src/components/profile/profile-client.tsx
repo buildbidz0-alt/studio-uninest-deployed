@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -49,8 +50,8 @@ export default function ProfileClient() {
             .from('profiles')
             .select(`
                 *,
-                follower_count:followers!following_id(count),
-                following_count:followers!follower_id(count)
+                followers:followers!following_id(count),
+                following:followers!follower_id(count)
             `)
             .eq('handle', handle)
             .single();
@@ -66,8 +67,8 @@ export default function ProfileClient() {
 
         const finalProfile = {
             ...profileData,
-            follower_count: profileData.follower_count[0]?.count || 0,
-            following_count: profileData.following_count[0]?.count || 0,
+            follower_count: profileData.followers[0]?.count || 0,
+            following_count: profileData.following[0]?.count || 0,
         };
 
         setProfile(finalProfile);
