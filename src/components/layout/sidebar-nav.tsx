@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -161,22 +162,8 @@ export function MobileBottomNav() {
 
   const getNavItems = () => {
     let items = defaultNavItems;
-    if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
-      items = [
-        { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'guest', 'admin'] },
-        { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'guest', 'admin'] },
-        { href: profileLink, label: 'Profile', icon: 'avatar', roles: ['student', 'admin'] },
-        { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
-      ];
-    }
-    if (pathname.startsWith('/workspace')) {
-      items = [
-        { href: '/workspace/competitions', label: 'Competitions', icon: Trophy, roles: ['student', 'vendor', 'guest', 'admin'] },
-        { href: '/workspace/internships', label: 'Internships', icon: Briefcase, roles: ['student', 'vendor', 'guest', 'admin'] },
-        { href: profileLink, label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
-        { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
-      ];
-    }
+    // No special nav for vendor role on mobile, they use the default
+    
     return items.filter(item => item.roles.includes(role));
   };
   

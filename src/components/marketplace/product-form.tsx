@@ -53,7 +53,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, supabase, role } = useAuth();
+  const { user, supabase, role, vendorCategories: userVendorCategories } = useAuth();
   const { openCheckout, isLoaded } = useRazorpay();
   const isEditMode = !!product;
 
@@ -62,8 +62,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         return studentCategories;
     }
     if (role === 'vendor') {
-        const vendorCategories = (user?.user_metadata?.vendor_categories || []).map((c: string) => {
-            if (c === 'library') return ['Library', 'Library Seat'];
+        const vendorCategories = (userVendorCategories || []).map((c: string) => {
+            if (c === 'library') return 'Library';
             if (c === 'food mess') return 'Food Mess';
             if (c === 'cybercafe') return 'Cyber Café';
             if (c === 'hostels') return ['Hostels', 'Hostel Room'];
@@ -264,7 +264,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                     <FormField control={form.control} name="category" render={({ field }) => (
                         <FormItem>
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditMode}>
                             <FormControl>
                             <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
                             </FormControl>
