@@ -16,7 +16,7 @@ async function getProfileData(handle: string) {
     // 1. Get the profile
     const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)')
         .eq('handle', handle)
         .single();
     
@@ -26,17 +26,7 @@ async function getProfileData(handle: string) {
     
     const userId = profileData.id;
 
-    // 2. Get counts
-    const { count: follower_count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('following_id', userId);
-    const { count: following_count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
-
-    const profileWithCounts = {
-        ...profileData,
-        follower_count: follower_count ?? 0,
-        following_count: following_count ?? 0,
-    };
-
-    // 3. Get related content
+    // 2. Get related content
     const [
         listingsRes,
         postsRes,
@@ -46,8 +36,8 @@ async function getProfileData(handle: string) {
     ] = await Promise.all([
         supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', userId),
         supabase.from('posts').select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`).eq('user_id', userId).order('created_at', { ascending: false }),
-        supabase.from('followers').select('follower:follower_id(*)').eq('following_id', userId),
-        supabase.from('followers').select('following:following_id(*)').eq('follower_id', userId),
+        supabase.from('followers').select('profiles!follower_id(*)').eq('following_id', userId),
+        supabase.from('followers').select('profiles!following_id(*)').eq('follower_id', userId),
         supabase.auth.getUser().then(({data: { user }}) => {
             if (!user) return { data: [] };
             return supabase.from('likes').select('post_id').eq('user_id', user.id);
@@ -59,11 +49,11 @@ async function getProfileData(handle: string) {
     const content = {
         listings: (listingsRes.data as any[] || []).map(p => ({ ...p, seller: p.profiles })) as Product[],
         posts: (postsRes.data || []).map(p => ({ ...p, isLiked: likedPostIds.has(p.id) })) as PostWithAuthor[],
-        followers: (followersRes.data?.map((f: any) => f.follower) as Profile[]) || [],
-        following: (followingRes.data?.map((f: any) => f.following) as Profile[]) || [],
+        followers: (followersRes.data?.map((f: any) => f.profiles) as Profile[]) || [],
+        following: (followingRes.data?.map((f: any) => f.profiles) as Profile[]) || [],
     };
     
-    return { profile: profileWithCounts, content };
+    return { profile: profileData as any, content };
 }
 
 
