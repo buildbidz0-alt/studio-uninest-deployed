@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -15,12 +16,12 @@ import { useRazorpay } from '@/hooks/use-razorpay';
 import { useRouter } from 'next/navigation';
 
 const categories = [
-  { name: 'Library Booking', icon: Armchair, href: '/booking', color: 'from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50' },
-  { name: 'Food Mess', icon: Utensils, href: '/marketplace?category=Food+Mess', color: 'from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-800/50' },
-  { name: 'Cyber Café', icon: Laptop, href: '/marketplace?category=Cyber+Café', color: 'from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50' },
-  { name: 'Books', icon: Book, href: '/marketplace?category=Books', color: 'from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50' },
-  { name: 'Hostels', icon: Bed, href: '/marketplace?category=Hostels', color: 'from-rose-100 to-rose-200 dark:from-rose-900/50 dark:to-rose-800/50' },
-  { name: 'Other Products', icon: Package, href: '/marketplace?category=Other+Products', color: 'from-slate-100 to-slate-200 dark:from-slate-700/50 dark:to-slate-600/50' },
+  { name: 'Books', icon: Book },
+  { name: 'Hostels', icon: Bed },
+  { name: 'Food Mess', icon: Utensils },
+  { name: 'Cyber Café', icon: Laptop },
+  { name: 'Library Booking', icon: Armchair, href: '/booking' },
+  { name: 'Other Products', icon: Package },
 ];
 
 export default function MarketplaceContent() {
@@ -195,69 +196,66 @@ export default function MarketplaceContent() {
     router.push('/chat');
 
   }, [user, supabase, toast, router]);
+  
+  const createCategoryLink = (categoryName: string) => {
+    if (selectedCategory === categoryName) {
+        return '/marketplace'; // Clicking again clears the filter
+    }
+    return `/marketplace?category=${encodeURIComponent(categoryName)}`;
+  };
 
   return (
-    <div className="space-y-12">
-      <section className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Marketplace</h1>
-        <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
-          Buy, Sell & Support – by Students, for Students.
-        </p>
-      </section>
-
-      {user && (
-        <Link href="/marketplace/new">
-          <Button className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-40 h-16 w-16 rounded-full shadow-lg">
-            <Plus className="h-8 w-8" />
-          </Button>
-        </Link>
-      )}
-
-
-      <section>
-         <h2 className="text-2xl font-bold tracking-tight mb-6">Categories</h2>
-         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {categories.map((category) => (
-                <Link href={category.href} key={category.name}>
-                    <div className={cn(
-                      "group relative flex flex-col items-center justify-center p-2 h-24 rounded-2xl border text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br",
-                      category.color,
-                      selectedCategory === category.name ? "ring-2 ring-primary ring-offset-2" : "border-transparent"
-                    )}>
-                        <category.icon className="size-6 mb-1.5 text-primary/80 transition-transform group-hover:scale-110"/>
-                        <span className="font-bold font-headline text-sm text-primary/90">{category.name}</span>
-                    </div>
-                </Link>
-            ))}
-         </div>
-      </section>
-
-      <section>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-bold tracking-tight">{selectedCategory ? `${selectedCategory} Listings` : 'Featured Listings'}</h2>
-            <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Search listings..." 
-                      className="pl-10 w-full md:w-64" 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+    <div className="space-y-8">
+       {/* New Header Section */}
+       <section className="bg-card p-6 rounded-2xl shadow-md border space-y-6">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary">Marketplace</h1>
+                    <p className="mt-1 text-muted-foreground">Buy, Sell & Support – by Students, for Students.</p>
                 </div>
-                <Button variant="outline" className="gap-2">
-                    <ListFilter className="size-4" />
-                    Filters
-                </Button>
-                {selectedCategory && (
-                  <Button variant="ghost" size="icon" asChild>
-                    <Link href="/marketplace">
-                      <X className="size-4" />
-                    </Link>
-                  </Button>
+                {user && (
+                    <Button asChild>
+                        <Link href="/marketplace/new"><Plus className="mr-2"/> Create Listing</Link>
+                    </Button>
                 )}
             </div>
-        </div>
+             <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative w-full flex-grow">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search for textbooks, notes, bikes..." 
+                        className="pl-11 h-12 text-base rounded-full" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <Button variant="outline" className="gap-2 h-12 rounded-full w-full sm:w-auto">
+                    <ListFilter className="size-5" />
+                    <span className="font-semibold">Filters</span>
+                </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold mr-2">Categories:</span>
+                {categories.map((category) => (
+                     <Button
+                        key={category.name}
+                        asChild
+                        variant={selectedCategory === category.name ? 'default' : 'outline'}
+                        size="sm"
+                        className="rounded-full gap-2"
+                     >
+                        <Link href={category.href || createCategoryLink(category.name)}>
+                           <category.icon className="size-4" />
+                           {category.name}
+                           {selectedCategory === category.name && <X className="size-4 -mr-1" />}
+                        </Link>
+                    </Button>
+                ))}
+            </div>
+       </section>
+      
+      {/* Listings Section */}
+      <section>
         {loading ? (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="size-8 animate-spin text-muted-foreground" />
