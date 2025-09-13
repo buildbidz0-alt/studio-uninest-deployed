@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, BookOpen, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users, Trophy, Briefcase, User as UserIcon, LifeBuoy, Sparkles, ArrowLeft } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users, Trophy, Briefcase, User as UserIcon, LifeBuoy, Sparkles, ArrowLeft, Network } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -143,8 +144,8 @@ export function MobileBottomNav() {
   const socialNavItems = [
     { href: '/social', label: 'Back', icon: ArrowLeft, roles: ['student', 'guest', 'admin'] },
     { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'guest', 'admin'] },
+    { href: '/social/connections', label: 'Connect', icon: Network, roles: ['student', 'guest', 'admin'] },
     { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'guest', 'admin'] },
-    { href: '/ai/chat', label: 'AI', icon: Sparkles, roles: ['student', 'guest', 'admin'] },
   ];
 
   const workspaceNavItems = [
@@ -154,7 +155,7 @@ export function MobileBottomNav() {
   ];
 
   let navItems;
-  if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat') || pathname.startsWith('/ai/chat')) {
+  if (pathname.startsWith('/social/') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
     navItems = socialNavItems.filter(item => item.roles.includes(role));
   } else if (pathname.startsWith('/workspace/')) {
     navItems = workspaceNavItems.filter(item => item.roles.includes(role));
@@ -169,6 +170,8 @@ export function MobileBottomNav() {
           let isActive = pathname === item.href;
           // Special case for 'Back' button to not be active
           if (item.label === 'Back') isActive = false;
+          if (item.href === '/feed' && pathname.startsWith('/social')) isActive = false;
+
 
           return (
             <Link

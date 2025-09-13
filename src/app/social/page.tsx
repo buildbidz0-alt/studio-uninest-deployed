@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Newspaper, MessageSquare, Sparkles } from 'lucide-react';
+import { Newspaper, MessageSquare, Sparkles, Network } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Social Hub | UniNest',
@@ -17,7 +17,7 @@ export default function SocialPage() {
           <h1 className="text-3xl font-bold tracking-tight text-primary">UniNest Social</h1>
       </header>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
         <Card className="shadow-lg transition-shadow hover:shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl">
@@ -31,6 +31,23 @@ export default function SocialPage() {
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/feed">Go to Feed</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg transition-shadow hover:shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Network className="text-red-500" />
+              Connections
+            </CardTitle>
+            <CardDescription className="mt-2">
+              View your followers and who you are following.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/social/connections">Manage Connections</Link>
             </Button>
           </CardContent>
         </Card>
@@ -53,7 +70,7 @@ export default function SocialPage() {
           </CardContent>
         </Card>
 
-         <Card className="shadow-lg transition-shadow hover:shadow-xl md:col-span-2 lg:col-span-1">
+         <Card className="shadow-lg transition-shadow hover:shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl">
               <Sparkles className="text-purple-500" />
