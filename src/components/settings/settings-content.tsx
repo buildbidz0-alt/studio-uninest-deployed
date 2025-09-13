@@ -118,6 +118,7 @@ export default function SettingsContent() {
     setIsProfileLoading(true);
 
     const userData = {
+        ...user.user_metadata, // Preserve existing metadata
         full_name: values.fullName,
         handle: values.handle,
         contact_number: values.contactNumber,
