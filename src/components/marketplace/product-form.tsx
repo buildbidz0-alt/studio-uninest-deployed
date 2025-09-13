@@ -60,7 +60,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
     }
     if (role === 'vendor') {
         const vendorCategories = user?.user_metadata?.vendor_categories || [];
-        return isEditMode ? allCategories : [...vendorCategories, "Other Products"];
+        // A vendor can edit a product to be any category, but can only create new ones for their assigned categories
+        return isEditMode ? allCategories : [...vendorCategories, "Other Products", "Library Services"];
     }
     return allCategories; // For admin
   }
@@ -78,8 +79,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   });
 
   const uploadFile = async (file: File): Promise<string | null> => {
-    if (!supabase) return null;
-    const filePath = `public/${user?.id}/${Date.now()}-${file.name}`;
+    if (!supabase || !user) return null;
+    const filePath = `public/${user.id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('products')
       .upload(filePath, file);
@@ -135,7 +136,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   }
 
   const handleUpdateListing = async (values: FormValues) => {
-    if (!user || !supabase) return;
+    if (!user || !supabase || !product) return;
     setIsLoading(true);
 
      let imageUrl = product?.image_url || null;
