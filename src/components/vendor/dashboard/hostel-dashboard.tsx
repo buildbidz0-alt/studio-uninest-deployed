@@ -42,7 +42,7 @@ export default function HostelDashboard() {
                     created_at,
                     total_amount,
                     buyer_id,
-                    buyer:profiles!buyer_id(full_name),
+                    buyer:profiles(full_name),
                     order_items!inner(
                         products!inner(name, category)
                     )
@@ -54,7 +54,7 @@ export default function HostelDashboard() {
             if (ordersError) {
                 console.error("Error fetching hostel orders:", ordersError);
             } else if (ordersData) {
-                const totalRevenue = ordersData.reduce((sum, order) => sum + order.total_amount, 0);
+                const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
                 const uniqueTenants = new Set(ordersData.map(o => o.buyer_id)).size;
 
                 setRecentActivity(ordersData.slice(0, 5));

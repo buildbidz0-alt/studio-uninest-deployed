@@ -43,7 +43,7 @@ export default function FoodMessDashboard() {
                     created_at,
                     total_amount,
                     status,
-                    buyer:profiles!buyer_id(full_name),
+                    buyer:profiles(full_name),
                     order_items!inner(
                         products!inner(name, category)
                     )
@@ -54,7 +54,7 @@ export default function FoodMessDashboard() {
 
 
             if (ordersData) {
-                const totalRevenue = ordersData.reduce((sum, order) => sum + order.total_amount, 0);
+                const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
                 setRecentOrders(ordersData.slice(0, 3));
                 setStats(prev => ({ ...prev, revenue: totalRevenue, orders: ordersData.length }));
             }
