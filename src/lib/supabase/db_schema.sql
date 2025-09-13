@@ -1,76 +1,381 @@
--- Drop existing policies and functions to start clean if they exist
-DO $$
-BEGIN
-   IF EXISTS (SELECT 1 FROM pg_policy WHERE polname = 'Users can view their own chat rooms.' AND polrelid = 'public.chat_rooms'::regclass) THEN
-      DROP POLICY "Users can view their own chat rooms." ON public.chat_rooms;
-   END IF;
-   IF EXISTS (SELECT 1 FROM pg_policy WHERE polname = 'Users can view participants of their own chat rooms.' AND polrelid = 'public.chat_participants'::regclass) THEN
-      DROP POLICY "Users can view participants of their own chat rooms." ON public.chat_participants;
-   END IF;
-   IF EXISTS (SELECT 1 FROM pg_policy WHERE polname = 'Users can access messages in their own chat rooms.' AND polrelid = 'public.chat_messages'::regclass) THEN
-      DROP POLICY "Users can access messages in their own chat rooms." ON public.chat_messages;
-   END IF;
-   IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_chat_participant') THEN
-      DROP FUNCTION public.is_chat_participant(uuid);
-   END IF;
-END
-$$;
 
--- Create the orders table
-CREATE TABLE IF NOT EXISTS public.orders (
-    id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    buyer_id uuid REFERENCES public.profiles(id),
-    vendor_id uuid REFERENCES public.profiles(id),
-    total_amount numeric(10, 2) NOT NULL,
-    razorpay_payment_id text,
-    status text DEFAULT 'Pending'::text
-);
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+-- Enable HTTP extension
+create extension if not exists http with schema extensions;
 
--- Create the order_items table
-CREATE TABLE IF NOT EXISTS public.order_items (
-    id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    order_id bigint REFERENCES public.orders(id) ON DELETE CASCADE,
-    product_id integer REFERENCES public.products(id) ON DELETE SET NULL,
-    quantity integer NOT NULL DEFAULT 1,
-    price numeric(10, 2) NOT NULL
-);
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+-- Enable vector extension
+create extension if not exists vector with schema extensions;
 
-
--- POLICIES for orders and order_items
-CREATE POLICY "Users can view their own orders."
-ON public.orders
-FOR SELECT USING (auth.uid() = buyer_id OR auth.uid() = vendor_id);
-
-CREATE POLICY "Users can view items of their own orders."
-ON public.order_items
-FOR SELECT USING (
-    (SELECT buyer_id FROM public.orders WHERE id = order_id) = auth.uid() OR
-    (SELECT vendor_id FROM public.orders WHERE id = order_id) = auth.uid()
-);
-
--- CHAT SYSTEM
--- Function to check if a user is a participant in a room
-CREATE OR REPLACE FUNCTION public.is_chat_participant(p_room_id uuid)
-RETURNS boolean
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.chat_participants
-    WHERE room_id = p_room_id AND user_id = auth.uid()
+-- Function to check if a user is an admin
+create or replace function is_admin()
+returns boolean
+language sql
+security definer
+as $$
+  select coalesce(
+    (select raw_user_meta_data->>'role' from auth.users where id = auth.uid()) = 'admin',
+    false
   );
 $$;
 
--- Policies for chat
-CREATE POLICY "Users can view their own chat rooms." ON public.chat_rooms
-FOR SELECT USING (public.is_chat_participant(id));
+-- Function to get or create a chat room between two users
+create or replace function get_or_create_chat_room(p_user_id1 uuid, p_user_id2 uuid)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  existing_room_id uuid;
+  new_room_id uuid;
+begin
+  -- Find a room where both users are participants
+  select room_id into existing_room_id
+  from chat_participants cp1
+  join chat_participants cp2 on cp1.room_id = cp2.room_id
+  where cp1.user_id = p_user_id1 and cp2.user_id = p_user_id2;
 
-CREATE POLICY "Users can view participants of their own chat rooms." ON public.chat_participants
-FOR SELECT USING (public.is_chat_participant(room_id));
+  if existing_room_id is not null then
+    return existing_room_id;
+  end if;
 
-CREATE POLICY "Users can access messages in their own chat rooms." ON public.chat_messages
-FOR ALL USING (public.is_chat_participant(room_id));
+  -- If no room exists, create a new one
+  insert into chat_rooms (id) values (gen_random_uuid()) returning id into new_room_id;
+  insert into chat_participants (room_id, user_id) values (new_room_id, p_user_id1);
+  insert into chat_participants (room_id, user_id) values (new_room_id, p_user_id2);
+
+  return new_room_id;
+end;
+$$;
+
+-- Function to get the last message for a set of rooms
+create or replace function get_last_messages_for_rooms(p_room_ids uuid[])
+returns table (
+  room_id uuid,
+  content text,
+  created_at timestamptz
+)
+language sql
+as $$
+  select
+    m.room_id,
+    m.content,
+    m.created_at
+  from chat_messages m
+  join (
+    select
+      room_id,
+      max(created_at) as last_created_at
+    from chat_messages
+    where room_id = any(p_room_ids)
+    group by room_id
+  ) lm on m.room_id = lm.room_id and m.created_at = lm.last_created_at
+  where m.room_id = any(p_room_ids);
+$$;
+
+-- Profiles table
+create table if not exists profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  avatar_url text,
+  handle text unique,
+  bio text,
+  role text default 'student',
+  banner_url text
+);
+-- RLS for profiles
+alter table profiles enable row level security;
+create policy "Public profiles are viewable by everyone." on profiles for select using (true);
+create policy "Users can insert their own profile." on profiles for insert with check (auth.uid() = id);
+create policy "Users can update their own profile." on profiles for update using (auth.uid() = id);
+
+-- Function to handle new user signup
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  insert into public.profiles (id, full_name, role, handle)
+  values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'role', new.raw_user_meta_data->>'handle');
+  return new;
+end;
+$$;
+-- Trigger for new user signup
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+
+-- Products Table
+create table if not exists products (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    name text not null,
+    description text not null,
+    price numeric not null,
+    image_url text,
+    category text not null,
+    seller_id uuid not null references public.profiles(id)
+);
+-- RLS for products
+alter table products enable row level security;
+create policy "Products are viewable by everyone." on products for select using (true);
+create policy "Users can insert their own products." on products for insert with check (auth.uid() = seller_id);
+create policy "Users can update their own products." on products for update using (auth.uid() = seller_id);
+create policy "Users can delete their own products." on products for delete using (auth.uid() = seller_id);
+create policy "Admins can manage all products." on products for all using (is_admin());
+
+
+-- Orders and Order Items Tables
+create table if not exists orders (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    buyer_id uuid not null references public.profiles(id),
+    vendor_id uuid not null references public.profiles(id),
+    total_amount numeric not null,
+    razorpay_payment_id text,
+    status text default 'Completed'
+);
+create table if not exists order_items (
+    id bigint primary key generated by default as identity,
+    order_id bigint not null references public.orders(id),
+    product_id bigint not null references public.products(id),
+    quantity int not null,
+    price numeric not null
+);
+-- RLS for orders
+alter table orders enable row level security;
+create policy "Users can view their own orders." on orders for select using (auth.uid() = buyer_id or auth.uid() = vendor_id);
+create policy "Users can insert orders." on orders for insert with check (auth.uid() = buyer_id);
+-- RLS for order_items
+alter table order_items enable row level security;
+create policy "Users can view items of their orders." on order_items for select using (
+    exists (select 1 from orders where orders.id = order_items.order_id)
+);
+create policy "Users can insert items for their orders." on order_items for insert with check (
+    exists (select 1 from orders where orders.id = order_items.order_id and orders.buyer_id = auth.uid())
+);
+
+
+-- Posts Table
+create table if not exists posts (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    content text not null,
+    user_id uuid not null references public.profiles(id)
+);
+-- RLS for posts
+alter table posts enable row level security;
+create policy "Posts are viewable by everyone." on posts for select using (true);
+create policy "Users can insert their own posts." on posts for insert with check (auth.uid() = user_id);
+create policy "Users can update their own posts." on posts for update using (auth.uid() = user_id);
+create policy "Users can delete their own posts." on posts for delete using (auth.uid() = user_id);
+create policy "Admins can manage all posts." on posts for all using (is_admin());
+
+-- Comments Table
+create table if not exists comments (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    content text not null,
+    user_id uuid not null references public.profiles(id),
+    post_id bigint not null references public.posts(id) on delete cascade
+);
+-- RLS for comments
+alter table comments enable row level security;
+create policy "Comments are viewable by everyone." on comments for select using (true);
+create policy "Users can insert comments." on comments for insert with check (auth.uid() = user_id);
+create policy "Users can delete their own comments." on comments for delete using (auth.uid() = user_id);
+create policy "Admins can manage all comments." on comments for all using (is_admin());
+
+-- Likes Table
+create table if not exists likes (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    user_id uuid not null references public.profiles(id),
+    post_id bigint not null references public.posts(id) on delete cascade,
+    unique (user_id, post_id)
+);
+-- RLS for likes
+alter table likes enable row level security;
+create policy "Likes are viewable by everyone." on likes for select using (true);
+create policy "Users can insert/delete their own likes." on likes for all with check (auth.uid() = user_id);
+
+
+-- Followers Table
+create table if not exists followers (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    follower_id uuid not null references public.profiles(id),
+    following_id uuid not null references public.profiles(id),
+    unique(follower_id, following_id)
+);
+-- RLS for followers
+alter table followers enable row level security;
+create policy "Follower relationships are public." on followers for select using (true);
+create policy "Users can manage their own followings." on followers for all with check (auth.uid() = follower_id);
+
+-- Chat Tables
+create table if not exists chat_rooms (
+    id uuid primary key default gen_random_uuid(),
+    created_at timestamptz not null default now()
+);
+create table if not exists chat_participants (
+    id bigint primary key generated by default as identity,
+    room_id uuid not null references public.chat_rooms(id) on delete cascade,
+    user_id uuid not null references public.profiles(id),
+    unique(room_id, user_id)
+);
+create table if not exists chat_messages (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    content text not null,
+    room_id uuid not null references public.chat_rooms(id) on delete cascade,
+    user_id uuid not null references public.profiles(id)
+);
+
+-- RLS for Chat
+alter table chat_rooms enable row level security;
+create policy "Users can view rooms they are in." on chat_rooms for select using (
+  exists (select 1 from chat_participants where chat_participants.room_id = chat_rooms.id and chat_participants.user_id = auth.uid())
+);
+alter table chat_participants enable row level security;
+create policy "Users can view participants of rooms they are in." on chat_participants for select using (
+  exists (select 1 from chat_participants cp where cp.room_id = chat_participants.room_id and cp.user_id = auth.uid())
+);
+alter table chat_messages enable row level security;
+create policy "Users can view messages in rooms they are in." on chat_messages for select using (
+  exists (select 1 from chat_participants where chat_participants.room_id = chat_messages.room_id and chat_participants.user_id = auth.uid())
+);
+create policy "Users can send messages in rooms they are in." on chat_messages for insert with check (
+  exists (select 1 from chat_participants where chat_participants.room_id = chat_messages.room_id and chat_participants.user_id = auth.uid())
+);
+
+
+-- Platform Settings Table
+create table if not exists platform_settings (
+    id bigint primary key generated by default as identity,
+    key text unique not null,
+    value jsonb,
+    description text
+);
+-- RLS for platform_settings
+alter table platform_settings enable row level security;
+create policy "Settings are readable by everyone." on platform_settings for select using (true);
+create policy "Admins can manage settings." on platform_settings for all using (is_admin());
+-- Seed platform settings
+insert into platform_settings (key, value, description)
+values 
+  ('monetization', '{"charge_for_posts": false, "post_price": 10, "start_date": null}', 'Settings for charging for new product listings.'),
+  ('app_config', '{"donation_goal": 50000}', 'General application configuration.')
+on conflict (key) do nothing;
+
+
+-- Donations table
+create table if not exists donations (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    user_id uuid references public.profiles(id),
+    amount numeric not null,
+    currency text not null,
+    razorpay_payment_id text
+);
+-- RLS for donations
+alter table donations enable row level security;
+create policy "Donations are public." on donations for select using (true);
+create policy "Users can insert donations." on donations for insert with check (auth.uid() = user_id);
+
+-- Competitions table
+create table if not exists competitions (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    title text not null,
+    description text not null,
+    prize numeric not null,
+    deadline timestamptz not null,
+    entry_fee numeric not null,
+    image_url text,
+    details_pdf_url text
+);
+-- RLS for competitions
+alter table competitions enable row level security;
+create policy "Competitions are public." on competitions for select using (true);
+create policy "Admins can manage competitions." on competitions for all using (is_admin());
+
+-- Competition Entries table
+create table if not exists competition_entries (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    user_id uuid not null references public.profiles(id),
+    competition_id bigint not null references public.competitions(id),
+    razorpay_payment_id text,
+    unique(user_id, competition_id)
+);
+-- RLS for competition_entries
+alter table competition_entries enable row level security;
+create policy "Users can see their own entries." on competition_entries for select using (auth.uid() = user_id);
+create policy "Users can create entries." on competition_entries for insert with check (auth.uid() = user_id);
+create policy "Admins can see all entries." on competition_entries for select using (is_admin());
+
+-- Internships table
+create table if not exists internships (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    role text not null,
+    company text not null,
+    stipend numeric,
+    stipend_period text,
+    location text,
+    deadline timestamptz,
+    image_url text,
+    details_pdf_url text
+);
+-- RLS for internships
+alter table internships enable row level security;
+create policy "Internships are public." on internships for select using (true);
+create policy "Admins can manage internships." on internships for all using (is_admin());
+
+-- Support Tickets table
+create table if not exists support_tickets (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    user_id uuid references public.profiles(id),
+    category text,
+    subject text,
+    description text,
+    status text default 'Open',
+    priority text default 'Medium',
+    screenshot_url text
+);
+-- RLS for support_tickets
+alter table support_tickets enable row level security;
+create policy "Users can see their own tickets." on support_tickets for select using (auth.uid() = user_id);
+create policy "Users can create tickets." on support_tickets for insert with check (auth.uid() = user_id);
+create policy "Admins can see all tickets." on support_tickets for select using (is_admin());
+create policy "Admins can update tickets." on support_tickets for update using (is_admin());
+
+-- Audit Log table
+create table if not exists audit_log (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    admin_id uuid references public.profiles(id),
+    action text,
+    details text
+);
+-- RLS for audit_log
+alter table audit_log enable row level security;
+create policy "Admins can view audit logs." on audit_log for select using (is_admin());
+
+-- Notifications Table
+create table if not exists notifications (
+    id bigint primary key generated by default as identity,
+    created_at timestamptz not null default now(),
+    user_id uuid not null references public.profiles(id),
+    sender_id uuid not null references public.profiles(id),
+    type text not null,
+    post_id bigint references public.posts(id),
+    is_read boolean default false
+);
+-- RLS for notifications
+alter table notifications enable row level security;
+create policy "Users can see their own notifications." on notifications for select using (auth.uid() = user_id);
+create policy "Users can update their own notifications." on notifications for update using (auth.uid() = user_id);
+create policy "Users can create notifications for others." on notifications for insert with check (auth.uid() = sender_id);

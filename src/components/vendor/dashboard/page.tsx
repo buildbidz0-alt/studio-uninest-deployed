@@ -39,7 +39,7 @@ export default function VendorDashboardContent() {
                 quantity,
                 products ( name )
             ),
-            buyer:profiles (
+            buyer:profiles!buyer_id (
                 id, full_name, avatar_url
             )
         `)
