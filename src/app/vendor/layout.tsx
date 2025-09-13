@@ -25,14 +25,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 export default function VendorLayout({ children }: { children: ReactNode }) {
   const { user, signOut, role, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
