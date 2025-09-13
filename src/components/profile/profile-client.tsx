@@ -54,7 +54,7 @@ export default function ProfileClient() {
             .single();
         
         if (profileError || !profileData) {
-            toast({ variant: 'destructive', title: 'Error fetching profile' });
+            toast({ variant: 'destructive', title: 'Error fetching profile', description: 'This profile could not be found.' });
             console.error("Profile fetch error:", profileError);
             router.push('/');
             return;
@@ -99,7 +99,7 @@ export default function ProfileClient() {
         }
         
         setProfileContent({
-            listings: (listingsData as Product[]) || [],
+            listings: (listingsData as any[] || []).map(p => ({ ...p, seller: p.profiles })) as Product[],
             posts: (postsData || []).map(p => ({ ...p, isLiked: likedPostIds.has(p.id) })) as PostWithAuthor[],
             followers: (followersData?.map((f: any) => f.follower) as Profile[]) || [],
             following: (followingData?.map((f: any) => f.following) as Profile[]) || [],
