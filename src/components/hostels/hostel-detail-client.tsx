@@ -150,13 +150,23 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         }
 
         try {
-            // Step 1: Check if a chat room already exists between the two users.
-            const { data: existingRoom, error: checkError } = await supabase.rpc('get_chat_room_for_user', { p_user_id: hostel.seller_id });
+            // Step 1: Check if a chat room already exists with just these two users.
+            const { data: rooms, error: roomError } = await supabase
+                .from('chat_room_participants')
+                .select('room_id')
+                .in('user_id', [currentUser.id, hostel.seller_id]);
 
-            if (checkError) throw checkError;
+            if (roomError) throw roomError;
+            
+            const roomCounts = rooms.reduce((acc, { room_id }) => {
+                acc[room_id] = (acc[room_id] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
 
-            if (existingRoom && existingRoom.length > 0) {
-                // If room exists, just navigate to chat
+            const existingRoomId = Object.keys(roomCounts).find(roomId => roomCounts[roomId] === 2);
+
+            if (existingRoomId) {
+                // If room exists, navigate to chat
                 router.push('/chat');
                 return;
             }
