@@ -118,7 +118,7 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link href={`/vendor/products/${product.id}/edit`}>
-                                <Pencil className="mr-2" />
+                                <Pencil className="mr-2 size-4" />
                                 Edit
                               </Link>
                             </DropdownMenuItem>
@@ -126,7 +126,7 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
                               className="text-destructive"
                               onSelect={() => setProductToDelete(product)}
                             >
-                                <Trash2 className="mr-2" />
+                                <Trash2 className="mr-2 size-4" />
                                 Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
