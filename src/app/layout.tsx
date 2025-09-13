@@ -11,6 +11,7 @@ const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '600', '800'],
   variable: '--font-poppins',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -56,10 +57,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={poppins.variable}>
       <body className={cn(
-        "min-h-screen bg-background font-body antialiased",
-        poppins.variable
+        "min-h-screen bg-background font-body antialiased"
       )}>
         <ClientOnly>
           <AuthProvider>

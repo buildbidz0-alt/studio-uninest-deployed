@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
 import { Users, BookOpen, Library, Star, Share2, Rocket } from 'lucide-react';
 import Link from 'next/link';
-import Confetti from 'react-confetti';
+import dynamic from 'next/dynamic';
 import { useWindowSize } from 'react-use';
 import {
   Carousel,
@@ -19,6 +19,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+
+const Confetti = dynamic(() => import('react-confetti'), { ssr: false });
 
 // --- Mock Data (replace with API calls) ---
 const MOCK_STATS = {
@@ -164,7 +166,7 @@ export default function ThankYouClient() {
                     <CarouselItem key={index} className="basis-1/3 sm:basis-1/4">
                         <div className="flex flex-col items-center gap-2">
                              <Avatar className="size-16 border-2 border-primary/50">
-                                <AvatarImage src={donor.avatar} alt={donor.name} data-ai-hint="person face" />
+                                <AvatarImage src={donor.avatar} alt={donor.name} width={64} height={64} data-ai-hint="person face" />
                                 <AvatarFallback>{donor.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <p className="font-semibold text-sm">{donor.name}</p>
@@ -202,4 +204,3 @@ export default function ThankYouClient() {
     </>
   );
 }
-

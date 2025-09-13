@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/use-auth';
 import StatCard from '@/components/home/stat-card';
 import DonationModal from './donation-modal';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const stats = [
   { value: 10000, label: 'Students Connected', icon: GraduationCap, isPlus: true },
@@ -199,7 +200,7 @@ export default function HomeClient() {
                       <Card className="h-full">
                         <CardContent className="flex flex-col items-center text-center justify-center p-6">
                           <Avatar className="w-20 h-20 mb-4 border-4 border-primary/20">
-                              <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="person face" />
+                              <AvatarImage src={testimonial.avatar} alt={testimonial.name} width={80} height={80} data-ai-hint="person face" />
                               <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <p className="text-muted-foreground italic">"{testimonial.quote}"</p>

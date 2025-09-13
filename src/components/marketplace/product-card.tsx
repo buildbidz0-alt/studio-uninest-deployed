@@ -47,7 +47,8 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
             <Image
                 src={product.image_url || 'https://picsum.photos/seed/product/400/225'}
                 alt={product.name}
-                fill
+                width={400}
+                height={225}
                 data-ai-hint="product image"
                 className="object-cover transition-transform group-hover:scale-105"
             />

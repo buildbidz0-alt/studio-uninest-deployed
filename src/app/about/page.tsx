@@ -47,6 +47,7 @@ export default function AboutPage() {
                 src="https://picsum.photos/seed/about-hero/1200/400"
                 alt="Digital campus illustration"
                 fill
+                priority
                 className="object-cover"
                 data-ai-hint="digital campus illustration vibrant gradient"
             />
