@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { chat, type ChatInput } from '@/ai/flows/chat-flow';
+import { chat } from '@/ai/flows/chat-flow';
+import type { ChatInput } from '@/ai/flows/chat-schema';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '../icons';
 
