@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { createProduct, updateProduct } from '@/app/marketplace/actions';
 
 const studentCategories = ["Books", "Other Products"];
 
@@ -66,14 +67,12 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
             return c;
         }).flat();
         
-        // In edit mode, ensure the product's current category is in the list
         if (isEditMode && product?.category && !vendorServices.includes(product.category)) {
             vendorServices.push(product.category);
         }
-        return [...new Set(vendorServices)]; // Use Set to remove duplicates
+        return [...new Set(vendorServices)];
     }
     
-    // For students, only allow these categories
     return studentCategories;
   }
 
@@ -93,110 +92,46 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   
   const selectedCategory = form.watch('category');
 
-  const uploadFile = async (file: File): Promise<string | null> => {
-    if (!supabase || !user) return null;
-    const filePath = `${user.id}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from('products')
-      .upload(filePath, file);
-    
-    if (uploadError) {
-      console.error('Upload Error:', uploadError);
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('products')
-      .getPublicUrl(filePath);
-      
-    return publicUrl;
-  }
-
-  const handleCreateListing = async (values: FormValues, paymentId?: string) => {
-    if (!user || !supabase) return;
-    setIsLoading(true);
-
-     let imageUrl = product?.image_url || null;
-    
-    if (values.image && values.image instanceof File) {
-        imageUrl = await uploadFile(values.image);
-        if (!imageUrl) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload image.' });
-            setIsLoading(false);
-            return;
+  const handleFormSubmit = async (values: FormValues, paymentId?: string) => {
+      setIsLoading(true);
+      const formData = new FormData();
+      Object.entries(values).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+              if (key === 'image' && value instanceof File) {
+                  formData.append(key, value);
+              } else if (typeof value !== 'object') {
+                  formData.append(key, String(value));
+              }
+          }
+      });
+       if (paymentId) {
+            formData.append('razorpay_payment_id', paymentId);
         }
-    }
 
-    const { error } = await supabase.from('products').insert({
-        name: values.name,
-        description: values.description,
-        price: values.price,
-        category: values.category,
-        seller_id: user.id,
-        image_url: imageUrl,
-        location: values.location,
-        total_seats: values.category === 'Library' ? values.total_seats : undefined,
-    });
+      const result = isEditMode
+          ? await updateProduct(product.id, formData)
+          : await createProduct(formData);
 
-     if (error) {
-        toast({ variant: 'destructive', title: 'Error creating product', description: error.message });
-    } else {
-        toast({ title: 'Success!', description: 'Your product has been listed.' });
-        const destination = role === 'vendor' ? '/vendor/products' : '/marketplace';
-        router.push(destination);
-        router.refresh();
-    }
+      if (result.error) {
+          toast({ variant: 'destructive', title: 'Error', description: result.error });
+      } else {
+          toast({ title: 'Success!', description: `Product ${isEditMode ? 'updated' : 'created'} successfully.` });
+          const destination = role === 'vendor' ? '/vendor/products' : '/marketplace';
+          router.push(destination);
+          router.refresh();
+      }
 
-    setIsLoading(false);
-  }
-
-  const handleUpdateListing = async (values: FormValues) => {
-    if (!user || !supabase || !product) return;
-    setIsLoading(true);
-
-     let imageUrl = product?.image_url || null;
-    
-    if (values.image && values.image instanceof File) {
-        imageUrl = await uploadFile(values.image);
-        if (!imageUrl) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload image.' });
-            setIsLoading(false);
-            return;
-        }
-    }
-
-    const { error } = await supabase.from('products')
-        .update({
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            category: values.category,
-            image_url: imageUrl,
-            location: values.location,
-            total_seats: values.category === 'Library' ? values.total_seats : null,
-        })
-        .eq('id', product.id);
-
-    if (error) {
-        toast({ variant: 'destructive', title: 'Error updating product', description: error.message });
-    } else {
-        toast({ title: 'Success!', description: 'Your product has been updated.' });
-        const destination = role === 'vendor' ? '/vendor/products' : '/marketplace';
-        router.push(destination);
-        router.refresh();
-    }
-
-    setIsLoading(false);
+      setIsLoading(false);
   }
 
   async function onSubmit(values: FormValues) {
-    if (!user || !supabase) {
+    if (!user) {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
         return;
     }
 
     if (isEditMode) {
-        await handleUpdateListing(values);
+        await handleFormSubmit(values);
         return;
     }
 
@@ -220,7 +155,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                 description: `One-time fee for posting "${values.name}"`,
                 order_id: order.id,
                 handler: async function (response: any) {
-                    await handleCreateListing(values, response.razorpay_payment_id);
+                    await handleFormSubmit(values, response.razorpay_payment_id);
                 },
                 modal: { ondismiss: () => setIsLoading(false) },
                 prefill: { name: user?.user_metadata?.full_name || '', email: user?.email || '' },
@@ -237,7 +172,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         }
 
     } else {
-        await handleCreateListing(values);
+        await handleFormSubmit(values);
     }
   }
 
