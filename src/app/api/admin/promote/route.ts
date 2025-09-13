@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
         
         const hasAdmin = existingAdmins.some(u => u.user_metadata?.role === 'admin');
         if (hasAdmin) {
-            // NOTE: In a real production environment, you would want to enable this to prevent creating multiple admins.
-            // For development and setup, we'll allow multiple admins.
+            // This check is disabled to ensure the initial admin can be created easily.
+            // In a production environment, you might want to re-enable this to prevent multiple admins.
             // return NextResponse.json({ error: 'An admin user already exists.' }, { status: 403 });
         }
 
