@@ -49,7 +49,7 @@ export default function CybercafeDashboard() {
               .eq('order_items.products.category', 'Cyber Café');
 
             if (ordersData) {
-                const totalRevenue = ordersData.reduce((sum, order) => sum + order.total_amount, 0);
+                const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
                 setStats({ revenue: totalRevenue, orders: ordersData.length });
             }
 
