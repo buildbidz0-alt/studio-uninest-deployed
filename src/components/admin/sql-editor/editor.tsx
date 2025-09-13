@@ -51,7 +51,7 @@ export default function SQLEditor() {
             <Textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="-- Your one-time setup query is pre-filled. Click 'Run Query' to create the necessary database functions."
+              placeholder="-- Enter your SQL query here."
               className="min-h-[150px] font-mono text-sm"
             />
             <Button onClick={handleRunQuery} disabled={isLoading} className="w-full sm:w-auto">
