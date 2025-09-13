@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Newspaper, MessageSquare, Camera, Search } from 'lucide-react';
+import { Newspaper, MessageSquare } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Social Hub | UniNest',
@@ -15,14 +15,6 @@ export default function SocialPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight text-primary">UniNest Social</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-                <Camera className="size-5" />
-            </Button>
-            <Button variant="ghost" size="icon">
-                <Search className="size-5" />
-            </Button>
-          </div>
       </header>
 
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
