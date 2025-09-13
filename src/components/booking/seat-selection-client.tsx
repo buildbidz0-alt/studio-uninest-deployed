@@ -24,8 +24,8 @@ export default function SeatSelectionClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
   const [libraryConfig, setLibraryConfig] = useState({ totalSeats: 50, price: 10 });
+  const [libraryVendorId, setLibraryVendorId] = useState<string | null>(null);
 
 
   const fetchSeatStatus = useCallback(async () => {
@@ -46,7 +46,8 @@ export default function SeatSelectionClient() {
         setSeats([]);
         return;
     }
-
+    
+    setLibraryVendorId(libraryVendor.id);
     const config = libraryVendor.user_metadata?.library_details || { totalSeats: 50, price: 10 };
     setLibraryConfig(config);
 
@@ -58,9 +59,10 @@ export default function SeatSelectionClient() {
     
     const seatMap = new Map<string, { status: 'booked' | 'pending' }>();
     orders?.forEach(order => {
-        const seatNameMatch = order.order_items[0]?.products?.name?.match(/Seat (\d+)/);
-        if (seatNameMatch && seatNameMatch[1]) {
-            const seatNumber = seatNameMatch[1];
+        // Find the seat name in the order items
+        const seatItem = order.order_items.find((item: any) => item.products?.name.startsWith('Seat '));
+        if (seatItem) {
+            const seatNumber = seatItem.products.name.split(' ')[1];
              if (order.status === 'approved') {
                 seatMap.set(seatNumber, { status: 'booked' });
             } else if (order.status === 'pending_approval') {
@@ -91,10 +93,17 @@ export default function SeatSelectionClient() {
   useEffect(() => {
     if(!supabase) return;
     const channel = supabase
-      .channel('table-db-changes-orders')
+      .channel('table-db-changes-orders-and-products')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          fetchSeatStatus();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
         (payload) => {
           fetchSeatStatus();
         }
@@ -116,11 +125,10 @@ export default function SeatSelectionClient() {
         return;
     }
     setSelectedSeat((prev) => (prev === seatId ? null : prev));
-    setSelectedSeat(seatId);
   };
 
   const handleBookingRequest = async () => {
-    if (!selectedSeat || !user || !supabase) {
+    if (!selectedSeat || !user || !supabase || !libraryVendorId) {
          toast({
             variant: 'destructive',
             description: 'Please select a seat and log in to continue.',
@@ -129,36 +137,39 @@ export default function SeatSelectionClient() {
     }
     setIsBooking(true);
 
-    const { data: libraryVendor } = await supabase.from('profiles').select('id').eq('role', 'vendor').like('user_metadata->vendor_categories', '%"library"%').limit(1).single();
-    if (!libraryVendor) {
-        toast({ variant: 'destructive', description: "Library service not available." });
-        setIsBooking(false);
-        return;
-    }
+    const seatProductName = `Seat ${selectedSeat}`;
     
-    // The vendor must create a "Library Services" product first.
-    let { data: seatProduct } = await supabase.from('products').select('*').eq('seller_id', libraryVendor.id).eq('category', 'Library Services').limit(1).single();
+    // Find the product ID for the selected seat
+    let { data: seatProduct } = await supabase
+      .from('products')
+      .select('id')
+      .eq('seller_id', libraryVendorId)
+      .eq('category', 'Library Seat')
+      .eq('name', seatProductName)
+      .limit(1)
+      .single();
     
     if (!seatProduct) {
-        toast({ variant: 'destructive', description: "The library vendor has not set up their booking service yet." });
+        toast({ variant: 'destructive', description: "The library vendor has not configured their booking service for this seat." });
         setIsBooking(false);
         return;
     }
 
-    const { data: newOrder, error } = await supabase.from('orders').insert({
+    // Create the order record
+    const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
         buyer_id: user.id,
-        vendor_id: libraryVendor.id,
-        total_amount: libraryConfig.price, // Set the price from config
+        vendor_id: libraryVendorId,
+        total_amount: libraryConfig.price,
         status: 'pending_approval'
     }).select('id').single();
 
-    if (error || !newOrder) {
+    if (orderError || !newOrder) {
         toast({ variant: 'destructive', description: 'Failed to create reservation request.'});
         setIsBooking(false);
         return;
     }
 
-    // Associate the product (e.g. "Seat 24 reservation") with the order
+    // Create the order item linking the order to the specific seat product
     const { error: itemError } = await supabase.from('order_items').insert({
         order_id: newOrder.id,
         product_id: seatProduct.id,
@@ -167,6 +178,7 @@ export default function SeatSelectionClient() {
     });
     
     if (itemError) {
+        // Rollback the order if item creation fails
         await supabase.from('orders').delete().eq('id', newOrder.id);
         toast({ variant: 'destructive', description: 'Failed to complete reservation details.'});
     } else {

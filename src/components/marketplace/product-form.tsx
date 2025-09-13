@@ -61,7 +61,6 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
     if (role === 'vendor') {
         const vendorCategories = user?.user_metadata?.vendor_categories || [];
         // A vendor can edit a product to be any category, but can only create new ones for their assigned categories
-        // Add "Library Services" for library vendors
         const categories = [...vendorCategories];
         if (categories.includes('library')) {
             categories.push('Library Services');
@@ -86,7 +85,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
 
   const uploadFile = async (file: File): Promise<string | null> => {
     if (!supabase || !user) return null;
-    const filePath = `public/${user.id}/${Date.now()}-${file.name}`;
+    const filePath = `${user.id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('products')
       .upload(filePath, file);
