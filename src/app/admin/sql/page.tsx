@@ -1,17 +1,7 @@
 
-import PageHeader from "@/components/admin/page-header";
-import SQLEditor from "@/components/admin/sql-editor/editor";
+import { redirect } from 'next/navigation';
 
 export default function AdminSQLPage() {
-    return (
-        <div className="space-y-8 h-full flex flex-col">
-            <PageHeader 
-                title="SQL Editor" 
-                description="Run raw SQL queries against your database. Use with caution." 
-            />
-            <div className="flex-grow">
-                 <SQLEditor />
-            </div>
-        </div>
-    )
+    // This page is deprecated and has been removed.
+    redirect('/admin/dashboard');
 }

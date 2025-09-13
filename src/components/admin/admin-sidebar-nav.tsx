@@ -15,7 +15,6 @@ const navItems = [
   { href: '/admin/internships', label: 'Internships', icon: Briefcase },
   { href: '/admin/tickets', label: 'Support Tickets', icon: LifeBuoy },
   { href: '/admin/logs', label: 'Audit Logs', icon: ScrollText },
-  { href: '/admin/sql', label: 'SQL Editor', icon: Database },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
