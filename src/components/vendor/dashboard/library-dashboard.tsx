@@ -10,16 +10,19 @@ import type { Product } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type LibraryDashboardProps = {
     products: Product[]; // This will contain library listings
     orders: any[];
 }
 
-export default function LibraryDashboard({ products, orders }: LibraryDashboardProps) {
+export default function LibraryDashboard({ products, orders: initialOrders }: LibraryDashboardProps) {
     const { supabase, user } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
+    const [orders, setOrders] = useState(initialOrders);
+    const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
     const library = products.find(p => p.category === 'Library');
 
@@ -29,13 +32,18 @@ export default function LibraryDashboard({ products, orders }: LibraryDashboardP
 
     const handleApproval = async (orderId: number, newStatus: 'approved' | 'rejected') => {
         if (!supabase) return;
+        setUpdatingOrderId(orderId);
+        
         const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+        
         if (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to ${newStatus === 'approved' ? 'approve' : 'reject'} booking.` });
         } else {
-            toast({ title: 'Success', description: `Booking has been ${newStatus === 'approved' ? 'approved' : 'rejected'}.` });
-            router.refresh();
+            toast({ title: 'Success', description: `Booking has been ${newStatus}.` });
+            // Optimistic UI update
+            setOrders(currentOrders => currentOrders.filter(o => o.id !== orderId));
         }
+        setUpdatingOrderId(null);
     }
 
     if (!library) {
@@ -101,8 +109,14 @@ export default function LibraryDashboard({ products, orders }: LibraryDashboardP
                                             Seat {booking.order_items?.map((oi: any) => oi.seat_number || 'N/A').join(', ') || 'N/A'}
                                         </TableCell>
                                         <TableCell className="text-right space-x-2">
-                                            <Button size="icon" variant="outline" className="text-green-500" onClick={() => handleApproval(booking.id, 'approved')}><ThumbsUp /></Button>
-                                            <Button size="icon" variant="outline" className="text-red-500" onClick={() => handleApproval(booking.id, 'rejected')}><X /></Button>
+                                            {updatingOrderId === booking.id ? (
+                                                <Loader2 className="size-5 animate-spin inline-flex" />
+                                            ) : (
+                                                <>
+                                                    <Button size="icon" variant="outline" className="text-green-500" onClick={() => handleApproval(booking.id, 'approved')}><ThumbsUp /></Button>
+                                                    <Button size="icon" variant="outline" className="text-red-500" onClick={() => handleApproval(booking.id, 'rejected')}><X /></Button>
+                                                </>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))}
