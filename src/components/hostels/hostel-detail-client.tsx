@@ -150,19 +150,39 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         }
 
         try {
-            const { data, error } = await supabase.rpc('get_or_create_chat_room', {
+            // Find existing private chat rooms between the two users
+            const { data: existingRooms, error: existingError } = await supabase
+                .from('chat_room_participants')
+                .select('room_id')
+                .in('user_id', [currentUser.id, hostel.seller_id]);
+            
+            if (existingError) throw existingError;
+
+            const roomCounts = existingRooms.reduce((acc, { room_id }) => {
+                acc[room_id] = (acc[room_id] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+
+            const existingRoomId = Object.keys(roomCounts).find(roomId => roomCounts[roomId] === 2);
+
+            if (existingRoomId) {
+                router.push('/chat');
+                return;
+            }
+
+            // If no room exists, create one
+            const { data: newRoomId, error: createError } = await supabase.rpc('create_private_chat', {
                 user1_id: currentUser.id,
                 user2_id: hostel.seller_id,
             });
 
-            if (error) throw error;
-            
-            if (data) {
+            if (createError) throw createError;
+
+            if (newRoomId) {
                 router.push('/chat');
             } else {
                 throw new Error('Could not get or create a chat room.');
             }
-    
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
