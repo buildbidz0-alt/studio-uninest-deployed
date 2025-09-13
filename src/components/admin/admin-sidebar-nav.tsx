@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, CreditCard, ScrollText, Settings, Briefcase, Trophy, LifeBuoy, Database } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, CreditCard, ScrollText, Settings, Briefcase, Trophy, LifeBuoy } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import Link from 'next/link';
 
