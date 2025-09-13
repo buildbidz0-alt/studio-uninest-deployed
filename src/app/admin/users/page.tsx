@@ -32,7 +32,7 @@ export default async function AdminUsersPage() {
                 console.warn("Could not fetch all profiles, some user data may be incomplete.", profileError);
             }
 
-            users = authUsers.users.map(authUser => {
+            users = authUsers.map(authUser => {
                 const profile = profiles?.find(p => p.id === authUser.id);
                 return {
                     id: authUser.id,
