@@ -35,28 +35,35 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  // Define paths outside the /vendor route that are still accessible to vendors
-  const allowedPaths = ['/settings', '/marketplace/new'];
-
   useEffect(() => {
     if (!loading) {
       if (role === 'vendor') {
         setIsAuthorized(true);
-      } else if (!pathname.startsWith('/vendor/') && !allowedPaths.includes(pathname)) {
-        // If not a vendor, only redirect if they are not on a vendor-specific page.
-        // This prevents kicking out admins or students from non-vendor pages.
+      } else if (pathname.startsWith('/vendor/')) {
+        // If the user is NOT a vendor but is trying to access a vendor route, redirect them.
         router.push('/');
+      } else {
+        // If not a vendor and not on a vendor route, they are authorized to be on whatever page they are on (e.g. /settings)
+        // This case is handled by other layouts, but we can set authorized here too.
+        setIsAuthorized(true);
       }
     }
   }, [role, loading, router, pathname]);
   
-  if (loading || !isAuthorized) {
+  if (loading || (role === 'vendor' && !isAuthorized)) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="size-8 animate-spin" />
             <p className="ml-2">Verifying vendor access...</p>
         </div>
     )
+  }
+
+  // If the user is not a vendor and is on a non-vendor page,
+  // we just render the children without the vendor layout.
+  // The main layout will handle these pages.
+  if (role !== 'vendor' && !pathname.startsWith('/vendor/')) {
+    return <>{children}</>;
   }
 
   return (
