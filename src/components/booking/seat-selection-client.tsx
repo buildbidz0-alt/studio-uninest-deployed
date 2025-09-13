@@ -12,15 +12,15 @@ import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 type Seat = {
-    id: string;
+    id: string; // This is the seat number, e.g., "1", "24"
+    productId: number; // This is the actual product ID from the database
     status: 'available' | 'booked' | 'pending';
-    orderId?: number;
 }
 
 export default function SeatSelectionClient() {
   const { user, supabase, loading: authLoading } = useAuth();
   const [seats, setSeats] = useState<Seat[]>([]);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const { toast } = useToast();
@@ -32,11 +32,12 @@ export default function SeatSelectionClient() {
     if (!supabase) return;
     setIsLoading(true);
 
+    // 1. Find the library vendor
     const { data: libraryVendor } = await supabase
         .from('profiles')
         .select('id, user_metadata')
         .eq('role', 'vendor')
-        .like('user_metadata->vendor_categories', '%"library"%')
+        .like('user_metadata->>vendor_categories', '%library%')
         .limit(1)
         .single();
     
@@ -51,44 +52,59 @@ export default function SeatSelectionClient() {
     const config = libraryVendor.user_metadata?.library_details || { totalSeats: 50, price: 10 };
     setLibraryConfig(config);
 
+    // 2. Fetch all "Library Seat" products for this vendor (source of truth)
+    const { data: seatProducts, error: productsError } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('seller_id', libraryVendor.id)
+        .eq('category', 'Library Seat');
+
+    if (productsError) {
+        console.error("Error fetching seat products:", productsError);
+        setIsLoading(false);
+        setSeats([]);
+        return;
+    }
+
+    // 3. Fetch all relevant orders to determine seat status
     const { data: orders } = await supabase
         .from('orders')
-        .select('id, status, order_items(products(name))')
+        .select('id, status, order_items(products(id))')
         .eq('vendor_id', libraryVendor.id)
         .in('status', ['pending_approval', 'approved']);
     
-    const seatMap = new Map<string, { status: 'booked' | 'pending' }>();
+    const seatStatusMap = new Map<number, { status: 'booked' | 'pending' }>();
     orders?.forEach(order => {
-        // Find the seat name in the order items
-        const seatItem = order.order_items.find((item: any) => item.products?.name.startsWith('Seat '));
+        const seatItem = order.order_items.find((item: any) => item.products?.id);
         if (seatItem) {
-            const seatNumber = seatItem.products.name.split(' ')[1];
+            const productId = seatItem.products.id;
              if (order.status === 'approved') {
-                seatMap.set(seatNumber, { status: 'booked' });
+                seatStatusMap.set(productId, { status: 'booked' });
             } else if (order.status === 'pending_approval') {
-                seatMap.set(seatNumber, { status: 'pending' });
+                seatStatusMap.set(productId, { status: 'pending' });
             }
         }
     });
 
-    const newSeats: Seat[] = Array.from({ length: config.totalSeats }, (_, i) => {
-        const seatId = `${i + 1}`;
-        const seatInfo = seatMap.get(seatId);
+    // 4. Create the final seats array based on actual products
+    const newSeats: Seat[] = (seatProducts || []).map(product => {
+        const statusInfo = seatStatusMap.get(product.id);
         return {
-            id: seatId,
-            status: seatInfo?.status || 'available',
+            id: product.name.split(' ')[1], // e.g., "Seat 24" -> "24"
+            productId: product.id,
+            status: statusInfo?.status || 'available',
         }
-    });
+    }).sort((a, b) => parseInt(a.id) - parseInt(b.id)); // Ensure seats are in order
     
     setSeats(newSeats);
     setIsLoading(false);
   }, [supabase]);
 
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && supabase) {
         fetchSeatStatus();
     }
-  }, [supabase, authLoading, fetchSeatStatus]);
+  }, [authLoading, fetchSeatStatus, supabase]);
 
   useEffect(() => {
     if(!supabase) return;
@@ -96,14 +112,7 @@ export default function SeatSelectionClient() {
       .channel('table-db-changes-orders-and-products')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          fetchSeatStatus();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
+        { event: '*', schema: 'public', table: 'orders', filter: `vendor_id=eq.${libraryVendorId}` },
         (payload) => {
           fetchSeatStatus();
         }
@@ -113,18 +122,17 @@ export default function SeatSelectionClient() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, fetchSeatStatus]);
+  }, [supabase, fetchSeatStatus, libraryVendorId]);
 
-  const handleSeatClick = (seatId: string) => {
-    const seat = seats.find(s => s.id === seatId);
-    if (seat?.status !== 'available') {
+  const handleSeatClick = (seat: Seat) => {
+    if (seat.status !== 'available') {
         toast({
             variant: 'destructive',
-            description: `This seat is already ${seat?.status === 'booked' ? 'booked' : 'pending approval'}.`,
+            description: `This seat is already ${seat.status === 'booked' ? 'booked' : 'pending approval'}.`,
         });
         return;
     }
-    setSelectedSeat((prev) => (prev === seatId ? null : prev));
+    setSelectedSeat((prev) => (prev?.id === seat.id ? null : seat));
   };
 
   const handleBookingRequest = async () => {
@@ -136,24 +144,6 @@ export default function SeatSelectionClient() {
         return;
     }
     setIsBooking(true);
-
-    const seatProductName = `Seat ${selectedSeat}`;
-    
-    // Find the product ID for the selected seat
-    let { data: seatProduct } = await supabase
-      .from('products')
-      .select('id')
-      .eq('seller_id', libraryVendorId)
-      .eq('category', 'Library Seat')
-      .eq('name', seatProductName)
-      .limit(1)
-      .single();
-    
-    if (!seatProduct) {
-        toast({ variant: 'destructive', description: "The library vendor has not configured their booking service for this seat." });
-        setIsBooking(false);
-        return;
-    }
 
     // Create the order record
     const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
@@ -172,7 +162,7 @@ export default function SeatSelectionClient() {
     // Create the order item linking the order to the specific seat product
     const { error: itemError } = await supabase.from('order_items').insert({
         order_id: newOrder.id,
-        product_id: seatProduct.id,
+        product_id: selectedSeat.productId,
         quantity: 1,
         price: libraryConfig.price
     });
@@ -184,7 +174,7 @@ export default function SeatSelectionClient() {
     } else {
         toast({
             title: 'Reservation Requested!',
-            description: `Your request for seat ${selectedSeat} has been sent for approval.`,
+            description: `Your request for seat ${selectedSeat.id} has been sent for approval.`,
         });
         setSelectedSeat(null);
         fetchSeatStatus(); // Refresh state immediately
@@ -223,11 +213,11 @@ export default function SeatSelectionClient() {
 
                         <div className="grid grid-cols-10 gap-2">
                             {seats.map((seat) => {
-                                const isSelected = selectedSeat === seat.id;
+                                const isSelected = selectedSeat?.id === seat.id;
                                 return (
                                 <button
                                     key={seat.id}
-                                    onClick={() => handleSeatClick(seat.id)}
+                                    onClick={() => handleSeatClick(seat)}
                                     disabled={seat.status !== 'available'}
                                     className={cn(
                                     'p-1 rounded-md transition-colors relative',
@@ -271,7 +261,7 @@ export default function SeatSelectionClient() {
                 <CardContent className="space-y-4">
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Selected Seat:</span>
-                        <span className="font-bold text-lg">{selectedSeat || 'None'}</span>
+                        <span className="font-bold text-lg">{selectedSeat?.id || 'None'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Price:</span>
