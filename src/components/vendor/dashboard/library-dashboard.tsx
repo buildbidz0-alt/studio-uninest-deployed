@@ -32,21 +32,28 @@ export default function LibraryDashboard() {
                 setBooks(productsData as Product[]);
             }
 
-            // Fetch bookings (orders for library services)
-            const { data: ordersData } = await supabase
+            // Fetch bookings (orders for library services) - CORRECTED QUERY
+            const { data: ordersData, error } = await supabase
                 .from('orders')
                 .select(`
                     *,
-                    order_items(*, products(name, category)),
+                    order_items!inner(
+                        products!inner(name, category)
+                    ),
                     profiles!buyer_id(full_name)
                 `)
                 .eq('vendor_id', user.id)
+                .eq('order_items.products.category', 'Library Services')
                 .order('created_at', { ascending: false });
 
-            if (ordersData) {
-                const libraryOrders = (ordersData as any[]).filter(order =>
-                    order.order_items.some((oi: any) => oi.products?.category === 'Library Services')
-                ).map(o => ({...o, buyer: o.profiles}));
+            if (error) {
+                console.error("Error fetching library orders:", error);
+            } else if (ordersData) {
+                const libraryOrders = (ordersData as any[]).map(o => ({
+                    ...o, 
+                    buyer: o.profiles || { full_name: 'N/A' },
+                    order_items: Array.isArray(o.order_items) ? o.order_items.map((oi: any) => ({products: oi.products})) : []
+                }));
                 setRecentBookings(libraryOrders.slice(0, 3) as Order[]);
             }
 
@@ -115,7 +122,7 @@ export default function LibraryDashboard() {
                                     {recentBookings.map(booking => (
                                         <TableRow key={booking.id}>
                                             <TableCell className="font-medium">{booking.buyer?.full_name || 'N/A'}</TableCell>
-                                            <TableCell>{booking.order_items.map(oi => oi.products?.name || 'Unknown Item').join(', ')}</TableCell>
+                                            <TableCell>{booking.order_items?.map(oi => oi.products?.name || 'Unknown Item').join(', ') || 'N/A'}</TableCell>
                                             <TableCell><CheckCircle className="size-5 text-green-500"/></TableCell>
                                         </TableRow>
                                     ))}
