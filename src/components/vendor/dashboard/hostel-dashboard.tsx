@@ -4,66 +4,23 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { useEffect, useState } from "react";
-import type { Order, Product } from "@/lib/types";
+import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight } from "lucide-react";
+import type { Product } from "@/lib/types";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
-export default function HostelDashboard() {
-    const { supabase, user } = useAuth();
-    const [rooms, setRooms] = useState<Product[]>([]);
-    const [recentActivity, setRecentActivity] = useState<any[]>([]); // Use any for safety
-    const [stats, setStats] = useState({ revenue: 0, tenants: 0, maintenance: 0 });
-    const [loading, setLoading] = useState(true);
+type HostelDashboardProps = {
+    products: Product[];
+    orders: any[];
+}
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!user || !supabase) return;
-            setLoading(true);
+export default function HostelDashboard({ products, orders }: HostelDashboardProps) {
+    const rooms = products;
+    const recentActivity = orders.slice(0, 5);
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+    const uniqueTenants = new Set(orders.map(o => o.buyer_id)).size;
 
-            // Fetch rooms (products in "Hostels" category)
-            const { data: productsData } = await supabase
-                .from('products')
-                .select('*')
-                .eq('seller_id', user.id)
-                .eq('category', 'Hostels');
-
-            if (productsData) {
-                setRooms(productsData as Product[]);
-            }
-            
-            const { data: ordersData, error: ordersError } = await supabase
-                .from('orders')
-                .select(`
-                    id,
-                    created_at,
-                    total_amount,
-                    buyer_id,
-                    buyer:profiles!buyer_id(full_name),
-                    order_items!inner(
-                        products!inner(name, category)
-                    )
-                `)
-                .eq('vendor_id', user.id)
-                .eq('order_items.products.category', 'Hostels')
-                .order('created_at', { ascending: false });
-            
-            if (ordersError) {
-                console.error("Error fetching hostel orders:", ordersError);
-            } else if (ordersData) {
-                const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-                const uniqueTenants = new Set(ordersData.map(o => o.buyer_id)).size;
-
-                setRecentActivity(ordersData.slice(0, 5));
-                setStats(prev => ({ ...prev, revenue: totalRevenue, tenants: uniqueTenants }));
-            }
-
-            setLoading(false);
-        };
-        fetchData();
-    }, [user, supabase]);
+    const stats = { revenue: totalRevenue, tenants: uniqueTenants, maintenance: 0 };
 
     return (
         <div className="space-y-8">
@@ -76,7 +33,7 @@ export default function HostelDashboard() {
                         <Users className="text-primary"/>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">{stats.tenants}</p>}
+                        <p className="text-3xl font-bold">{stats.tenants}</p>
                         <p className="text-sm text-muted-foreground">based on unique orders</p>
                     </CardContent>
                 </Card>
@@ -86,7 +43,7 @@ export default function HostelDashboard() {
                         <IndianRupee className="text-green-500"/>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>}
+                        <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>
                         <p className="text-sm text-muted-foreground">from all bookings</p>
                     </CardContent>
                 </Card>
@@ -114,7 +71,7 @@ export default function HostelDashboard() {
                     </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                     {loading ? <Loader2 className="animate-spin" /> : rooms.length > 0 ? (
+                     {rooms.length > 0 ? (
                         rooms.map(room => (
                             <div key={room.id} className="p-4 rounded-lg border-2 bg-green-100 dark:bg-green-900/50 border-green-200 dark:border-green-800">
                                 <div className="flex justify-between items-center">
@@ -137,7 +94,7 @@ export default function HostelDashboard() {
                     <CardTitle>Recent Bookings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                     {loading ? <Loader2 className="animate-spin" /> : recentActivity.length > 0 ? (
+                     {recentActivity.length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>

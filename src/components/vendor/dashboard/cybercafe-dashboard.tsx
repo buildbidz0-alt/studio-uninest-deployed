@@ -1,14 +1,11 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Computer, IndianRupee, PlusCircle, Check, Loader2 } from "lucide-react";
+import { Computer, IndianRupee, PlusCircle, Check } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { useAuth } from "@/hooks/use-auth";
-import { Product } from "@/lib/types";
-import { useEffect, useState } from "react";
+import type { Product } from "@/lib/types";
 import Link from "next/link";
 
 // Mock data for charts, as we don't have time-series data
@@ -20,49 +17,15 @@ const usageData = [
   { time: '6 PM', users: 16 },
 ];
 
-export default function CybercafeDashboard() {
-    const { supabase, user } = useAuth();
-    const [services, setServices] = useState<Product[]>([]);
-    const [stats, setStats] = useState({ revenue: 0, orders: 0 });
-    const [loading, setLoading] = useState(true);
-    
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!user || !supabase) return;
-            setLoading(true);
+type CybercafeDashboardProps = {
+    products: Product[];
+    orders: any[];
+}
 
-            // Fetch services/rate plans
-            const { data: productsData } = await supabase
-                .from('products')
-                .select('*')
-                .eq('seller_id', user.id)
-                .eq('category', 'Cyber Café');
-
-            if (productsData) {
-                setServices(productsData as Product[]);
-            }
-
-            // Fetch orders for stats
-             const { data: ordersData, error } = await supabase
-              .from('orders')
-              .select(`
-                total_amount, 
-                order_items!inner(
-                    products!inner(category)
-                )
-              `)
-              .eq('vendor_id', user.id)
-              .eq('order_items.products.category', 'Cyber Café');
-
-            if (ordersData) {
-                const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-                setStats({ revenue: totalRevenue, orders: ordersData.length });
-            }
-
-            setLoading(false);
-        };
-        fetchData();
-    }, [user, supabase]);
+export default function CybercafeDashboard({ products, orders }: CybercafeDashboardProps) {
+    const services = products;
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+    const stats = { revenue: totalRevenue, orders: orders.length };
 
     return (
         <div className="space-y-8">
@@ -75,7 +38,7 @@ export default function CybercafeDashboard() {
                         <Computer className="text-primary"/>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">{services.length}</p>}
+                        <p className="text-3xl font-bold">{services.length}</p>
                         <p className="text-sm text-muted-foreground">Active service listings</p>
                     </CardContent>
                 </Card>
@@ -85,7 +48,7 @@ export default function CybercafeDashboard() {
                         <Check className="text-green-500"/>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">{stats.orders}</p>}
+                        <p className="text-3xl font-bold">{stats.orders}</p>
                          <p className="text-sm text-muted-foreground">Across all services</p>
                     </CardContent>
                 </Card>
@@ -95,7 +58,7 @@ export default function CybercafeDashboard() {
                         <IndianRupee className="text-primary"/>
                     </CardHeader>
                     <CardContent>
-                         {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>}
+                         <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>
                          <p className="text-sm text-muted-foreground">from all-time sales</p>
                     </CardContent>
                 </Card>
@@ -137,7 +100,7 @@ export default function CybercafeDashboard() {
                         </Button>
                     </CardHeader>
                      <CardContent className="space-y-4">
-                        {loading ? <Loader2 className="animate-spin" /> : services.length > 0 ? (
+                        {services.length > 0 ? (
                             services.map(plan => (
                                 <div key={plan.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
                                     <div className="flex items-center gap-3">

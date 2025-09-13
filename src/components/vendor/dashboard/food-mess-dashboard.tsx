@@ -5,63 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, PlusCircle, Users, IndianRupee, ChefHat, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { Order, Product } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { Utensils, PlusCircle, Users, IndianRupee, ChefHat } from "lucide-react";
 import Link from 'next/link';
+import type { Product } from "@/lib/types";
 
-export default function FoodMessDashboard() {
-    const { supabase, user } = useAuth();
-    const [menuItems, setMenuItems] = useState<Product[]>([]);
-    const [recentOrders, setRecentOrders] = useState<any[]>([]); // Use any for safety
-    const [stats, setStats] = useState({ revenue: 0, orders: 0, subscriptions: 0 });
-    const [loading, setLoading] = useState(true);
+type FoodMessDashboardProps = {
+    products: Product[];
+    orders: any[];
+};
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!user || !supabase) return;
-            setLoading(true);
-
-            // Fetch menu items (products in "Food Mess" category)
-            const { data: productsData } = await supabase
-                .from('products')
-                .select('*')
-                .eq('seller_id', user.id)
-                .eq('category', 'Food Mess');
-            
-            if (productsData) {
-                setMenuItems(productsData as Product[]);
-            }
-
-            // Fetch orders for stats and recent activity
-            const { data: ordersData, error } = await supabase
-                .from('orders')
-                .select(`
-                    id,
-                    created_at,
-                    total_amount,
-                    status,
-                    buyer:profiles!buyer_id(full_name),
-                    order_items!inner(
-                        products!inner(name, category)
-                    )
-                `)
-                .eq('vendor_id', user.id)
-                .eq('order_items.products.category', 'Food Mess')
-                .order('created_at', { ascending: false });
-
-
-            if (ordersData) {
-                const totalRevenue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-                setRecentOrders(ordersData.slice(0, 3));
-                setStats(prev => ({ ...prev, revenue: totalRevenue, orders: ordersData.length }));
-            }
-
-            setLoading(false);
-        };
-        fetchData();
-    }, [user, supabase]);
+export default function FoodMessDashboard({ products, orders }: FoodMessDashboardProps) {
+    const menuItems = products;
+    const recentOrders = orders.slice(0, 3);
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     
     return (
         <div className="space-y-8">
@@ -74,7 +30,7 @@ export default function FoodMessDashboard() {
                         <CardDescription>A snapshot of your latest food orders.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <Loader2 className="animate-spin" /> : recentOrders.length > 0 ? (
+                        {recentOrders.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -109,8 +65,8 @@ export default function FoodMessDashboard() {
                             <CardTitle className="flex items-center gap-2"><IndianRupee className="text-primary"/> Total Sales</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             {loading ? <Loader2 className="animate-spin" /> : <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>}
-                            <p className="text-sm text-muted-foreground">from {stats.orders} orders</p>
+                            <p className="text-3xl font-bold">₹{totalRevenue.toLocaleString()}</p>
+                            <p className="text-sm text-muted-foreground">from {orders.length} orders</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -137,7 +93,7 @@ export default function FoodMessDashboard() {
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    {loading ? <Loader2 className="animate-spin" /> : menuItems.length > 0 ? (
+                    {menuItems.length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>

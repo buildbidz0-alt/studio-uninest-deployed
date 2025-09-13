@@ -1,40 +1,82 @@
 
-'use client';
-
-import { useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import CybercafeDashboard from '@/components/vendor/dashboard/cybercafe-dashboard';
 import FoodMessDashboard from '@/components/vendor/dashboard/food-mess-dashboard';
 import HostelDashboard from '@/components/vendor/dashboard/hostel-dashboard';
 import LibraryDashboard from '@/components/vendor/dashboard/library-dashboard';
 import PageHeader from '@/components/admin/page-header';
+import { createClient } from '@/lib/supabase/server';
+import type { Product } from '@/lib/types';
 
-export default function VendorCategoryDashboardPage() {
-    const params = useParams();
-    const category = params.category as string;
+const categoryMap: { [key: string]: { label: string; component: React.FC<any> } } = {
+    'library': { label: 'Library Services', component: LibraryDashboard },
+    'food-mess': { label: 'Food Mess', component: FoodMessDashboard },
+    'hostels': { label: 'Hostels', component: HostelDashboard },
+    'cybercafe': { label: 'Cyber Café', component: CybercafeDashboard },
+};
 
-    const renderDashboard = () => {
-        switch (category) {
-            case 'library':
-                return <LibraryDashboard />;
-            case 'food-mess':
-                return <FoodMessDashboard />;
-            case 'hostels':
-                return <HostelDashboard />;
-            case 'cybercafe':
-                return <CybercafeDashboard />;
-            default:
-                return (
-                     <PageHeader 
-                        title="Unknown Dashboard"
-                        description="This service dashboard does not exist."
-                    />
+async function getVendorDataForCategory(categoryLabel: string, userId: string) {
+    const supabase = createClient();
+
+    const [productsRes, ordersRes] = await Promise.all([
+        supabase
+            .from('products')
+            .select('*')
+            .eq('seller_id', userId)
+            .eq('category', categoryLabel),
+        supabase
+            .from('orders')
+            .select(`
+                id,
+                created_at,
+                total_amount,
+                status,
+                buyer_id,
+                buyer:profiles!buyer_id(full_name, avatar_url),
+                order_items!inner(
+                    products!inner(name, category)
                 )
-        }
+            `)
+            .eq('vendor_id', userId)
+            .eq('order_items.products.category', categoryLabel)
+            .order('created_at', { ascending: false })
+    ]);
+
+    if (productsRes.error || ordersRes.error) {
+        console.error('Error fetching vendor data:', productsRes.error || ordersRes.error);
+        return { products: [], orders: [] };
     }
+
+    return {
+        products: (productsRes.data as Product[]) || [],
+        orders: (ordersRes.data as any[]) || [],
+    };
+}
+
+
+export default async function VendorCategoryDashboardPage({ params }: { params: { category: string } }) {
+    const categoryKey = params.category;
+    const categoryInfo = categoryMap[categoryKey];
+    const supabase = createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!categoryInfo || !user) {
+        notFound();
+    }
+    
+    const { products, orders } = await getVendorDataForCategory(categoryInfo.label, user.id);
+
+    const DashboardComponent = categoryInfo.component;
+
+    const props = {
+        products,
+        orders
+    };
 
     return (
         <div>
-            {renderDashboard()}
+            <DashboardComponent {...props} />
         </div>
     );
 }

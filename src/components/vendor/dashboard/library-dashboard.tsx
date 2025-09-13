@@ -4,59 +4,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Armchair, Book, CheckCircle, PlusCircle, Users, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { Order, Product } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { Armchair, Book, CheckCircle, PlusCircle, Users } from "lucide-react";
 import Link from "next/link";
+import type { Product } from "@/lib/types";
 
-export default function LibraryDashboard() {
-    const { supabase, user } = useAuth();
-    const [books, setBooks] = useState<Product[]>([]);
-    const [recentBookings, setRecentBookings] = useState<any[]>([]); // Use any to be safe with joins
-    const [loading, setLoading] = useState(true);
+type LibraryDashboardProps = {
+    products: Product[];
+    orders: any[];
+}
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!user || !supabase) return;
-            setLoading(true);
-
-            const { data: productsData } = await supabase
-                .from('products')
-                .select('*')
-                .eq('seller_id', user.id)
-                .eq('category', 'Library Services');
-
-            if (productsData) {
-                setBooks(productsData as Product[]);
-            }
-
-            const { data: ordersData, error } = await supabase
-                .from('orders')
-                .select(`
-                    id,
-                    created_at,
-                    status,
-                    buyer:profiles!buyer_id(full_name),
-                    order_items!inner(
-                        products!inner(name, category)
-                    )
-                `)
-                .eq('vendor_id', user.id)
-                .eq('order_items.products.category', 'Library Services')
-                .order('created_at', { ascending: false })
-                .limit(3);
-            
-            if (error) {
-                console.error("Error fetching library orders:", error);
-            } else if (ordersData) {
-                setRecentBookings(ordersData);
-            }
-
-            setLoading(false);
-        };
-        fetchData();
-    }, [user, supabase]);
+export default function LibraryDashboard({ products, orders }: LibraryDashboardProps) {
+    const recentBookings = orders.slice(0, 3);
+    const books = products;
+    const loading = false; // Data is pre-fetched
 
     return (
         <div className="space-y-8">
@@ -84,7 +44,7 @@ export default function LibraryDashboard() {
                     <CardContent className="space-y-3">
                          <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Total Books</span>
-                             {loading ? <Loader2 className="animate-spin size-4" /> : <span className="font-bold">{books.length}</span>}
+                             <span className="font-bold">{books.length}</span>
                          </div>
                          <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Books Issued</span>
@@ -105,7 +65,7 @@ export default function LibraryDashboard() {
                         <CardTitle>Recent Seat Bookings</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <Loader2 className="animate-spin mx-auto my-10" /> : recentBookings.length > 0 ? (
+                        {recentBookings.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
