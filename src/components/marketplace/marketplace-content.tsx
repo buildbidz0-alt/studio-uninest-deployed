@@ -186,50 +186,19 @@ export default function MarketplaceContent() {
     }
 
     try {
-      // Step 1: Check if a chat room already exists with just these two users.
-      const { data: rooms, error: roomError } = await supabase
-        .from('chat_room_participants')
-        .select('room_id')
-        .in('user_id', [user.id, sellerId]);
+      const { data, error } = await supabase.rpc('get_or_create_chat_room', {
+        user1_id: user.id,
+        user2_id: sellerId,
+      });
 
-      if (roomError) throw roomError;
+      if (error) throw error;
       
-      const roomCounts = rooms.reduce((acc, { room_id }) => {
-        acc[room_id] = (acc[room_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const existingRoomId = Object.keys(roomCounts).find(roomId => roomCounts[roomId] === 2);
-
-      if (existingRoomId) {
-        // If room exists, navigate to chat
+      // If the function returns a room ID, it means it either found one or created one successfully.
+      if (data) {
         router.push('/chat');
-        return;
+      } else {
+        throw new Error('Could not get or create a chat room.');
       }
-      
-      // Step 2: If no room, create it.
-      const { data: newRoom, error: createError } = await supabase
-        .from('chat_rooms')
-        .insert({})
-        .select('id')
-        .single();
-
-      if (createError) throw createError;
-      const roomId = newRoom.id;
-
-      // Step 3: Add both users as participants.
-      const { error: participantError } = await supabase
-        .from('chat_room_participants')
-        .insert([
-          { room_id: roomId, user_id: user.id },
-          { room_id: roomId, user_id: sellerId },
-        ]);
-
-      if (participantError) throw participantError;
-
-      // Step 4: Navigate to chat page.
-      router.push('/chat');
-
     } catch (error) {
       console.error('Error starting chat session:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
