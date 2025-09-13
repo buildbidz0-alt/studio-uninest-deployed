@@ -34,21 +34,26 @@ export default function HostelDashboard() {
                 setRooms(productsData as Product[]);
             }
             
-            // Fetch orders for revenue and activity
+            // Fetch orders for revenue and activity, correctly filtered for 'Hostels'
             const { data: ordersData, error: ordersError } = await supabase
                 .from('orders')
                 .select(`
                     *,
-                    order_items(*, products(name, category)),
+                    order_items!inner(
+                        products!inner(name, category)
+                    ),
                     profiles!buyer_id(full_name)
                 `)
                 .eq('vendor_id', user.id)
+                .eq('order_items.products.category', 'Hostels')
                 .order('created_at', { ascending: false });
 
             if (ordersData) {
-                const hostelOrders = (ordersData as any[]).filter(order =>
-                    order.order_items.some((oi: any) => oi.products?.category === 'Hostels')
-                ).map(o => ({...o, buyer: o.profiles}));
+                const hostelOrders = (ordersData as any[]).map(o => ({
+                    ...o,
+                    buyer: o.profiles || { full_name: 'N/A' },
+                    order_items: Array.isArray(o.order_items) ? o.order_items.map((oi:any) => ({products: oi.products})) : []
+                }));
 
                 const totalRevenue = hostelOrders.reduce((sum, order) => sum + order.total_amount, 0);
                 const uniqueTenants = new Set(hostelOrders.map(o => o.buyer_id)).size;
