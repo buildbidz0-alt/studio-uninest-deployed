@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import type { Order, Product } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 type Seat = {
     id: string;
@@ -24,6 +24,7 @@ export default function SeatSelectionClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
   const [libraryConfig, setLibraryConfig] = useState({ totalSeats: 50, price: 10 });
 
 
@@ -35,13 +36,14 @@ export default function SeatSelectionClient() {
         .from('profiles')
         .select('id, user_metadata')
         .eq('role', 'vendor')
-        .ilike('vendor_categories', '%library%')
+        .like('user_metadata->vendor_categories', '%"library"%')
         .limit(1)
         .single();
     
     if (!libraryVendor) {
         console.error("No library vendor found");
         setIsLoading(false);
+        setSeats([]);
         return;
     }
 
@@ -56,9 +58,9 @@ export default function SeatSelectionClient() {
     
     const seatMap = new Map<string, { status: 'booked' | 'pending' }>();
     orders?.forEach(order => {
-        const seatName = order.order_items[0]?.products?.name;
-        if (seatName && seatName.startsWith('Seat ')) {
-            const seatNumber = seatName.split(' ')[1];
+        const seatNameMatch = order.order_items[0]?.products?.name?.match(/Seat (\d+)/);
+        if (seatNameMatch && seatNameMatch[1]) {
+            const seatNumber = seatNameMatch[1];
              if (order.status === 'approved') {
                 seatMap.set(seatNumber, { status: 'booked' });
             } else if (order.status === 'pending_approval') {
@@ -89,12 +91,11 @@ export default function SeatSelectionClient() {
   useEffect(() => {
     if(!supabase) return;
     const channel = supabase
-      .channel('table-db-changes')
+      .channel('table-db-changes-orders')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
-          console.log('Change received!', payload);
           fetchSeatStatus();
         }
       )
@@ -114,7 +115,8 @@ export default function SeatSelectionClient() {
         });
         return;
     }
-    setSelectedSeat((prev) => (prev === seatId ? null : seatId));
+    setSelectedSeat((prev) => (prev === seatId ? null : prev));
+    setSelectedSeat(seatId);
   };
 
   const handleBookingRequest = async () => {
@@ -127,36 +129,26 @@ export default function SeatSelectionClient() {
     }
     setIsBooking(true);
 
-    const { data: libraryVendor } = await supabase.from('profiles').select('id').eq('role', 'vendor').ilike('vendor_categories', '%library%').limit(1).single();
+    const { data: libraryVendor } = await supabase.from('profiles').select('id').eq('role', 'vendor').like('user_metadata->vendor_categories', '%"library"%').limit(1).single();
     if (!libraryVendor) {
         toast({ variant: 'destructive', description: "Library service not available." });
         setIsBooking(false);
         return;
     }
     
+    // The vendor must create a "Library Services" product first.
     let { data: seatProduct } = await supabase.from('products').select('*').eq('seller_id', libraryVendor.id).eq('category', 'Library Services').limit(1).single();
     
     if (!seatProduct) {
-      const { data: newSeatProduct, error: createError } = await supabase.from('products').insert({
-        name: `Library Seat Reservation`,
-        description: `Reservation service for a library seat.`,
-        price: libraryConfig.price,
-        category: 'Library Services',
-        seller_id: libraryVendor.id,
-      }).select().single();
-
-      if (createError) {
-        toast({ variant: 'destructive', description: "Could not create seat product for booking." });
+        toast({ variant: 'destructive', description: "The library vendor has not set up their booking service yet." });
         setIsBooking(false);
         return;
-      }
-      seatProduct = newSeatProduct;
     }
 
     const { data: newOrder, error } = await supabase.from('orders').insert({
         buyer_id: user.id,
         vendor_id: libraryVendor.id,
-        total_amount: 0,
+        total_amount: libraryConfig.price, // Set the price from config
         status: 'pending_approval'
     }).select('id').single();
 
@@ -166,14 +158,16 @@ export default function SeatSelectionClient() {
         return;
     }
 
+    // Associate the product (e.g. "Seat 24 reservation") with the order
     const { error: itemError } = await supabase.from('order_items').insert({
         order_id: newOrder.id,
         product_id: seatProduct.id,
         quantity: 1,
-        price: 0
+        price: libraryConfig.price
     });
     
     if (itemError) {
+        await supabase.from('orders').delete().eq('id', newOrder.id);
         toast({ variant: 'destructive', description: 'Failed to complete reservation details.'});
     } else {
         toast({
@@ -181,6 +175,7 @@ export default function SeatSelectionClient() {
             description: `Your request for seat ${selectedSeat} has been sent for approval.`,
         });
         setSelectedSeat(null);
+        fetchSeatStatus(); // Refresh state immediately
     }
     
     setIsBooking(false);
@@ -201,6 +196,10 @@ export default function SeatSelectionClient() {
                 <CardContent className="p-4">
                     {isLoading ? (
                         <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin size-8" /></div>
+                    ) : seats.length === 0 ? (
+                         <div className="flex h-96 items-center justify-center text-muted-foreground">
+                           <p>The library booking service is not yet configured by a vendor.</p>
+                         </div>
                     ) : (
                     <div className="flex flex-col items-center space-y-6">
                         <div className="flex items-center justify-center w-full">

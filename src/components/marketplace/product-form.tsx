@@ -61,7 +61,13 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
     if (role === 'vendor') {
         const vendorCategories = user?.user_metadata?.vendor_categories || [];
         // A vendor can edit a product to be any category, but can only create new ones for their assigned categories
-        return isEditMode ? allCategories : [...vendorCategories, "Other Products", "Library Services"];
+        // Add "Library Services" for library vendors
+        const categories = [...vendorCategories];
+        if (categories.includes('library')) {
+            categories.push('Library Services');
+        }
+        categories.push("Other Products");
+        return isEditMode ? allCategories : [...new Set(categories)]; // Use Set to avoid duplicates
     }
     return allCategories; // For admin
   }
