@@ -25,7 +25,7 @@ export default async function AdminTicketsPage() {
             status,
             priority,
             screenshot_url,
-            profiles (
+            profiles:user_id (
                 id,
                 full_name,
                 avatar_url
