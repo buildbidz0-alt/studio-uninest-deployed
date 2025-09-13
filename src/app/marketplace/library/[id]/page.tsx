@@ -66,7 +66,7 @@ export default async function LibraryDetailPage({ params }: LibraryDetailPagePro
     // Fetch all relevant orders to determine seat status
     const { data: orders } = await supabase
         .from('orders')
-        .select('id, status, order_items(seat_number)')
+        .select('id, status, order_items!inner(seat_number)')
         .eq('vendor_id', library.seller_id)
         .eq('order_items.library_id', library.id)
         .in('status', ['pending_approval', 'approved']);
