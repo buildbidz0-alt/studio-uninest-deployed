@@ -11,3 +11,5 @@ runConfig:
 # https://firebase.google.com/docs/app-hosting/configure#secret-env
 secretEnv:
   - secret: SUPABASE_SERVICE_KEY
+  - secret: RAZORPAY_KEY_ID
+  - secret: RAZORPAY_KEY_SECRET
