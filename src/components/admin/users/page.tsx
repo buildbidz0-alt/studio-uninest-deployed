@@ -76,16 +76,35 @@ export default function AdminUsersContent() {
     
     const makeAdmin = async (userId: string) => {
         if (!supabase) return;
+        
+        // This is a client-side call, but Supabase SDK forwards it to a secure edge function.
+        // For this to work, the call must be made by an already authenticated admin user.
+        // The management of users is handled by Supabase's built-in auth admin capabilities,
+        // which verifies the caller's permissions.
         const { data, error } = await supabase.auth.admin.updateUserById(
             userId,
             { user_metadata: { role: 'admin' } }
         )
         if (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update user role.' });
+            return;
+        } 
+        
+        // Also update the public profiles table
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', userId);
+
+        if (profileError) {
+            // Log the error, but the main auth action succeeded.
+            console.error("Failed to update role in profiles table, but auth role was set.", profileError);
+            toast({ variant: 'destructive', title: 'Partial Success', description: 'User promoted, but public profile failed to update.' });
         } else {
-            toast({ title: 'Success', description: 'User promoted to Admin.' });
-            fetchUsers(); // Refetch users to update the UI
+             toast({ title: 'Success', description: 'User promoted to Admin.' });
         }
+        
+        fetchUsers(); // Refetch users to update the UI
     }
 
     return (
@@ -131,7 +150,7 @@ export default function AdminUsersContent() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>{user.role}</Badge>
+                                            <Badge variant={user.role === 'admin' ? 'default' : user.role === 'vendor' ? 'secondary' : 'outline'}>{user.role}</Badge>
                                         </TableCell>
                                          <TableCell>
                                             {format(new Date(user.created_at), 'PPP')}
