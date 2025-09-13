@@ -5,18 +5,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import type { Product, Profile } from "@/lib/types";
+
+// Explicitly define the types for clarity
+type ProductWithProfile = Product & {
+    profiles: Pick<Profile, 'full_name' | 'email'> | null;
+};
+
 
 export default async function AdminListingsPage() {
     const supabase = createClient();
-    const { data: listings, error } = await supabase
-        .from('products')
-        .select(`
-            *,
-            profiles:seller_id!left(
-                full_name,
-                email
-            )
-        `);
+    
+    // 1. Fetch all products and all profiles in parallel
+    const [productsRes, profilesRes] = await Promise.all([
+        supabase.from('products').select('*'),
+        supabase.from('profiles').select('id, full_name, email')
+    ]);
+
+    const products = productsRes.data || [];
+    const profiles = profilesRes.data || [];
+
+    // Create a quick-access map for profiles
+    const profilesMap = new Map(profiles.map(p => [p.id, p]));
+
+    // 2. Manually join the data in code for robustness
+    const listings: ProductWithProfile[] = products.map(product => ({
+        ...product,
+        profiles: profilesMap.get(product.seller_id) || null,
+    }));
+
 
     return (
         <div className="space-y-8">
