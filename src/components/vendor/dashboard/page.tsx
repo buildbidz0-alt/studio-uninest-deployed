@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -39,7 +38,7 @@ export default function VendorDashboardContent() {
                 quantity,
                 products ( name )
             ),
-            buyer:profiles!buyer_id (
+            buyer:profiles!buyer_id(
                 id, full_name, avatar_url
             )
         `)

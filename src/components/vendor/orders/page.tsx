@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,7 +34,7 @@ export default function VendorOrdersContent() {
             quantity,
             products ( name )
           ),
-          buyer:profiles!buyer_id (
+          buyer:profiles!buyer_id(
             id, full_name, avatar_url
           )
         `)

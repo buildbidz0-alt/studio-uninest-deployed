@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ export default function LibraryDashboard() {
                     id,
                     created_at,
                     status,
-                    buyer:profiles(full_name),
+                    buyer:profiles!buyer_id(full_name),
                     order_items!inner(
                         products!inner(name, category)
                     )

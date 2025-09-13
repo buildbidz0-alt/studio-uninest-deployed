@@ -1,381 +1,365 @@
 
--- Drop existing tables and types to start fresh
-drop table if exists "public"."products" cascade;
-drop table if exists "public"."profiles" cascade;
-drop table if exists "public"."posts" cascade;
-drop table if exists "public"."likes" cascade;
-drop table if exists "public"."followers" cascade;
-drop table if exists "public"."comments" cascade;
-drop table if exists "public"."chat_rooms" cascade;
-drop table if exists "public"."chat_participants" cascade;
-drop table if exists "public"."chat_messages" cascade;
-drop table if exists "public"."donations" cascade;
-drop table if exists "public"."orders" cascade;
-drop table if exists "public"."order_items" cascade;
-drop table if exists "public"."support_tickets" cascade;
-drop table if exists "public"."competitions" cascade;
-drop table if exists "public"."internships" cascade;
-drop table ifexists "public"."competition_entries" cascade;
-drop table if exists "public"."platform_settings" cascade;
-drop table if exists "public"."audit_log" cascade;
-drop table if exists "public"."app_config" cascade;
+-- Drop existing policies to start fresh
+DROP POLICY IF EXISTS "Allow read access to all users" ON "public"."products";
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON "public"."products";
+DROP policy IF EXISTS "Allow update for users based on user_id" ON "public"."products";
+DROP policy IF EXISTS "Allow delete for users based on user_id" ON "public"."products";
+DROP policy IF EXISTS "Allow read access for a user's own profile" ON "public"."profiles";
+DROP policy IF EXISTS "Allow update for a user's own profile" ON "public"."profiles";
+DROP policy IF EXISTS "Enable read access for all users" ON "public"."profiles";
+DROP policy IF EXISTS "Allow read access for user to their own notifications" ON "public"."notifications";
+DROP policy IF EXISTS "Allow read access for user to their own likes" ON "public"."likes";
+DROP policy IF EXISTS "Allow insert for authenticated users" ON "public"."likes";
+DROP policy IF EXISTS "Allow delete for users based on user_id" ON "public"."likes";
+DROP policy IF EXISTS "Allow read access for user to their own followers" ON "public"."followers";
+DROP policy IF EXISTS "Allow insert for authenticated users" ON "public"."followers";
+DROP policy IF EXISTS "Allow delete for users based on user_id" ON "public"."followers";
+DROP policy IF EXISTS "Enable read access for all users" ON "public"."posts";
+DROP policy IF EXISTS "Allow insert for authenticated users" ON "public"."posts";
+DROP policy IF EXISTS "Allow update for users based on user_id" ON "public"."posts";
+DROP policy IF EXISTS "Allow delete for users based on user_id" ON "public"."posts";
+DROP policy IF EXISTS "Enable read access for all users" ON "public"."comments";
+DROP policy IF EXISTS "Allow insert for authenticated users" ON "public"."comments";
+DROP policy IF EXISTS "Allow read access for user to their own donations" ON "public"."donations";
+DROP policy IF EXISTS "Allow insert for authenticated users" ON "public"."donations";
+DROP policy IF EXISTS "Enable read access for all users" ON public.competitions;
+DROP policy IF EXISTS "Enable read access for all users" ON public.internships;
+DROP POLICY IF EXISTS "Allow read access for user to their own entries" ON public.competition_entries;
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON public.competition_entries;
+DROP POLICY IF EXISTS "Allow read access to participants" ON public.chat_rooms;
+DROP POLICY IF EXISTS "Allow read access to participants" ON public.chat_participants;
+DROP POLICY IF EXISTS "Allow read access to participants" ON public.chat_messages;
+DROP POLICY IF EXISTS "Allow insert for participants" ON public.chat_messages;
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."support_tickets";
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON "public"."support_tickets";
+DROP POLICY IF EXISTS "Allow update for admins" ON "public"."support_tickets";
+DROP POLICY IF EXISTS "Enable read for admins" ON "public"."audit_log";
+DROP POLICY IF EXISTS "Enable read/write for admins" ON "public"."platform_settings";
+DROP POLICY IF EXISTS "Enable read for users of their own orders" ON public.orders;
+DROP POLICY IF EXISTS "Enable read for vendors of their own orders" ON public.orders;
+DROP POLICY IF EXISTS "Enable read for order participants" ON public.order_items;
 
--- public.profiles definition
+-- Drop Tables if they exist
+DROP TABLE IF EXISTS public.order_items;
+DROP TABLE IF EXISTS public.orders;
+DROP TABLE IF EXISTS public.donations;
+DROP TABLE IF EXISTS public.support_tickets;
+DROP TABLE IF EXISTS public.audit_log;
+DROP TABLE IF EXISTS public.platform_settings;
+DROP TABLE IF EXISTS public.competition_entries;
+DROP TABLE IF EXISTS public.competitions;
+DROP TABLE IF EXISTS public.internships;
+DROP TABLE IF EXISTS public.likes;
+DROP TABLE IF EXISTS public.comments;
+DROP TABLE IF EXISTS public.posts;
+DROP TABLE IF EXISTS public.followers;
+DROP TABLE IF EXISTS public.notifications;
+DROP TABLE IF EXISTS public.products;
+DROP TABLE IF EXISTS public.chat_messages;
+DROP TABLE IF EXISTS public.chat_participants;
+DROP TABLE IF EXISTS public.chat_rooms;
+DROP TABLE IF EXISTS public.profiles;
+
+
+-- Create profiles table
 CREATE TABLE public.profiles (
-    id uuid NOT NULL,
-    updated_at timestamp with time zone NULL,
-    full_name text NULL,
-    avatar_url text NULL,
-    bio text NULL,
-    handle text NULL,
-    role text DEFAULT 'student'::text NULL,
-    banner_url text NULL,
-    contact_number text NULL,
-    opening_hours text NULL,
-    vendor_categories jsonb NULL,
-    CONSTRAINT profiles_pkey PRIMARY KEY (id),
-    CONSTRAINT profiles_handle_key UNIQUE (handle),
-    CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE,
-    CONSTRAINT handle_length CHECK ((char_length(handle) >= 3))
+    id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name text,
+    avatar_url text,
+    handle text UNIQUE,
+    bio text,
+    role text DEFAULT 'student'::text,
+    contact_number text,
+    opening_hours text,
+    vendor_categories text[],
+    banner_url text
 );
--- RLS for profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own profile." ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update their own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
--- public.posts definition
-CREATE TABLE public.posts (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    content text NOT NULL,
-    user_id uuid NOT NULL,
-    CONSTRAINT posts_pkey PRIMARY KEY (id),
-    CONSTRAINT posts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
-);
-ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Posts are viewable by everyone." ON public.posts FOR SELECT USING (true);
-CREATE POLICY "Users can create posts." ON publicposts FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own posts." ON public.posts FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own posts." ON public.posts FOR DELETE USING (auth.uid() = user_id);
-
--- public.comments definition
-CREATE TABLE public.comments (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    post_id bigint NOT NULL,
-    user_id uuid NOT NULL,
-    content text NOT NULL,
-    CONSTRAINT comments_pkey PRIMARY KEY (id),
-    CONSTRAINT comments_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE,
-    CONSTRAINT comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
-);
-ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Comments are viewable by everyone." ON public.comments FOR SELECT USING (true);
-CREATE POLICY "Users can create comments." ON public.comments FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own comments." ON public.comments FOR DELETE USING (auth.uid() = user_id);
-
--- public.likes definition
-CREATE TABLE public.likes (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    user_id uuid NOT NULL,
-    post_id bigint NOT NULL,
-    CONSTRAINT likes_pkey PRIMARY KEY (id),
-    CONSTRAINT likes_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE,
-    CONSTRAINT likes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT likes_user_id_post_id_key UNIQUE (user_id, post_id)
-);
-ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Likes are viewable by everyone." ON public.likes FOR SELECT USING (true);
-CREATE POLICY "Users can like posts." ON public.likes FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can unlike posts." ON public.likes FOR DELETE USING (auth.uid() = user_id);
-
--- public.followers definition
-CREATE TABLE public.followers (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    follower_id uuid NOT NULL,
-    following_id uuid NOT NULL,
-    CONSTRAINT followers_pkey PRIMARY KEY (id),
-    CONSTRAINT followers_follower_id_fkey FOREIGN KEY (follower_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT followers_following_id_fkey FOREIGN KEY (following_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT followers_follower_id_following_id_key UNIQUE (follower_id, following_id)
-);
-ALTER TABLE public.followers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Follows are viewable by everyone." ON public.followers FOR SELECT USING (true);
-CREATE POLICY "Users can follow others." ON public.followers FOR INSERT WITH CHECK (auth.uid() = follower_id);
-CREATE POLICY "Users can unfollow." ON public.followers FOR DELETE USING (auth.uid() = follower_id);
-
-
--- CHAT --
+-- Create chat_rooms table
 CREATE TABLE public.chat_rooms (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    CONSTRAINT chat_rooms_pkey PRIMARY KEY (id)
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 ALTER TABLE public.chat_rooms ENABLE ROW LEVEL SECURITY;
 
+-- Create chat_participants table
 CREATE TABLE public.chat_participants (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    room_id uuid NOT NULL,
-    user_id uuid NOT NULL,
-    CONSTRAINT chat_participants_pkey PRIMARY KEY (id),
-    CONSTRAINT chat_participants_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.chat_rooms(id) ON DELETE CASCADE,
-    CONSTRAINT chat_participants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT chat_participants_room_id_user_id_key UNIQUE (room_id, user_id)
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    room_id uuid NOT NULL REFERENCES public.chat_rooms(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    UNIQUE (room_id, user_id)
 );
 ALTER TABLE public.chat_participants ENABLE ROW LEVEL SECURITY;
 
+-- Create chat_messages table
 CREATE TABLE public.chat_messages (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    room_id uuid NOT NULL,
-    user_id uuid NOT NULL,
-    content text NOT NULL,
-    CONSTRAINT chat_messages_pkey PRIMARY KEY (id),
-    CONSTRAINT chat_messages_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.chat_rooms(id) ON DELETE CASCADE,
-    CONSTRAINT chat_messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    content text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    room_id uuid REFERENCES public.chat_rooms(id) ON DELETE CASCADE,
+    user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
--- Chat RLS Policies
-CREATE POLICY "Users can view rooms they are a participant in." ON public.chat_rooms FOR SELECT USING (id IN (SELECT room_id FROM public.chat_participants WHERE user_id = auth.uid()));
-CREATE POLICY "Users can view participants of rooms they are in." ON public.chat_participants FOR SELECT USING (room_id IN (SELECT room_id FROM public.chat_participants WHERE user_id = auth.uid()));
-CREATE POLICY "Users can view messages in rooms they are in." ON public.chat_messages FOR SELECT USING (room_id IN (SELECT room_id FROM public.chat_participants WHERE user_id = auth.uid()));
-CREATE POLICY "Users can insert messages in rooms they are in." ON public.chat_messages FOR INSERT WITH CHECK (room_id IN (SELECT room_id FROM public.chat_participants WHERE user_id = auth.uid()));
-CREATE POLICY "Users can insert themselves into a chat room." ON public.chat_participants FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Authenticated users can create chat rooms." ON public.chat_rooms FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-
--- PRODUCTS & ORDERS --
+-- Create products table
 CREATE TABLE public.products (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
     name text NOT NULL,
-    description text NOT NULL,
-    price numeric NOT NULL,
+    price real NOT NULL,
+    image_url text,
     category text NOT NULL,
-    image_url text NULL,
-    seller_id uuid NOT NULL,
-    CONSTRAINT products_pkey PRIMARY KEY (id),
-    CONSTRAINT products_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+    seller_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    description text
 );
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Products are viewable by everyone." ON public.products FOR SELECT USING (true);
-CREATE POLICY "Users can create products." ON public.products FOR INSERT WITH CHECK (auth.uid() = seller_id);
-CREATE POLICY "Users can update their own products." ON public.products FOR UPDATE USING (auth.uid() = seller_id);
-CREATE POLICY "Users can delete their own products." ON public.products FOR DELETE USING (auth.uid() = seller_id);
 
-CREATE TABLE public.orders (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    buyer_id uuid NOT NULL,
-    vendor_id uuid NOT NULL,
-    total_amount numeric NOT NULL,
-    status text DEFAULT 'Pending'::text,
-    razorpay_payment_id text,
-    CONSTRAINT orders_pkey PRIMARY KEY (id),
-    CONSTRAINT orders_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT orders_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+-- Create notifications table
+CREATE TABLE public.notifications (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    sender_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    type text NOT NULL,
+    post_id integer,
+    is_read boolean DEFAULT false
 );
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own orders." ON public.orders FOR SELECT USING (auth.uid() = buyer_id OR auth.uid() = vendor_id);
-CREATE POLICY "Users can create orders." ON public.orders FOR INSERT WITH CHECK (auth.uid() = buyer_id);
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
-
-CREATE TABLE public.order_items (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    order_id bigint NOT NULL,
-    product_id bigint NOT NULL,
-    quantity integer NOT NULL,
-    price numeric NOT NULL,
-    CONSTRAINT order_items_pkey PRIMARY KEY (id),
-    CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE,
-    CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL
+-- Create followers table
+CREATE TABLE public.followers (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    follower_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    following_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    UNIQUE(follower_id, following_id)
 );
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view items in their orders." ON public.order_items FOR SELECT USING (
-    (SELECT buyer_id FROM public.orders WHERE id = order_id) = auth.uid() OR
-    (SELECT vendor_id FROM public.orders WHERE id = order_id) = auth.uid()
+ALTER TABLE public.followers ENABLE ROW LEVEL SECURITY;
+
+-- Create posts table
+CREATE TABLE public.posts (
+    id integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    content text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE
 );
-CREATE POLICY "Users can insert order items for their own orders." ON public.order_items FOR INSERT WITH CHECK ((SELECT buyer_id FROM public.orders WHERE id = order_id) = auth.uid());
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 
+-- Create comments table
+CREATE TABLE public.comments (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    content text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    post_id integer NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE
+);
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 
--- DONATIONS --
+-- Create likes table
+CREATE TABLE public.likes (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    post_id integer NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+    UNIQUE(user_id, post_id)
+);
+ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
+
+-- Create donations table
 CREATE TABLE public.donations (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    user_id uuid NOT NULL,
-    amount numeric NOT NULL,
-    currency text,
-    razorpay_payment_id text,
-    CONSTRAINT donations_pkey PRIMARY KEY (id),
-    CONSTRAINT donations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE SET NULL
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid REFERENCES public.profiles(id),
+    amount integer NOT NULL,
+    currency character varying(3) NOT NULL,
+    razorpay_payment_id text UNIQUE
 );
 ALTER TABLE public.donations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Donations are publicly viewable." ON public.donations FOR SELECT USING (true);
-CREATE POLICY "Users can make donations." ON public.donations FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- COMPETITIONS, INTERNSHIPS, WORKSPACE --
+-- Create competitions table
 CREATE TABLE public.competitions (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
     title text NOT NULL,
-    description text NOT NULL,
-    prize numeric NOT NULL,
-    deadline timestamp with time zone NOT NULL,
-    entry_fee numeric DEFAULT 0,
+    description text,
+    prize integer,
+    entry_fee integer DEFAULT 0,
+    deadline timestamp with time zone,
     image_url text,
-    details_pdf_url text,
-    CONSTRAINT competitions_pkey PRIMARY KEY (id)
+    details_pdf_url text
 );
 ALTER TABLE public.competitions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Competitions are publicly viewable." ON public.competitions FOR SELECT USING (true);
-CREATE POLICY "Admins can manage competitions." ON public.competitions FOR ALL USING ( (SELECT profiles.role FROM public.profiles WHERE profiles.id = auth.uid()) = 'admin'::text );
 
-CREATE TABLE public.internships (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    role text NOT NULL,
-    company text NOT NULL,
-    stipend integer NOT NULL,
-    stipend_period text,
-    location text NOT NULL,
-    deadline timestamp with time zone NOT NULL,
-    image_url text,
-    details_pdf_url text,
-    CONSTRAINT internships_pkey PRIMARY KEY (id)
-);
-ALTER TABLE public.internships ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Internships are publicly viewable." ON public.internships FOR SELECT USING (true);
-CREATE POLICY "Admins can manage internships." ON public.internships FOR ALL USING ( (SELECT profiles.role FROM public.profiles WHERE profiles.id = auth.uid()) = 'admin'::text );
-
-
+-- Create competition_entries table
 CREATE TABLE public.competition_entries (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    competition_id bigint NOT NULL,
-    user_id uuid NOT NULL,
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    competition_id bigint NOT NULL REFERENCES public.competitions(id) ON DELETE CASCADE,
     razorpay_payment_id text,
-    CONSTRAINT competition_entries_pkey PRIMARY KEY (id),
-    CONSTRAINT competition_entries_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE,
-    CONSTRAINT competition_entries_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+    UNIQUE(user_id, competition_id)
 );
 ALTER TABLE public.competition_entries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own entries." ON public.competition_entries FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can enter competitions." ON public.competition_entries FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Admins can view all entries." ON public.competition_entries FOR SELECT USING ( (SELECT profiles.role FROM public.profiles WHERE profiles.id = auth.uid()) = 'admin'::text );
 
--- OTHER --
+-- Create internships table
+CREATE TABLE public.internships (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    role text,
+    company text,
+    stipend integer,
+    stipend_period text,
+    location text,
+    deadline timestamp with time zone,
+    image_url text,
+    details_pdf_url text,
+    description text
+);
+ALTER TABLE public.internships ENABLE ROW LEVEL SECURITY;
+
+-- Create support_tickets table
 CREATE TABLE public.support_tickets (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    user_id uuid NOT NULL,
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     category text NOT NULL,
     subject text NOT NULL,
     description text NOT NULL,
     status text DEFAULT 'Open'::text,
     priority text DEFAULT 'Medium'::text,
-    screenshot_url text,
-    CONSTRAINT support_tickets_pkey PRIMARY KEY (id),
-    CONSTRAINT support_tickets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+    screenshot_url text
 );
 ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own tickets." ON public.support_tickets FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can create support tickets." ON public.support_tickets FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Admins can manage all tickets." ON public.support_tickets FOR ALL USING ( (SELECT profiles.role FROM public.profiles WHERE profiles.id = auth.uid()) = 'admin'::text );
 
-
-CREATE TABLE public.platform_settings (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    key text NOT NULL UNIQUE,
-    value jsonb,
-    CONSTRAINT platform_settings_pkey PRIMARY KEY (id)
-);
-ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Settings are publicly viewable." ON public.platform_settings FOR SELECT USING (true);
-CREATE POLICY "Admins can manage settings." ON public.platform_settings FOR ALL USING ( (SELECT profiles.role FROM public.profiles WHERE profiles.id = auth.uid()) = 'admin'::text );
--- Insert monetization settings if they don't exist
-INSERT INTO public.platform_settings (key, value)
-SELECT 'monetization', '{"charge_for_posts": false, "post_price": 10, "start_date": null}'
-WHERE NOT EXISTS (SELECT 1 FROM public.platform_settings WHERE key = 'monetization');
-
-
+-- Create audit_log table
 CREATE TABLE public.audit_log (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    admin_id uuid NOT NULL,
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    admin_id uuid REFERENCES public.profiles(id),
     action text NOT NULL,
-    details text,
-    CONSTRAINT audit_log_pkey PRIMARY KEY (id),
-    CONSTRAINT audit_log_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.profiles(id) ON DELETE SET NULL
+    details text
 );
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins can view logs." ON public.audit_log FOR SELECT USING ( (SELECT profiles.role FROM public.profiles WHERE profiles.id = auth.uid()) = 'admin'::text );
 
-
-CREATE TABLE public.app_config (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
+-- Create platform_settings table
+CREATE TABLE public.platform_settings (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
     key text NOT NULL UNIQUE,
-    value text,
-    CONSTRAINT app_config_pkey PRIMARY KEY (id)
+    value jsonb,
+    description text
 );
-ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Config is publicly viewable." ON public.app_config FOR SELECT USING (true);
-CREATE POLICY "Admins can manage config." ON public.app_config FOR ALL USING ( (SELECT profiles.role FROM public.profiles WHERE profiles.id = auth.uid()) = 'admin'::text );
--- Insert donation goal if it doesn't exist
-INSERT INTO public.app_config (key, value)
-SELECT 'donation_goal', '50000'
-WHERE NOT EXISTS (SELECT 1 FROM public.app_config WHERE key = 'donation_goal');
+ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
 
--- NOTIFICATIONS TABLE
-CREATE TABLE public.notifications (
-    id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    user_id uuid NOT NULL,
-    sender_id uuid NOT NULL,
-    type text NOT NULL,
-    post_id bigint NULL,
-    is_read boolean DEFAULT false,
-    CONSTRAINT notifications_pkey PRIMARY KEY (id),
-    CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT notifications_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT notifications_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE
+-- Create orders table
+CREATE TABLE public.orders (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    buyer_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    vendor_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    total_amount real NOT NULL,
+    razorpay_payment_id text UNIQUE,
+    status text DEFAULT 'Pending'::text
 );
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own notifications." ON public.notifications FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can update their own notifications." ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+
+-- Create order_items table
+CREATE TABLE public.order_items (
+    id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    order_id bigint NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+    product_id bigint NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    quantity integer NOT NULL,
+    price real NOT NULL
+);
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+
+
+-- POLICIES --
+
+-- Profiles
+CREATE POLICY "Enable read access for all users" ON "public"."profiles" FOR SELECT USING (true);
+CREATE POLICY "Allow update for a user's own profile" ON "public"."profiles" FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Chat
+CREATE POLICY "Allow read access to participants" ON "public"."chat_rooms" FOR SELECT USING (EXISTS (SELECT 1 FROM public.chat_participants WHERE chat_participants.room_id = chat_rooms.id AND chat_participants.user_id = auth.uid()));
+CREATE POLICY "Allow read access to participants" ON "public"."chat_participants" FOR SELECT USING (EXISTS (SELECT 1 FROM public.chat_participants cp2 WHERE cp2.room_id = chat_participants.room_id AND cp2.user_id = auth.uid()));
+CREATE POLICY "Allow read access to participants" ON "public"."chat_messages" FOR SELECT USING (EXISTS (SELECT 1 FROM public.chat_participants WHERE chat_participants.room_id = chat_messages.room_id AND chat_participants.user_id = auth.uid()));
+CREATE POLICY "Allow insert for participants" ON "public"."chat_messages" FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.chat_participants WHERE chat_participants.room_id = chat_messages.room_id AND chat_participants.user_id = auth.uid()));
+
+-- Products
+CREATE POLICY "Allow read access to all users" ON "public"."products" FOR SELECT USING (true);
+CREATE POLICY "Allow insert for authenticated users" ON "public"."products" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for users based on user_id" ON "public"."products" FOR UPDATE USING (auth.uid() = seller_id);
+CREATE POLICY "Allow delete for users based on user_id" ON "public"."products" FOR DELETE USING (auth.uid() = seller_id);
+
+-- Notifications
+CREATE POLICY "Allow read access for user to their own notifications" ON "public"."notifications" FOR SELECT USING (auth.uid() = user_id);
+
+-- Followers
+CREATE POLICY "Allow read access for user to their own followers" ON "public"."followers" FOR SELECT USING (true);
+CREATE POLICY "Allow insert for authenticated users" ON "public"."followers" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for users based on user_id" ON "public"."followers" FOR DELETE USING (auth.uid() = follower_id);
+
+-- Posts
+CREATE POLICY "Enable read access for all users" ON "public"."posts" FOR SELECT USING (true);
+CREATE POLICY "Allow insert for authenticated users" ON "public"."posts" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for users based on user_id" ON "public"."posts" FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Allow delete for users based on user_id" ON "public"."posts" FOR DELETE USING (auth.uid() = user_id);
+
+-- Comments
+CREATE POLICY "Enable read access for all users" ON "public"."comments" FOR SELECT USING (true);
+CREATE POLICY "Allow insert for authenticated users" ON "public"."comments" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Likes
+CREATE POLICY "Allow read access for user to their own likes" ON "public"."likes" FOR SELECT USING (true);
+CREATE POLICY "Allow insert for authenticated users" ON "public"."likes" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for users based on user_id" ON "public"."likes" FOR DELETE USING (auth.uid() = user_id);
+
+-- Donations
+CREATE POLICY "Allow read access for user to their own donations" ON "public"."donations" FOR SELECT USING (auth.uid() = user_id OR get_user_role() = 'admin');
+CREATE POLICY "Allow insert for authenticated users" ON "public"."donations" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Competitions/Internships
+CREATE POLICY "Enable read access for all users" ON public.competitions FOR SELECT USING (true);
+CREATE POLICY "Enable read access for all users" ON public.internships FOR SELECT USING (true);
+CREATE POLICY "Allow read access for user to their own entries" ON public.competition_entries FOR SELECT USING (auth.uid() = user_id OR get_user_role() = 'admin');
+CREATE POLICY "Allow insert for authenticated users" ON public.competition_entries FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Support Tickets
+CREATE POLICY "Enable read access for all users" ON "public"."support_tickets" FOR SELECT USING (get_user_role() = 'admin' OR auth.uid() = user_id);
+CREATE POLICY "Allow insert for authenticated users" ON "public"."support_tickets" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for admins" ON "public"."support_tickets" FOR UPDATE USING (get_user_role() = 'admin');
+
+-- Admin
+CREATE POLICY "Enable read for admins" ON "public"."audit_log" FOR SELECT USING (get_user_role() = 'admin');
+CREATE POLICY "Enable read/write for admins" ON "public"."platform_settings" FOR ALL USING (get_user_role() = 'admin');
+
+-- Orders
+CREATE POLICY "Enable read for users of their own orders" ON public.orders FOR SELECT USING (auth.uid() = buyer_id);
+CREATE POLICY "Enable read for vendors of their own orders" ON public.orders FOR SELECT USING (auth.uid() = vendor_id);
+CREATE POLICY "Enable read for order participants" ON public.order_items FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM public.orders
+        WHERE orders.id = order_items.order_id AND (orders.buyer_id = auth.uid() OR orders.vendor_id = auth.uid())
+    )
+);
 
 
 -- FUNCTIONS --
 
--- Function to create a profile for a new user.
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (id, full_name, handle, role, vendor_categories)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'handle',
-    new.raw_user_meta_data->>'role',
-    new.raw_user_meta_data->'vendor_categories'
-  );
-  return new;
-end;
+-- get_user_role function
+CREATE OR REPLACE FUNCTION public.get_user_role()
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT raw_user_meta_data->>'role' FROM auth.users WHERE id = auth.uid();
 $$;
--- Trigger for new user
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
 
--- Function to get or create a chat room between two users
+
+-- get_or_create_chat_room function
 CREATE OR REPLACE FUNCTION public.get_or_create_chat_room(p_user_id1 uuid, p_user_id2 uuid)
 RETURNS uuid
 LANGUAGE plpgsql
@@ -387,13 +371,11 @@ BEGIN
     SELECT room_id INTO v_room_id
     FROM chat_participants p1
     JOIN chat_participants p2 ON p1.room_id = p2.room_id
-    WHERE p1.user_id = p_user_id1 AND p2.user_id = p_user_id2
-    -- Check for rooms with exactly two participants to avoid group chat conflicts
-    AND (SELECT count(*) FROM chat_participants WHERE room_id = p1.room_id) = 2;
+    WHERE p1.user_id = p_user_id1 AND p2.user_id = p_user_id2;
 
-    -- If no room is found, create one
+    -- If no room is found, create a new one
     IF v_room_id IS NULL THEN
-        INSERT INTO chat_rooms (id) VALUES (DEFAULT) RETURNING id INTO v_room_id;
+        INSERT INTO chat_rooms DEFAULT VALUES RETURNING id INTO v_room_id;
         INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id1);
         INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id2);
     END IF;
@@ -403,86 +385,63 @@ END;
 $$;
 
 
--- Function to get last message for multiple rooms
+-- get_last_messages_for_rooms function
 CREATE OR REPLACE FUNCTION public.get_last_messages_for_rooms(p_room_ids uuid[])
 RETURNS TABLE(room_id uuid, content text, created_at timestamptz)
 LANGUAGE sql
-STABLE
 AS $$
     WITH ranked_messages AS (
-        SELECT
-            m.room_id,
-            m.content,
-            m.created_at,
-            ROW_NUMBER() OVER(PARTITION BY m.room_id ORDER BY m.created_at DESC) as rn
-        FROM
-            chat_messages m
-        WHERE
-            m.room_id = ANY(p_room_ids)
+      SELECT
+        m.room_id,
+        m.content,
+        m.created_at,
+        ROW_NUMBER() OVER(PARTITION BY m.room_id ORDER BY m.created_at DESC) as rn
+      FROM chat_messages m
+      WHERE m.room_id = ANY(p_room_ids)
     )
     SELECT
-        rm.room_id,
-        rm.content,
-        rm.created_at
-    FROM
-        ranked_messages rm
-    WHERE
-        rm.rn = 1;
+      rm.room_id,
+      rm.content,
+      rm.created_at
+    FROM ranked_messages rm
+    WHERE rm.rn = 1;
 $$;
 
--- Function to create notifications on new follower
-CREATE OR REPLACE FUNCTION public.create_follower_notification()
-RETURNS TRIGGER
+
+-- handle_new_user function to create a profile
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
-    INSERT INTO public.notifications(user_id, sender_id, type)
-    VALUES(NEW.following_id, NEW.follower_id, 'new_follower');
-    RETURN NEW;
+    INSERT INTO public.profiles (id, full_name, role, handle, vendor_categories)
+    VALUES (
+        new.id,
+        new.raw_user_meta_data->>'full_name',
+        new.raw_user_meta_data->>'role',
+        COALESCE(new.raw_user_meta_data->>'handle', split_part(new.email, '@', 1) || '_' || (random() * 1000)::int),
+        (select array_agg(elem::text) from jsonb_array_elements_text(new.raw_user_meta_data->'vendor_categories'))
+    );
+    RETURN new;
 END;
 $$;
--- Trigger for new follower
-CREATE TRIGGER on_new_follower
-    AFTER INSERT ON public.followers
-    FOR EACH ROW EXECUTE PROCEDURE public.create_follower_notification();
-
--- Function to create notifications for followers on new post
-CREATE OR REPLACE FUNCTION public.create_post_notifications()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO public.notifications(user_id, sender_id, type, post_id)
-    SELECT
-        follower_id, -- The user to be notified is the follower
-        NEW.user_id, -- The sender of the notification is the post author
-        'new_post',
-        NEW.id
-    FROM
-        public.followers
-    WHERE
-        following_id = NEW.user_id; -- Find all users who follow the post author
-    RETURN NEW;
-END;
-$$;
--- Trigger for new post
-CREATE TRIGGER on_new_post
-    AFTER INSERT ON public.posts
-    FOR EACH ROW EXECUTE PROCEDURE public.create_post_notifications();
 
 
--- STORAGE POLICIES
--- Give users access to folders based on their user_id
-CREATE POLICY "Allow access to own folder" ON storage.objects FOR SELECT USING (bucket_id = 'avatars' AND auth.uid() = (storage.foldername(name))[1]::uuid);
-CREATE POLICY "Allow insert to own folder" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() = (storage.foldername(name))[1]::uuid);
-CREATE POLICY "Allow access to own product folder" ON storage.objects FOR SELECT USING (bucket_id = 'products' AND auth.uid() = (storage.foldername(name))[1]::uuid);
-CREATE POLICY "Allow insert to own product folder" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'products' AND auth.uid() = (storage.foldername(name))[1]::uuid);
-CREATE POLICY "Allow access to own ticket folder" ON storage.objects FOR SELECT USING (bucket_id = 'support-tickets' AND auth.uid() = (storage.foldername(name))[1]::uuid);
-CREATE POLICY "Allow insert to own ticket folder" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'support-tickets' AND auth.uid() = (storage.foldername(name))[1]::uuid);
+-- TRIGGERS --
 
--- Public access to certain buckets
-CREATE POLICY "Public access to competitions" ON storage.objects FOR SELECT USING (bucket_id = 'competitions');
-CREATE POLICY "Public access to internships" ON storage.objects FOR SELECT USING (bucket_id = 'internships');
-CREATE POLICY "Public read access to products" ON storage.objects FOR SELECT USING (bucket_id = 'products');
-CREATE POLICY "Public read access to avatars" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
-CREATE POLICY "Public read access to support-tickets" ON storage.objects FOR SELECT USING (bucket_id = 'support-tickets');
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- Create the trigger
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+-- Initial Data
+INSERT INTO public.platform_settings (key, value, description)
+VALUES 
+  ('monetization', '{"charge_for_posts": false, "post_price": 10, "start_date": null}', 'Settings for charging users for marketplace listings.'),
+  ('donation_goal', '50000', 'The monthly donation goal for the platform.')
+ON CONFLICT (key) DO NOTHING;

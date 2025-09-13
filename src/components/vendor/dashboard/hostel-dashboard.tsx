@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,7 @@ export default function HostelDashboard() {
                     created_at,
                     total_amount,
                     buyer_id,
-                    buyer:profiles(full_name),
+                    buyer:profiles!buyer_id(full_name),
                     order_items!inner(
                         products!inner(name, category)
                     )

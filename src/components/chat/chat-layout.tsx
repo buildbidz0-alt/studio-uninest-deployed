@@ -41,7 +41,7 @@ export default function ChatLayout() {
 
     if (participantError) {
       console.error('Error fetching user rooms:', participantError);
-      toast({ variant: 'destructive', title: 'Error loading chats' });
+      toast({ variant: 'destructive', title: 'Error loading chats', description: participantError.message });
       setLoadingRooms(false);
       return;
     }
