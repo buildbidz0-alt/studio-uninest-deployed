@@ -9,8 +9,71 @@ import { runQuery } from '@/app/admin/sql/actions';
 import { Loader2, Play, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+const createSupportTicketsTableQuery = `
+CREATE TABLE support_tickets (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    category TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'Open' NOT NULL, -- Open, In Progress, Closed, Archived
+    priority TEXT DEFAULT 'Medium' NOT NULL, -- Low, Medium, High
+    screenshot_url TEXT
+);
+
+-- Enable RLS
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to insert their own tickets
+CREATE POLICY "Allow individual user to insert their own tickets"
+ON support_tickets
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- Allow users to view their own tickets
+CREATE POLICY "Allow individual user to view their own tickets"
+ON support_tickets
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Allow admin to perform all operations
+CREATE POLICY "Allow admin full access"
+ON support_tickets
+FOR ALL
+USING (public.is_admin(auth.uid()))
+WITH CHECK (public.is_admin(auth.uid()));
+
+-- Create storage bucket for screenshots
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('support-tickets', 'support-tickets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create policy for users to upload to their own folder
+CREATE POLICY "Allow users to upload screenshots to their own folder"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (
+  bucket_id = 'support-tickets' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Create policy for users to view their own screenshots
+CREATE POLICY "Allow users to view their own screenshots"
+ON storage.objects FOR SELECT TO authenticated
+USING (
+  bucket_id = 'support-tickets' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Give admin full access to the bucket
+CREATE POLICY "Give admin full access to support-tickets bucket"
+ON storage.objects FOR ALL
+USING ( bucket_id = 'support-tickets' AND public.is_admin(auth.uid()) );
+
+`;
+
 export default function SQLEditor() {
-  const [query, setQuery] = useState('SELECT * FROM profiles LIMIT 10;');
+  const [query, setQuery] = useState(createSupportTicketsTableQuery.trim());
   const [results, setResults] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +103,7 @@ export default function SQLEditor() {
             <Textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="SELECT * FROM users;"
+              placeholder="-- Your one-time setup query is pre-filled. Click 'Run Query' to create the support_tickets table."
               className="min-h-[150px] font-mono text-sm"
             />
             <Button onClick={handleRunQuery} disabled={isLoading} className="w-full sm:w-auto">
@@ -92,7 +155,7 @@ export default function SQLEditor() {
                             </div>
                         ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground">
-                                <p>Query executed successfully, but returned no rows.</p>
+                                <p>Query executed successfully. If you ran the `CREATE TABLE` script, the 'support_tickets' table should now exist.</p>
                             </div>
                         )}
                     </>
