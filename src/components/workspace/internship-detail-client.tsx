@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import Link from 'next/link';
 
 type Internship = {
     id: number;
@@ -43,16 +44,9 @@ export default function InternshipDetailClient({ internship, initialApplicants }
     const { toast } = useToast();
     const [hasApplied, setHasApplied] = useState(false); // Placeholder state
 
-    const handleApply = () => {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to apply.'});
-            return;
-        }
-        // In a real scenario, this would trigger an application flow.
-        // For now, it's a placeholder action.
-        setHasApplied(true);
-        toast({ title: 'Application Sent!', description: `Your application for ${internship.role} has been submitted.`});
-    }
+    // In a real app, this should be checked against the database
+    // For now, we assume user hasn't applied unless they click.
+    // A more robust solution would pass the application status from the server.
 
     return (
         <div className="max-w-4xl mx-auto p-4 space-y-8">
@@ -87,9 +81,11 @@ export default function InternshipDetailClient({ internship, initialApplicants }
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-                <Button size="lg" className="flex-1" onClick={handleApply} disabled={hasApplied}>
-                    <Briefcase className="mr-2"/>
-                    {hasApplied ? 'Applied' : 'Apply Now'}
+                <Button size="lg" className="flex-1" asChild>
+                    <Link href={`/workspace/internships/${internship.id}/apply`}>
+                        <Briefcase className="mr-2"/>
+                        Apply Now
+                    </Link>
                 </Button>
                 {internship.details_pdf_url && (
                     <Button size="lg" variant="outline" className="flex-1" asChild>
