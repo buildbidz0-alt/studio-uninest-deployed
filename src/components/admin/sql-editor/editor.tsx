@@ -44,7 +44,8 @@ RETURNS TABLE(
     name text,
     avatar text,
     last_message text,
-    last_message_timestamp timestamptz
+    last_message_timestamp timestamptz,
+    unread_count bigint
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -54,6 +55,16 @@ BEGIN
             MAX(created_at) as max_created_at
         FROM chat_messages
         GROUP BY room_id
+    ),
+    unread_counts AS (
+        SELECT
+            cm.room_id,
+            COUNT(*) AS unread
+        FROM chat_messages cm
+        WHERE cm.room_id IN (SELECT room_id FROM chat_participants WHERE user_id = p_user_id)
+          AND cm.user_id != p_user_id
+          AND cm.is_read = false
+        GROUP BY cm.room_id
     )
     SELECT
         cr.id,
@@ -61,17 +72,23 @@ BEGIN
         p.full_name AS name,
         p.avatar_url AS avatar,
         cm.content AS last_message,
-        cm.created_at AS last_message_timestamp
+        cm.created_at AS last_message_timestamp,
+        COALESCE(uc.unread, 0) AS unread_count
     FROM chat_participants cp_user
     JOIN chat_rooms cr ON cp_user.room_id = cr.id
     JOIN chat_participants cp_other ON cr.id = cp_other.room_id AND cp_other.user_id != p_user_id
     JOIN profiles p ON cp_other.user_id = p.id
     LEFT JOIN last_messages lm ON cr.id = lm.room_id
     LEFT JOIN chat_messages cm ON lm.room_id = cm.room_id AND lm.max_created_at = cm.created_at
+    LEFT JOIN unread_counts uc ON cr.id = uc.room_id
     WHERE cp_user.user_id = p_user_id
-    ORDER BY cm.created_at DESC;
+    ORDER BY cm.created_at DESC NULLS LAST;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Grant permissions to authenticated users to call the functions
+GRANT EXECUTE ON FUNCTION get_or_create_chat_room TO authenticated;
+GRANT EXECUTE ON FUNCTION get_user_chat_rooms TO authenticated;
 `;
 
 export default function SQLEditor() {
