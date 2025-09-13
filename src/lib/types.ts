@@ -18,6 +18,7 @@ export type Room = {
   last_message: string | null;
   last_message_timestamp: string | null;
   unread_count: number | null;
+  room_created_at: string;
 };
 
 export type Message = {
