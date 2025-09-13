@@ -18,7 +18,10 @@ export default async function AdminUsersPage() {
     } else {
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
         
-        const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+        const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+        });
         
         if (authError) {
             console.error("Error fetching auth users:", authError);
@@ -34,12 +37,13 @@ export default async function AdminUsersPage() {
 
             users = authUsers.map(authUser => {
                 const profile = profiles?.find(p => p.id === authUser.id);
+                // Roles are now sourced from user_metadata first, which is the source of truth
                 return {
                     id: authUser.id,
                     full_name: profile?.full_name || authUser.user_metadata?.full_name || 'N/A',
                     email: authUser.email || 'N/A',
                     avatar_url: profile?.avatar_url || authUser.user_metadata?.avatar_url,
-                    role: authUser.user_metadata?.role || 'student',
+                    role: authUser.user_metadata?.role || 'student', // <-- Source of truth for role
                     created_at: authUser.created_at,
                 };
             });

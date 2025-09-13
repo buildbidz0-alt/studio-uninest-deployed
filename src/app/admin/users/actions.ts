@@ -3,6 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,14 +15,25 @@ const getSupabaseAdmin = () => {
     return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-export async function promoteUser(userId: string) {
+export async function updateUserRole(userId: string, newRole: 'co-admin' | 'student') {
+    const supabaseServer = createServerClient();
+    const { data: { user: currentUser } } = await supabaseServer.auth.getUser();
+
+    if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
+        return { error: 'Forbidden. Only the main admin can change roles.' };
+    }
+
+    if (currentUser.id === userId) {
+        return { error: 'The main admin cannot change their own role.' };
+    }
+
     try {
         const supabaseAdmin = getSupabaseAdmin();
         
         // Update auth user metadata
         const { data: { user: updatedUser }, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             userId,
-            { user_metadata: { role: 'admin' } }
+            { user_metadata: { role: newRole } }
         );
 
         if (updateError) {
@@ -31,7 +43,7 @@ export async function promoteUser(userId: string) {
         // Update public profiles table
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
-            .update({ role: 'admin' })
+            .update({ role: newRole })
             .eq('id', userId);
 
         if (profileError) {
@@ -40,7 +52,7 @@ export async function promoteUser(userId: string) {
         }
         
         revalidatePath('/admin/users');
-        return { error: null };
+        return { error: null, success: true, message: `User role updated to ${newRole}.` };
 
     } catch(e: any) {
         return { error: e.message };

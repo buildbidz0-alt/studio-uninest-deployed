@@ -15,10 +15,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, UserCog } from "lucide-react";
+import { MoreHorizontal, UserCog, UserX } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { promoteUser } from "@/app/admin/users/actions";
+import { updateUserRole } from "@/app/admin/users/actions";
+import { useAuth } from "@/hooks/use-auth";
 
 export type UserProfile = {
     id: string;
@@ -35,20 +38,30 @@ type AdminUsersContentProps = {
 }
 
 export default function AdminUsersContent({ initialUsers, initialError }: AdminUsersContentProps) {
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<UserProfile[]>(initialUsers);
     const { toast } = useToast();
     const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
-    const makeAdmin = async (userId: string) => {
+    const handleRoleChange = async (userId: string, newRole: 'co-admin' | 'student') => {
         setUpdatingUserId(userId);
-        const result = await promoteUser(userId);
+        const result = await updateUserRole(userId, newRole);
         setUpdatingUserId(null);
 
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
         } else {
-            toast({ title: 'Success', description: 'User promoted to admin successfully.' });
-            setUsers(users.map(u => u.id === userId ? { ...u, role: 'admin' } : u));
+            toast({ title: 'Success', description: result.message });
+            setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+        }
+    }
+    
+    const getRoleBadgeVariant = (role: string) => {
+        switch (role) {
+            case 'admin': return 'destructive';
+            case 'co-admin': return 'default';
+            case 'vendor': return 'secondary';
+            default: return 'outline';
         }
     }
 
@@ -96,7 +109,7 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={user.role === 'admin' ? 'default' : user.role === 'vendor' ? 'secondary' : 'outline'}>{user.role}</Badge>
+                                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
                                     </TableCell>
                                         <TableCell>
                                         {format(new Date(user.created_at), 'PPP')}
@@ -104,15 +117,25 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                                     <TableCell className="text-right">
                                         {updatingUserId === user.id ? (
                                             <Loader2 className="animate-spin" />
+                                        ) : currentUser?.id === user.id ? (
+                                            <span className="text-sm text-muted-foreground">This is you</span>
+                                        ) : user.role === 'admin' ? (
+                                            <span className="text-sm text-muted-foreground">Super Admin</span>
                                         ) : (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => makeAdmin(user.id)} disabled={user.role === 'admin'}>
+                                                    <DropdownMenuLabel>Change Role</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator/>
+                                                    <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'co-admin')} disabled={user.role === 'co-admin'}>
                                                         <UserCog className="mr-2 size-4" />
-                                                        Make Admin
+                                                        Make Co-Admin
+                                                    </DropdownMenuItem>
+                                                     <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'student')} disabled={user.role === 'student'}>
+                                                        <UserX className="mr-2 size-4" />
+                                                        Demote to Student
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
