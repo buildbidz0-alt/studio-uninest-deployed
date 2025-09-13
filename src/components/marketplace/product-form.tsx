@@ -19,7 +19,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const allCategories = ["Library", "Hostels", "Hostel Room", "Food Mess", "Cyber Café", "Books", "Other Products"];
 const studentCategories = ["Books", "Other Products"];
 
 const formSchema = z.object({
@@ -70,20 +69,16 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
             return c;
         }).flat();
         
-        const finalCategories = [...categoriesFromProfile];
-        if (!finalCategories.includes('Other Products')) {
-          finalCategories.push("Other Products");
-        }
+        const finalCategories = [...categoriesFromProfile, ...studentCategories];
         
-        // In edit mode, we must include the product's current category even if it's no longer in the vendor's profile.
-        // This prevents the form from breaking if the vendor's permissions changed.
         if (isEditMode && product?.category && !finalCategories.includes(product.category)) {
             finalCategories.push(product.category);
         }
 
         return [...new Set(finalCategories)];
     }
-    return allCategories;
+    // Fallback for admin or other roles
+    return ["Library", "Hostels", "Hostel Room", "Food Mess", "Cyber Café", "Books", "Other Products"];
   }
 
   const availableCategories = getAvailableCategories();
