@@ -129,39 +129,27 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-            // Find existing private chat rooms between the two users
-            const { data: existingRooms, error: existingError } = await supabase
-                .from('chat_room_participants')
-                .select('room_id')
-                .in('user_id', [currentUser.id, product.seller_id]);
-            
-            if (existingError) throw existingError;
+            const { data: rooms, error: roomError } = await supabase
+                .rpc('get_mutual_private_room', {
+                    user1_id: currentUser.id,
+                    user2_id: product.seller_id
+                });
 
-            const roomCounts = existingRooms.reduce((acc, { room_id }) => {
-                acc[room_id] = (acc[room_id] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>);
+            if (roomError) throw roomError;
 
-            const existingRoomId = Object.keys(roomCounts).find(roomId => roomCounts[roomId] === 2);
-
-            if (existingRoomId) {
+            if (rooms && rooms.length > 0) {
                 router.push('/chat');
                 return;
             }
 
-            // If no room exists, create one
-            const { data: newRoomId, error: createError } = await supabase.rpc('create_private_chat', {
+            const { data: newRoom, error: createError } = await supabase.rpc('create_private_chat', {
                 user1_id: currentUser.id,
                 user2_id: product.seller_id,
             });
 
             if (createError) throw createError;
 
-            if (newRoomId) {
-                router.push('/chat');
-            } else {
-                throw new Error('Could not get or create a chat room.');
-            }
+            router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
