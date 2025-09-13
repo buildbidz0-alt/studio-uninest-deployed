@@ -186,41 +186,48 @@ export default function MarketplaceContent() {
         }
 
         try {
-            // New, reliable method to find an existing private chat room.
-            const { data: rooms, error: rpcError } = await supabase.rpc('get_mutual_private_room', {
+            // Find existing private rooms with both users
+            const { data: existingRooms, error: existingRoomsError } = await supabase.rpc('get_mutual_private_room', {
                 p_user1_id: user.id,
                 p_user2_id: sellerId,
             });
 
-            if (rpcError) throw rpcError;
-
-            if (rooms && rooms.length > 0) {
-                // If a room exists, navigate to chat.
+            if (existingRoomsError) {
+                throw existingRoomsError;
+            }
+            
+            if (existingRooms && existingRooms.length > 0) {
+                // If a room already exists, just navigate to the chat page
                 router.push('/chat');
                 return;
             }
 
-            // If no room exists, create a new one.
+            // If no room exists, create a new one
             const { data: newRoomData, error: createError } = await supabase
                 .from('chat_rooms')
                 .insert({ is_private: true })
                 .select('id')
                 .single();
-            
-            if (createError) throw createError;
+
+            if (createError) {
+                throw createError;
+            }
 
             const newRoomId = newRoomData.id;
 
+            // Add both users as participants
             const { error: participantsError } = await supabase
                 .from('chat_room_participants')
                 .insert([
                     { room_id: newRoomId, user_id: user.id },
                     { room_id: newRoomId, user_id: sellerId },
                 ]);
-            
-            if (participantsError) throw participantsError;
 
-            // Navigate to chat after creating the room.
+            if (participantsError) {
+                throw participantsError;
+            }
+
+            // Navigate to chat page, which will now find the new room
             router.push('/chat');
 
         } catch (error) {
