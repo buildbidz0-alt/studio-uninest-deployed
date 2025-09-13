@@ -65,6 +65,7 @@ export default function LoginForm() {
         title: 'Login Failed',
         description: error.message,
       });
+      setIsLoading(false);
     } else {
       toast({ title: 'Welcome back!' });
       // Role-based redirection
@@ -76,9 +77,9 @@ export default function LoginForm() {
       } else {
         router.push('/');
       }
-      router.refresh();
+      // No longer need router.refresh() here, as it's handled by the AuthProvider
     }
-    setIsLoading(false);
+    // setIsLoading(false) is moved to prevent a flash of the button being enabled before navigation
   }
 
   return (

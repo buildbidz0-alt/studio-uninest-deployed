@@ -104,14 +104,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       updateUserState(session?.user || null);
+      setLoading(false);
     };
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       updateUserState(session?.user ?? null);
-      if (['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'].includes(event)) {
-        router.refresh();
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+          router.refresh();
       }
     });
 
