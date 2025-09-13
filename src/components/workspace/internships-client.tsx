@@ -70,41 +70,38 @@ export default function InternshipsClient() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {internships.length > 0 ? (
             internships.map((internship) => (
-            <Card key={internship.id} className="flex flex-col">
-                <CardHeader>
-                {internship.image_url && (
-                    <div className="relative h-40 mb-4 rounded-md overflow-hidden">
-                        <Image src={internship.image_url} alt={internship.company} fill objectFit="cover" data-ai-hint="company logo" />
+            <Link key={internship.id} href={`/workspace/internships/${internship.id}`} className="flex">
+                <Card className="flex flex-col w-full transition-shadow hover:shadow-lg">
+                    <CardHeader>
+                    {internship.image_url && (
+                        <div className="relative h-40 mb-4 rounded-md overflow-hidden">
+                            <Image src={internship.image_url} alt={internship.company} fill objectFit="cover" data-ai-hint="company logo" />
+                        </div>
+                    )}
+                    <CardTitle className="flex items-center gap-2">
+                        <Briefcase className="size-5 text-sky-500"/>
+                        {internship.role}
+                    </CardTitle>
+                    <CardDescription className="pt-2 flex items-center gap-2">
+                        <Building className="size-4"/>{internship.company}
+                    </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow space-y-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <IndianRupee className="size-4" />
+                        <span>Stipend: {internship.stipend > 0 ? <span className="font-semibold text-foreground">₹{internship.stipend.toLocaleString()}/{internship.stipend_period}</span> : <Badge variant="secondary">Unpaid</Badge>}</span>
                     </div>
-                )}
-                <CardTitle className="flex items-center gap-2">
-                    <Briefcase className="size-5 text-sky-500"/>
-                    {internship.role}
-                </CardTitle>
-                <CardDescription className="pt-2 flex items-center gap-2">
-                    <Building className="size-4"/>{internship.company}
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <IndianRupee className="size-4" />
-                    <span>Stipend: {internship.stipend > 0 ? <span className="font-semibold text-foreground">₹{internship.stipend.toLocaleString()}/{internship.stipend_period}</span> : <Badge variant="secondary">Unpaid</Badge>}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="size-4" />
-                    <span>Apply by: <span className="font-semibold text-foreground">{new Date(internship.deadline).toLocaleDateString()}</span></span>
-                </div>
-                <Badge>{internship.location}</Badge>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center">
-                    {internship.details_pdf_url ? (
-                        <Button variant="outline" asChild>
-                            <Link href={internship.details_pdf_url} target="_blank">View Details (PDF)</Link>
-                        </Button>
-                    ) : <div></div>}
-                    <Button>Apply Now</Button>
-                </CardFooter>
-            </Card>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="size-4" />
+                        <span>Apply by: <span className="font-semibold text-foreground">{new Date(internship.deadline).toLocaleDateString()}</span></span>
+                    </div>
+                    <Badge>{internship.location}</Badge>
+                    </CardContent>
+                    <CardFooter>
+                       <Button className="w-full" variant="outline">View Details</Button>
+                    </CardFooter>
+                </Card>
+            </Link>
             ))
         ) : (
             <div className="text-center text-muted-foreground py-16 md:col-span-3">
