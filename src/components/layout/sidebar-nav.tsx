@@ -1,6 +1,7 @@
 
 
 
+
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -18,7 +19,6 @@ const mainNavItems = [
   { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag, roles: ['student', 'guest', 'vendor', 'admin'] },
   { href: '/workspace', label: 'Workspace', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
   { href: '/notes', label: 'Study Hub', icon: BookOpen, roles: ['student', 'vendor', 'guest', 'admin'] },
-  { href: '/ai/chat', label: 'AI Assistant', icon: Sparkles, roles: ['student', 'vendor', 'guest', 'admin'] },
 ];
 
 const secondaryNavItems = [
@@ -47,13 +47,7 @@ export function SidebarNav() {
     return items
       .filter(item => item.roles.includes(userRole))
       .map(item => {
-        let isActive = pathname.startsWith(item.href) && item.href !== '/';
-        if (item.href === '/social') {
-            isActive = pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat');
-        }
-        if (item.href === '/ai/chat') {
-            isActive = pathname.startsWith('/ai/chat');
-        }
+        const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
         return (
             <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
@@ -74,23 +68,8 @@ export function SidebarNav() {
   
   return (
     <SidebarMenu>
-       <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname === '/'}
-            className="font-headline"
-            onClick={handleLinkClick}
-          >
-            <Link href={'/'}>
-              <Home className="size-5" />
-              <span>Home</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-
-      {renderNavItems(mainNavItems.filter(i => i.href !== '/'))}
+      {renderNavItems(mainNavItems)}
       
-
       <SidebarMenuItem>
         <Separator className="my-2" />
       </SidebarMenuItem>
@@ -181,9 +160,6 @@ export function MobileBottomNav() {
 
           if (item.label === 'Profile') {
             isActive = pathname.startsWith('/profile') || pathname.startsWith('/settings');
-          }
-           if (item.href === '/social') {
-            isActive = pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat');
           }
 
           return (
