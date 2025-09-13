@@ -150,27 +150,39 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         }
 
         try {
-            const { data: rooms, error: roomError } = await supabase
-                .rpc('get_mutual_private_room', {
-                    user1_id: currentUser.id,
-                    user2_id: hostel.seller_id
-                });
+            const { data: rooms, error: rpcError } = await supabase.rpc('get_mutual_private_room', {
+                p_user1_id: currentUser.id,
+                p_user2_id: hostel.seller_id,
+            });
 
-            if (roomError) throw roomError;
+            if (rpcError) throw rpcError;
 
             if (rooms && rooms.length > 0) {
                 router.push('/chat');
                 return;
             }
 
-            const { data: newRoom, error: createError } = await supabase.rpc('create_private_chat', {
-                user1_id: currentUser.id,
-                user2_id: hostel.seller_id,
-            });
+            const { data: newRoomData, error: createError } = await supabase
+                .from('chat_rooms')
+                .insert({ is_private: true })
+                .select('id')
+                .single();
 
             if (createError) throw createError;
 
+            const newRoomId = newRoomData.id;
+
+            const { error: participantsError } = await supabase
+                .from('chat_room_participants')
+                .insert([
+                    { room_id: newRoomId, user_id: currentUser.id },
+                    { room_id: newRoomId, user_id: hostel.seller_id },
+                ]);
+
+            if (participantsError) throw participantsError;
+            
             router.push('/chat');
+
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });

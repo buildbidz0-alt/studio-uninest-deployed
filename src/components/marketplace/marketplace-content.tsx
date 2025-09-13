@@ -186,16 +186,13 @@ export default function MarketplaceContent() {
         }
 
         try {
-            // Find a private room that already exists between the two users.
-            const { data: rooms, error: roomError } = await supabase
-                .rpc('get_mutual_private_room', {
-                    user1_id: user.id,
-                    user2_id: sellerId
-                });
+            // New, reliable method to find an existing private chat room.
+            const { data: rooms, error: rpcError } = await supabase.rpc('get_mutual_private_room', {
+                p_user1_id: user.id,
+                p_user2_id: sellerId,
+            });
 
-            if (roomError) {
-                throw roomError;
-            }
+            if (rpcError) throw rpcError;
 
             if (rooms && rooms.length > 0) {
                 // If a room exists, navigate to chat.
@@ -204,14 +201,24 @@ export default function MarketplaceContent() {
             }
 
             // If no room exists, create a new one.
-            const { data: newRoom, error: createError } = await supabase.rpc('create_private_chat', {
-                user1_id: user.id,
-                user2_id: sellerId,
-            });
+            const { data: newRoomData, error: createError } = await supabase
+                .from('chat_rooms')
+                .insert({ is_private: true })
+                .select('id')
+                .single();
+            
+            if (createError) throw createError;
 
-            if (createError) {
-                throw createError;
-            }
+            const newRoomId = newRoomData.id;
+
+            const { error: participantsError } = await supabase
+                .from('chat_room_participants')
+                .insert([
+                    { room_id: newRoomId, user_id: user.id },
+                    { room_id: newRoomId, user_id: sellerId },
+                ]);
+            
+            if (participantsError) throw participantsError;
 
             // Navigate to chat after creating the room.
             router.push('/chat');
