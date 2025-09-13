@@ -36,22 +36,23 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
+    // This is the critical authorization logic.
+    // We MUST wait for the auth state to finish loading before making a decision.
     if (!loading) {
-      // Simple, robust authorization logic
       if (role === 'vendor') {
+        // If the user is a vendor, they are authorized.
         setIsAuthorized(true);
-      } else if (pathname.startsWith('/vendor')) {
-        // If a non-vendor tries to access a vendor-specific page, redirect them.
-        router.push('/');
       } else {
-        // For non-vendor pages (like /settings), let other layouts handle it.
-        setIsAuthorized(true);
+        // If the user is not a vendor, they should not be in this layout.
+        // Redirect them to the home page.
+        router.push('/');
       }
     }
-  }, [role, loading, router, pathname]);
+  }, [role, loading, router]);
   
-  // This loading state specifically protects the /vendor routes
-  if (pathname.startsWith('/vendor') && (loading || !isAuthorized)) {
+  // While loading or before authorization is confirmed, show a loading screen.
+  // This prevents rendering the page content incorrectly before the redirect can happen.
+  if (loading || !isAuthorized) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="size-8 animate-spin" />
@@ -60,13 +61,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  // If the user is authorized but not on a vendor page (e.g. /settings),
-  // we just render the children without the vendor layout.
-  // The main layout will handle these pages.
-  if (!pathname.startsWith('/vendor/')) {
-    return <>{children}</>;
-  }
-
+  // Once authorized, render the full vendor layout.
   return (
     <SidebarProvider>
       <Sidebar>
