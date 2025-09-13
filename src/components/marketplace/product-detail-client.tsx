@@ -123,17 +123,24 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
             toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
             return;
         }
-    
+         if (currentUser.id === product.seller_id) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You cannot start a chat with yourself.' });
+            return;
+        }
+
         try {
-            // Step 1: Check if a room already exists with the seller.
-            const { data, error: rpcError } = await supabase.rpc('get_chat_room_with_user', {
-                p_user_id: product.seller_id
+            // Step 1: Check if a room already exists.
+            const { data: existingRooms, error: rpcError } = await supabase.rpc('get_chat_rooms_for_user');
+
+            if (rpcError) throw rpcError;
+            
+            const existingRoom = existingRooms.find((room: any) => {
+                return room.participants.some((p: any) => p.user_id === currentUser.id) &&
+                       room.participants.some((p: any) => p.user_id === product.seller_id);
             });
     
-            if (rpcError) throw rpcError;
-    
-            // If room exists, just navigate to chat
-            if (data && data.length > 0) {
+            if (existingRoom) {
+                // If room exists, just navigate to chat
                 router.push('/chat');
                 return;
             }

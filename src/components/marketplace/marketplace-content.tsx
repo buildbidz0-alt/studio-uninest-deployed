@@ -177,51 +177,58 @@ export default function MarketplaceContent() {
 
   const handleChat = useCallback(async (sellerId: string) => {
     if (!user || !supabase) {
-        toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
-        return;
+      toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
+      return;
+    }
+    if (user.id === sellerId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You cannot start a chat with yourself.' });
+      return;
     }
 
     try {
-        // Step 1: Check if a room already exists.
-        const { data, error: rpcError } = await supabase.rpc('get_chat_room_with_user', {
-            p_user_id: sellerId
-        });
+      // Step 1: Check if a room already exists between the two users.
+      const { data: existingRooms, error: existingRoomError } = await supabase.rpc('get_chat_rooms_for_user');
 
-        if (rpcError) throw rpcError;
+      if (existingRoomError) throw existingRoomError;
 
+      const existingRoom = existingRooms.find((room: any) => {
+          return room.participants.some((p: any) => p.user_id === user.id) &&
+                 room.participants.some((p: any) => p.user_id === sellerId);
+      });
+      
+      if (existingRoom) {
         // If room exists, just navigate to chat
-        if (data && data.length > 0) {
-            router.push('/chat');
-            return;
-        }
-
-        // Step 2: If no room, create it.
-        const { data: newRoom, error: createError } = await supabase
-            .from('chat_rooms')
-            .insert({})
-            .select('id')
-            .single();
-
-        if (createError) throw createError;
-
-        const roomId = newRoom.id;
-
-        // Step 3: Add both users as participants.
-        const { error: participantError } = await supabase
-            .from('chat_room_participants')
-            .insert([
-                { room_id: roomId, user_id: user.id },
-                { room_id: roomId, user_id: sellerId },
-            ]);
-
-        if (participantError) throw participantError;
-
-        // Step 4: Navigate to chat page.
         router.push('/chat');
+        return;
+      }
+
+      // Step 2: If no room, create it.
+      const { data: newRoom, error: createError } = await supabase
+        .from('chat_rooms')
+        .insert({})
+        .select('id')
+        .single();
+
+      if (createError) throw createError;
+
+      const roomId = newRoom.id;
+
+      // Step 3: Add both users as participants.
+      const { error: participantError } = await supabase
+        .from('chat_room_participants')
+        .insert([
+          { room_id: roomId, user_id: user.id },
+          { room_id: roomId, user_id: sellerId },
+        ]);
+
+      if (participantError) throw participantError;
+
+      // Step 4: Navigate to chat page.
+      router.push('/chat');
 
     } catch (error) {
-        console.error('Error starting chat session:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
+      console.error('Error starting chat session:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
     }
   }, [user, supabase, toast, router]);
   
