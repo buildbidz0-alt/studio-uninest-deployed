@@ -180,22 +180,47 @@ export default function MarketplaceContent() {
         toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
         return;
     }
-    
-    // Check if a chat room already exists
-    const { data: existingRoom, error: fetchError } = await supabase.rpc('get_or_create_chat_room', {
-        p_user_id1: user.id,
-        p_user_id2: sellerId
-    });
 
-    if (fetchError) {
-        console.error('Error getting or creating chat room:', fetchError);
+    try {
+        const { data, error } = await supabase.rpc('get_chat_room_with_user', {
+            p_user_id: sellerId
+        });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            // Room exists
+            router.push('/chat');
+            return;
+        }
+
+        // Room does not exist, create it
+        const { data: newRoom, error: createError } = await supabase
+            .from('chat_rooms')
+            .insert({})
+            .select('id')
+            .single();
+
+        if (createError) throw createError;
+
+        const roomId = newRoom.id;
+
+        const { error: participantError } = await supabase
+            .from('chat_room_participants')
+            .insert([
+                { room_id: roomId, user_id: user.id },
+                { room_id: roomId, user_id: sellerId },
+            ]);
+
+        if (participantError) throw participantError;
+
+        router.push('/chat');
+
+    } catch (error) {
+        console.error('Error starting chat session:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
-        return;
     }
-    
-    router.push('/chat');
-
-  }, [user, supabase, toast, router]);
+}, [user, supabase, toast, router]);
   
   const createCategoryLink = (categoryName: string) => {
     if (selectedCategory === categoryName) {

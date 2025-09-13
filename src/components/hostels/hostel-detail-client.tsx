@@ -144,20 +144,46 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
             toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
             return;
         }
-        
-        const { data: existingRoom, error: fetchError } = await supabase.rpc('get_or_create_chat_room', {
-            p_user_id1: currentUser.id,
-            p_user_id2: hostel.seller_id
-        });
-
-        if (fetchError) {
-            console.error('Error getting or creating chat room:', fetchError);
+    
+        try {
+            const { data, error } = await supabase.rpc('get_chat_room_with_user', {
+                p_user_id: hostel.seller_id
+            });
+    
+            if (error) throw error;
+    
+            if (data && data.length > 0) {
+                // Room exists
+                router.push('/chat');
+                return;
+            }
+    
+            // Room does not exist, create it
+            const { data: newRoom, error: createError } = await supabase
+                .from('chat_rooms')
+                .insert({})
+                .select('id')
+                .single();
+    
+            if (createError) throw createError;
+    
+            const roomId = newRoom.id;
+    
+            const { error: participantError } = await supabase
+                .from('chat_room_participants')
+                .insert([
+                    { room_id: roomId, user_id: currentUser.id },
+                    { room_id: roomId, user_id: hostel.seller_id },
+                ]);
+    
+            if (participantError) throw participantError;
+    
+            router.push('/chat');
+    
+        } catch (error) {
+            console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
-            return;
         }
-        
-        router.push('/chat');
-
     }, [currentUser, supabase, toast, router, hostel.seller_id]);
 
     return (
