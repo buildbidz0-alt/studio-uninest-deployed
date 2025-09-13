@@ -8,7 +8,7 @@ import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Edit, Loader2, Package, Newspaper, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
-import { redirect, useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { PostWithAuthor, Product, Profile } from '@/lib/types';
 import ProductCard from '../marketplace/product-card';
@@ -25,6 +25,7 @@ export default function ProfileClient() {
   const { user, loading: authLoading, supabase } = useAuth();
   const { toast } = useToast();
   const params = useParams();
+  const router = useRouter();
   const handleFromParams = params.handle as string | undefined;
 
   const [profile, setProfile] = useState<ProfileWithCounts | null>(null);
@@ -55,19 +56,18 @@ export default function ProfileClient() {
         if (profileError || !profileData) {
             toast({ variant: 'destructive', title: 'Error fetching profile' });
             console.error("Profile fetch error:", profileError);
-            redirect('/');
+            router.push('/');
             return;
         }
         
         const userId = profileData.id;
 
-        // Separate, correct queries for follower/following counts
-        const { count: follower_count, error: followerError } = await supabase
+        const { count: follower_count } = await supabase
             .from('followers')
             .select('*', { count: 'exact', head: true })
             .eq('following_id', userId);
 
-        const { count: following_count, error: followingError } = await supabase
+        const { count: following_count } = await supabase
             .from('followers')
             .select('*', { count: 'exact', head: true })
             .eq('follower_id', userId);
@@ -81,16 +81,9 @@ export default function ProfileClient() {
         setProfile(finalProfile);
         
         if (user && user.id !== userId) {
-            const { data, error } = await supabase
-                .from('followers')
-                .select('*', { count: 'exact', head: true })
-                .eq('follower_id', user.id)
-                .eq('following_id', userId);
-            if (!error) {
-                const { count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', user.id).eq('following_id', userId);
-                if (count && count > 0) {
-                    setIsFollowing(true);
-                }
+            const { count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', user.id).eq('following_id', userId);
+            if (count && count > 0) {
+                setIsFollowing(true);
             }
         }
 
@@ -122,9 +115,9 @@ export default function ProfileClient() {
     if (targetHandle) {
         fetchProfileData(targetHandle);
     } else if (!handleFromParams && !user) {
-        redirect('/login');
+        router.push('/login');
     }
-  }, [user, authLoading, handleFromParams, supabase, toast]);
+  }, [user, authLoading, handleFromParams, supabase, toast, router]);
 
   const handleFollowToggle = async () => {
     if (!user || !profile || isMyProfile || !supabase) return;
