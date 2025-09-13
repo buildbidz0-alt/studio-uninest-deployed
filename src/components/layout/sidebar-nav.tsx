@@ -161,7 +161,7 @@ export function MobileBottomNav() {
     if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
       return [
         { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'guest', 'admin'] },
-        { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'admin'] },
+        { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'guest', 'admin'] },
         { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'admin'] },
       ];
     }
