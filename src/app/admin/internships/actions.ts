@@ -15,7 +15,7 @@ const getSupabaseAdmin = () => {
 }
 
 const uploadFile = async (supabaseAdmin: any, file: File, bucket: string): Promise<string | null> => {
-    if (!file) return null;
+    if (!file || file.size === 0) return null;
     const filePath = `admin/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabaseAdmin.storage
       .from(bucket)
