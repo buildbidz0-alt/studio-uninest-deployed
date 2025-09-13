@@ -186,17 +186,12 @@ export default function MarketplaceContent() {
     }
 
     try {
-      // Step 1: Check if a room already exists between the two users.
-      const { data: existingRooms, error: existingRoomError } = await supabase.rpc('get_chat_rooms_for_user');
+      // Step 1: Check if a chat room already exists between the two users.
+      const { data: existingRoom, error: checkError } = await supabase.rpc('get_chat_room_for_user', { p_user_id: sellerId });
 
-      if (existingRoomError) throw existingRoomError;
+      if (checkError) throw checkError;
 
-      const existingRoom = existingRooms.find((room: any) => {
-          return room.participants.some((p: any) => p.user_id === user.id) &&
-                 room.participants.some((p: any) => p.user_id === sellerId);
-      });
-      
-      if (existingRoom) {
+      if (existingRoom && existingRoom.length > 0) {
         // If room exists, just navigate to chat
         router.push('/chat');
         return;

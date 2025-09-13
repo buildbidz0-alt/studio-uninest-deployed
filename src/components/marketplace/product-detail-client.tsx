@@ -129,17 +129,12 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-            // Step 1: Check if a room already exists.
-            const { data: existingRooms, error: rpcError } = await supabase.rpc('get_chat_rooms_for_user');
+            // Step 1: Check if a chat room already exists between the two users.
+            const { data: existingRoom, error: checkError } = await supabase.rpc('get_chat_room_for_user', { p_user_id: product.seller_id });
 
-            if (rpcError) throw rpcError;
-            
-            const existingRoom = existingRooms.find((room: any) => {
-                return room.participants.some((p: any) => p.user_id === currentUser.id) &&
-                       room.participants.some((p: any) => p.user_id === product.seller_id);
-            });
-    
-            if (existingRoom) {
+            if (checkError) throw checkError;
+
+            if (existingRoom && existingRoom.length > 0) {
                 // If room exists, just navigate to chat
                 router.push('/chat');
                 return;
