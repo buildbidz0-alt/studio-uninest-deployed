@@ -74,7 +74,7 @@ export default function VendorProductsContent({ initialProducts }: VendorProduct
       <div className="space-y-8">
         <PageHeader title="My Products" description="Manage your marketplace listings.">
           <Button asChild>
-            <Link href="/vendor/products/new">
+            <Link href="/marketplace/new">
               <PlusCircle className="mr-2" />
               Add New Product
             </Link>

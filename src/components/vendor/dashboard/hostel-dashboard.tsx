@@ -4,10 +4,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bed, Users, IndianRupee, Wrench, Calendar, PlusCircle, ArrowRight, ThumbsUp, X, Loader2 } from "lucide-react";
+import { Bed, Users, IndianRupee, Settings, PlusCircle, ThumbsUp, X, Loader2 } from "lucide-react";
 import type { Product } from "@/lib/types";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
