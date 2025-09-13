@@ -1,67 +1,99 @@
+
 -- Drop existing policies and functions to ensure a clean slate
-DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."profiles";
-DROP POLICY IF EXISTS "Users can insert their own profile" ON "public"."profiles";
-DROP POLICY IF EXISTS "Users can update their own profile" ON "public"."profiles";
-DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."products";
-DROP POLICY IF EXISTS "Users can create products" ON "public"."products";
-DROP POLICY IF EXISTS "Users can update their own products" ON "public"."products";
-DROP POLICY IF EXISTS "Users can delete their own products" ON "public"."products";
-DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."posts";
-DROP POLICY IF EXISTS "Enable read for all users" ON "public"."posts";
-DROP POLICY IF EXISTS "Users can delete their own posts" ON "public"."posts";
-DROP POLICY IF EXISTS "Users can update their own posts" ON "public"."posts";
-DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."likes";
-DROP POLICY IF EXISTS "Enable read for all users" ON "public"."likes";
-DROP POLICY IF EXISTS "Users can delete their own likes" ON "public"."likes";
-DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."comments";
-DROP POLICY IF EXISTS "Enable read for all users" ON "public"."comments";
-DROP POLICY IF EXISTS "Users can delete their own comments" ON "public"."comments";
-DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON "public"."followers";
-DROP POLICY IF EXISTS "Enable read for all users" ON "public"."followers";
-DROP POLICY IF EXISTS "Users can delete their own follow records" ON "public"."followers";
-DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."donations";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."app_config";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."competitions";
 DROP POLICY IF EXISTS "Enable insert for authenticated users" ON "public"."donations";
-DROP POLICY IF EXISTS "Allow all access for admin" ON "public"."platform_settings";
-DROP POLICY IF EXISTS "Allow read for all users" ON "public"."platform_settings";
-DROP POLICY IF EXISTS "Allow all access to admins" ON "public"."competitions";
-DROP POLICY IF EXISTS "Allow read access to all users" ON "public"."competitions";
-DROP POLICY IF EXISTS "Allow authenticated users to enter" ON "public"."competition_entries";
-DROP POLICY IF EXISTS "Admins can see all entries" ON "public"."competition_entries";
-DROP POLICY IF EXISTS "Users can see their own entries" ON "public"."competition_entries";
-DROP POLICY IF EXISTS "Allow all access to admins" ON "public"."internships";
-DROP POLICY IF EXISTS "Allow read access to all users" ON "public"."internships";
-DROP POLICY IF EXISTS "Allow insert for authenticated users" ON "public"."support_tickets";
-DROP POLICY IF EXISTS "Users can read their own tickets" ON "public"."support_tickets";
-DROP POLICY IF EXISTS "Admins can read all tickets" ON "public"."support_tickets";
-DROP POLICY IF EXISTS "Admins can update tickets" ON "public"."support_tickets";
-DROP POLICY IF EXISTS "Enable read for all users" ON "public"."audit_log";
-DROP POLICY IF EXISTS "Admins can insert their own logs" ON "public"."audit_log";
-DROP POLICY IF EXISTS "Enable access for participants" ON "public"."chat_rooms";
-DROP POLICY IF EXISTS "Enable read for participants" ON "public"."chat_messages";
-DROP POLICY IF EXISTS "Enable insert for participants" ON "public"."chat_messages";
-DROP POLICY IF EXISTS "Enable read for participants" ON "public"."chat_participants";
-DROP POLICY IF EXISTS "Allow read access for vendors and buyers" ON "public"."orders";
-DROP POLICY IF EXISTS "Allow insert for authenticated users" ON "public"."orders";
-DROP POLICY IF EXISTS "Allow read for users involved in order" ON "public"."order_items";
-DROP POLICY IF EXISTS "Allow insert for authenticated users" ON "public"."order_items";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."donations";
+DROP POLICY IF EXISTS "Enable read for users based on user_id" ON "public"."donations";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."internships";
+DROP POLICY IF EXISTS "Allow all for admin" ON "public"."posts";
+DROP POLICY IF EXISTS "Allow delete for owners" ON "public"."posts";
+DROP POLICY IF EXISTS "Allow insert for authenticated" ON "public"."posts";
+DROP POLICY IF EXISTS "Allow update for owners" ON "public"."posts";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."posts";
+DROP POLICY IF EXISTS "Allow all for admin" ON "public"."products";
+DROP POLICY IF EXISTS "Allow delete for owners" ON "public"."products";
+DROP POLICY IF EXISTS "Allow insert for authenticated" ON "public"."products";
+DROP POLICY IF EXISTS "Allow update for owners" ON "public"."products";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."products";
+DROP POLICY IF EXISTS "Can update own profile" ON "public"."profiles";
+DROP POLICY IF EXISTS "Enable insert for new users" ON "public"."profiles";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."profiles";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."platform_settings";
+DROP POLICY IF EXISTS "Allow insert for ticket owners" ON "public"."support_tickets";
+DROP POLICY IF EXISTS "Allow read for ticket owners and admins" ON "public"."support_tickets";
+DROP POLICY IF EXISTS "Allow update for admins" ON "public"."support_tickets";
+DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."followers";
 
+-- Chat policies
+DROP POLICY IF EXISTS "Enable read access for participants" ON "public"."chat_rooms";
+DROP POLICY IF EXISTS "Enable read access for participants" ON "public"."chat_participants";
+DROP POLICY IF EXISTS "Allow participants to read messages" ON "public"."chat_messages";
+DROP POLICY IF EXISTS "Allow participants to insert messages" ON "public"."chat_messages";
 
-DROP FUNCTION IF EXISTS public.handle_new_user();
-DROP FUNCTION IF EXISTS public.get_or_create_chat_room(uuid, uuid);
-DROP FUNCTION IF EXISTS public.get_last_messages_for_rooms(room_ids uuid[]);
-DROP FUNCTION IF EXISTS public.is_chat_participant(user_id_to_check uuid, room_id_to_check uuid);
+DROP FUNCTION IF EXISTS public.is_chat_participant;
+DROP FUNCTION IF EXISTS public.handle_new_user;
+DROP FUNCTION IF EXISTS public.get_or_create_chat_room;
+DROP FUNCTION IF EXISTS public.get_last_messages_for_rooms;
 
--- Recreate tables
+-- Recreate tables to ensure correct structure
+
+-- PROFILES
 CREATE TABLE IF NOT EXISTS public.profiles (
     id uuid NOT NULL PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+    updated_at timestamp with time zone,
     full_name text,
     avatar_url text,
     handle text UNIQUE,
     bio text,
-    role text DEFAULT 'student'::text,
+    role text DEFAULT 'student',
+    vendor_categories text[],
+    contact_number text,
+    opening_hours text,
     banner_url text
 );
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- POSTS (Social Feed)
+CREATE TABLE IF NOT EXISTS public.posts (
+    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    content text NOT NULL,
+    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE
+);
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+
+-- LIKES
+CREATE TABLE IF NOT EXISTS public.likes (
+    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    post_id bigint NOT NULL REFERENCES public.posts ON DELETE CASCADE,
+    UNIQUE (user_id, post_id)
+);
+ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
+
+-- COMMENTS
+CREATE TABLE IF NOT EXISTS public.comments (
+    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    content text NOT NULL,
+    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    post_id bigint NOT NULL REFERENCES public.posts ON DELETE CASCADE
+);
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+
+-- FOLLOWERS
+CREATE TABLE IF NOT EXISTS public.followers (
+    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    follower_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    following_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    UNIQUE (follower_id, following_id)
+);
+ALTER TABLE public.followers ENABLE ROW LEVEL SECURITY;
+
+-- PRODUCTS (Marketplace)
 CREATE TABLE IF NOT EXISTS public.products (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
@@ -70,363 +102,323 @@ CREATE TABLE IF NOT EXISTS public.products (
     price real NOT NULL,
     image_url text,
     category text NOT NULL,
-    seller_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE
+    seller_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    listing_payment_id text
 );
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS public.posts (
+-- ORDERS
+CREATE TABLE IF NOT EXISTS public.orders (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    content text NOT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
-    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE
+    buyer_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+    vendor_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+    total_amount real NOT NULL,
+    status text DEFAULT 'Completed',
+    razorpay_payment_id text
 );
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS public.likes (
+-- ORDER ITEMS
+CREATE TABLE IF NOT EXISTS public.order_items (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
-    post_id bigint NOT NULL REFERENCES public.posts ON DELETE CASCADE,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    UNIQUE(user_id, post_id)
+    order_id bigint NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+    product_id bigint REFERENCES public.products(id) ON DELETE SET NULL,
+    quantity integer NOT NULL,
+    price real NOT NULL
 );
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS public.comments (
-    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    content text NOT NULL,
-    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
-    post_id bigint NOT NULL REFERENCES public.posts ON DELETE CASCADE,
-    created_at timestamp with time zone NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS public.followers (
-    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    follower_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
-    following_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    UNIQUE(follower_id, following_id)
-);
-
+-- DONATIONS
 CREATE TABLE IF NOT EXISTS public.donations (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    user_id uuid REFERENCES public.profiles ON DELETE SET NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
     amount real NOT NULL,
-    currency text NOT NULL DEFAULT 'INR'::text,
-    razorpay_payment_id text,
-    created_at timestamp with time zone NOT NULL DEFAULT now()
+    currency text NOT NULL,
+    razorpay_payment_id text
 );
+ALTER TABLE public.donations ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS public.platform_settings (
+-- APP CONFIG (for donation goal etc)
+CREATE TABLE IF NOT EXISTS public.app_config (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     key text NOT NULL UNIQUE,
-    value jsonb,
-    description text
+    value jsonb
 );
+ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 
+-- COMPETITIONS
 CREATE TABLE IF NOT EXISTS public.competitions (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     title text NOT NULL,
-    description text,
-    prize real NOT NULL DEFAULT 0,
-    entry_fee real NOT NULL DEFAULT 0,
-    deadline timestamp with time zone,
+    description text NOT NULL,
+    prize real NOT NULL,
+    entry_fee real NOT NULL,
+    deadline timestamp with time zone NOT NULL,
     image_url text,
     details_pdf_url text
 );
+ALTER TABLE public.competitions ENABLE ROW LEVEL SECURITY;
 
+-- COMPETITION ENTRIES
 CREATE TABLE IF NOT EXISTS public.competition_entries (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    competition_id bigint NOT NULL REFERENCES public.competitions ON DELETE CASCADE,
-    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
+    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    competition_id bigint NOT NULL REFERENCES public.competitions ON DELETE CASCADE,
     razorpay_payment_id text,
-    UNIQUE(competition_id, user_id)
+    UNIQUE (user_id, competition_id)
 );
+ALTER TABLE public.competition_entries ENABLE ROW LEVEL SECURITY;
 
+-- INTERNSHIPS
 CREATE TABLE IF NOT EXISTS public.internships (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     role text NOT NULL,
     company text NOT NULL,
-    stipend real DEFAULT 0,
+    stipend real NOT NULL,
     stipend_period text,
-    location text,
-    deadline timestamp with time zone,
+    location text NOT NULL,
+    deadline timestamp with time zone NOT NULL,
     image_url text,
-    details_pdf_url text
+    details_pdf_url text,
+    description text
 );
+ALTER TABLE public.internships ENABLE ROW LEVEL SECURITY;
 
+-- PLATFORM SETTINGS (for admin)
+CREATE TABLE IF NOT EXISTS public.platform_settings (
+    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    key text NOT NULL UNIQUE,
+    value jsonb
+);
+ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+
+-- AUDIT LOG
+CREATE TABLE IF NOT EXISTS public.audit_log (
+    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    admin_id uuid NOT NULL REFERENCES public.profiles ON DELETE SET NULL,
+    action text NOT NULL,
+    details text
+);
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
+
+-- SUPPORT TICKETS
 CREATE TABLE IF NOT EXISTS public.support_tickets (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
     category text NOT NULL,
     subject text NOT NULL,
-    description text,
-    status text DEFAULT 'Open'::text,
-    priority text DEFAULT 'Medium'::text,
+    description text NOT NULL,
+    status text NOT NULL DEFAULT 'Open',
+    priority text NOT NULL DEFAULT 'Medium',
     screenshot_url text
 );
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS public.audit_log (
-    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    admin_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
-    action text NOT NULL,
-    details text
-);
 
+-- CHAT ROOMS
 CREATE TABLE IF NOT EXISTS public.chat_rooms (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at timestamp with time zone NOT NULL DEFAULT now()
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY
 );
+ALTER TABLE public.chat_rooms ENABLE ROW LEVEL SECURITY;
 
+-- CHAT PARTICIPANTS
 CREATE TABLE IF NOT EXISTS public.chat_participants (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    room_id uuid NOT NULL REFERENCES public.chat_rooms ON DELETE CASCADE,
-    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    room_id uuid NOT NULL REFERENCES public.chat_rooms(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     UNIQUE(room_id, user_id)
 );
+ALTER TABLE public.chat_participants ENABLE ROW LEVEL SECURITY;
 
+-- CHAT MESSAGES
 CREATE TABLE IF NOT EXISTS public.chat_messages (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    room_id uuid NOT NULL REFERENCES public.chat_rooms ON DELETE CASCADE,
-    user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
     content text NOT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT now()
+    room_id uuid NOT NULL REFERENCES public.chat_rooms(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
+
+-- NOTIFICATIONS
 CREATE TABLE IF NOT EXISTS public.notifications (
     id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     user_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
-    sender_id uuid REFERENCES public.profiles ON DELETE SET NULL,
+    sender_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE,
     type text NOT NULL,
     post_id bigint REFERENCES public.posts ON DELETE CASCADE,
-    is_read boolean DEFAULT false
+    is_read boolean NOT NULL DEFAULT false
 );
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS public.orders (
-    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    buyer_id uuid REFERENCES public.profiles ON DELETE SET NULL,
-    vendor_id uuid REFERENCES public.profiles ON DELETE CASCADE,
-    total_amount real NOT NULL,
-    razorpay_payment_id text,
-    status text DEFAULT 'Completed'::text
-);
 
-CREATE TABLE IF NOT EXISTS public.order_items (
-    id bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    order_id bigint NOT NULL REFERENCES public.orders ON DELETE CASCADE,
-    product_id bigint NOT NULL REFERENCES public.products ON DELETE CASCADE,
-    quantity integer NOT NULL,
-    price real NOT NULL
-);
+-- FUNCTIONS
 
--- Recreate functions and triggers
+-- Function to create a profile for a new user
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
-AS $$
+RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, role, handle, avatar_url)
+  INSERT INTO public.profiles (id, full_name, role, avatar_url, handle)
   VALUES (
-    new.id,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'role',
-    'user' || substr(new.id::text, 1, 8),
-    new.raw_user_meta_data->>'avatar_url'
+    NEW.id,
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'role',
+    NEW.raw_user_meta_data->>'avatar_url',
+    -- Generate a handle from email and add random chars for uniqueness
+    substring(NEW.email from '(.*)@') || '_' || substr(md5(random()::text), 0, 5)
   );
-  RETURN new;
+  RETURN NEW;
 END;
-$$;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Trigger for new user
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+
+-- Function to get or create a chat room between two users
 CREATE OR REPLACE FUNCTION public.get_or_create_chat_room(p_user_id1 uuid, p_user_id2 uuid)
-RETURNS uuid
-LANGUAGE plpgsql
-AS $$
+RETURNS uuid AS $$
 DECLARE
-    v_room_id uuid;
+    existing_room_id uuid;
+    new_room_id uuid;
 BEGIN
     -- Find a room where both users are participants
-    SELECT room_id INTO v_room_id
+    SELECT p1.room_id INTO existing_room_id
     FROM chat_participants p1
     JOIN chat_participants p2 ON p1.room_id = p2.room_id
-    WHERE p1.user_id = p_user_id1 AND p2.user_id = p_user_id2;
+    WHERE p1.user_id = p_user_id1 AND p2.user_id = p_user_id2
+    LIMIT 1;
 
-    -- If no room is found, create one
-    IF v_room_id IS NULL THEN
-        INSERT INTO chat_rooms DEFAULT VALUES RETURNING id INTO v_room_id;
-        INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id1);
-        INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id2);
+    IF existing_room_id IS NOT NULL THEN
+        RETURN existing_room_id;
     END IF;
 
-    RETURN v_room_id;
+    -- If no room exists, create a new one
+    INSERT INTO chat_rooms DEFAULT VALUES RETURNING id INTO new_room_id;
+
+    -- Add both users as participants
+    INSERT INTO chat_participants (room_id, user_id) VALUES (new_room_id, p_user_id1);
+    INSERT INTO chat_participants (room_id, user_id) VALUES (new_room_id, p_user_id2);
+
+    RETURN new_room_id;
 END;
-$$;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to get last message for a set of rooms
 CREATE OR REPLACE FUNCTION public.get_last_messages_for_rooms(p_room_ids uuid[])
-RETURNS TABLE(room_id uuid, content text, created_at timestamptz)
-LANGUAGE sql
-AS $$
-  SELECT
-    m.room_id,
-    m.content,
-    m.created_at
-  FROM
-    chat_messages m
-  JOIN (
-    SELECT
-      room_id,
-      max(created_at) AS max_created_at
-    FROM
-      chat_messages
-    WHERE
-      room_id = ANY(p_room_ids)
-    GROUP BY
-      room_id
-  ) lm ON m.room_id = lm.room_id AND m.created_at = lm.max_created_at
-  WHERE
-    m.room_id = ANY(p_room_ids);
-$$;
+RETURNS TABLE(room_id uuid, content text, created_at timestamp with time zone) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT m.room_id, m.content, m.created_at
+    FROM chat_messages m
+    JOIN (
+        SELECT m_inner.room_id, MAX(m_inner.created_at) as max_created_at
+        FROM chat_messages m_inner
+        WHERE m_inner.room_id = ANY(p_room_ids)
+        GROUP BY m_inner.room_id
+    ) lm ON m.room_id = lm.room_id AND m.created_at = lm.max_created_at;
+END;
+$$ LANGUAGE plpgsql STABLE;
 
--- RLS Policies
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- ROW LEVEL SECURITY (RLS) POLICIES
+
+-- PROFILES
 CREATE POLICY "Enable read access for all users" ON "public"."profiles" FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own profile" ON "public"."profiles" FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update their own profile" ON "public"."profiles" FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Can update own profile" ON "public"."profiles" FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+-- POSTS
+CREATE POLICY "Enable read access for all users" ON "public"."posts" FOR SELECT USING (true);
+CREATE POLICY "Allow insert for authenticated" ON "public"."posts" FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for owners" ON "public"."posts" FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Allow delete for owners" ON "public"."posts" FOR DELETE USING (auth.uid() = user_id);
+
+-- LIKES/COMMENTS/FOLLOWERS
+CREATE POLICY "Enable read access for all users" ON "public"."likes" FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON "public"."likes" FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable delete for owner" ON "public"."likes" FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Enable read access for all users" ON "public"."comments" FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON "public"."comments" FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable delete for owner" ON "public"."comments" FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Enable read access for all users" ON "public"."followers" FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON "public"."followers" FOR INSERT WITH CHECK (auth.uid() = follower_id);
+CREATE POLICY "Enable delete for owner" ON "public"."followers" FOR DELETE USING (auth.uid() = follower_id);
+
+-- PRODUCTS
 CREATE POLICY "Enable read access for all users" ON "public"."products" FOR SELECT USING (true);
-CREATE POLICY "Users can create products" ON "public"."products" FOR INSERT WITH CHECK (auth.uid() = seller_id);
-CREATE POLICY "Users can update their own products" ON "public"."products" FOR UPDATE USING (auth.uid() = seller_id);
-CREATE POLICY "Users can delete their own products" ON "public"."products" FOR DELETE USING (auth.uid() = seller_id);
+CREATE POLICY "Allow insert for authenticated" ON "public"."products" FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = seller_id);
+CREATE POLICY "Allow update for owners" ON "public"."products" FOR UPDATE USING (auth.uid() = seller_id);
+CREATE POLICY "Allow delete for owners" ON "public"."products" FOR DELETE USING (auth.uid() = seller_id);
 
-ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable insert for authenticated users only" ON "public"."posts" FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Enable read for all users" ON "public"."posts" FOR SELECT USING (true);
-CREATE POLICY "Users can delete their own posts" ON "public"."posts" FOR DELETE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users can update their own posts" ON "public"."posts" FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+-- ORDERS
+CREATE POLICY "Allow read for participants" ON "public"."orders" FOR SELECT USING (auth.uid() = buyer_id OR auth.uid() = vendor_id);
+CREATE POLICY "Allow insert for buyers" ON "public"."orders" FOR INSERT WITH CHECK (auth.uid() = buyer_id);
 
-ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable insert for authenticated users only" ON "public"."likes" FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Enable read for all users" ON "public"."likes" FOR SELECT USING (true);
-CREATE POLICY "Users can delete their own likes" ON "public"."likes" FOR DELETE TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Allow read for order participants" ON "public"."order_items" FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM orders
+        WHERE orders.id = order_items.order_id AND (orders.buyer_id = auth.uid() OR orders.vendor_id = auth.uid())
+    )
+);
 
-ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable insert for authenticated users only" ON "public"."comments" FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Enable read for all users" ON "public"."comments" FOR SELECT USING (true);
-CREATE POLICY "Users can delete their own comments" ON "public"."comments" FOR DELETE TO authenticated USING (auth.uid() = user_id);
-
-ALTER TABLE public.followers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable insert for authenticated users only" ON "public"."followers" FOR INSERT TO authenticated WITH CHECK (auth.uid() = follower_id);
-CREATE POLICY "Enable read for all users" ON "public"."followers" FOR SELECT USING (true);
-CREATE POLICY "Users can delete their own follow records" ON "public"."followers" FOR DELETE TO authenticated USING (auth.uid() = follower_id);
-
-ALTER TABLE public.donations ENABLE ROW LEVEL SECURITY;
+-- DONATIONS
 CREATE POLICY "Enable read access for all users" ON "public"."donations" FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users" ON "public"."donations" FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Enable insert for authenticated users" ON "public"."donations" FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all access for admin" ON "public"."platform_settings" FOR ALL USING (public.is_admin(auth.uid())) WITH CHECK (public.is_admin(auth.uid()));
-CREATE POLICY "Allow read for all users" ON "public"."platform_settings" FOR SELECT USING (true);
+-- COMPETITIONS/INTERNSHIPS
+CREATE POLICY "Enable read access for all users" ON "public"."competitions" FOR SELECT USING (true);
+CREATE POLICY "Enable read access for all users" ON "public"."internships" FOR SELECT USING (true);
+CREATE POLICY "Allow insert for authenticated users" ON "public"."competition_entries" FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-ALTER TABLE public.competitions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all access to admins" ON "public"."competitions" FOR ALL USING (public.is_admin(auth.uid()));
-CREATE POLICY "Allow read access to all users" ON "public"."competitions" FOR SELECT USING (true);
-
-ALTER TABLE public.competition_entries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow authenticated users to enter" ON "public"."competition_entries" FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Admins can see all entries" ON "public"."competition_entries" FOR SELECT USING (public.is_admin(auth.uid()));
-CREATE POLICY "Users can see their own entries" ON "public"."competition_entries" FOR SELECT USING (auth.uid() = user_id);
-
-ALTER TABLE public.internships ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all access to admins" ON "public"."internships" FOR ALL USING (public.is_admin(auth.uid()));
-CREATE POLICY "Allow read access to all users" ON "public"."internships" FOR SELECT USING (true);
-
-ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow insert for authenticated users" ON "public"."support_tickets" FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can read their own tickets" ON "public"."support_tickets" FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Admins can read all tickets" ON "public"."support_tickets" FOR SELECT USING (public.is_admin(auth.uid()));
-CREATE POLICY "Admins can update tickets" ON "public"."support_tickets" FOR UPDATE USING (public.is_admin(auth.uid()));
-
-ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read for all users" ON "public"."audit_log" FOR SELECT USING (true);
-CREATE POLICY "Admins can insert their own logs" ON "public"."audit_log" FOR INSERT WITH CHECK (public.is_admin(auth.uid()) AND admin_id = auth.uid());
-
--- Simple, non-recursive RLS for chat
-ALTER TABLE public.chat_rooms ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable access for participants" ON "public"."chat_rooms"
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.chat_participants
-    WHERE chat_participants.room_id = id AND chat_participants.user_id = auth.uid()
-  )
+-- CHAT SYSTEM POLICIES
+-- Simple, non-recursive policies
+CREATE POLICY "Enable read access for participants" ON "public"."chat_rooms" FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM chat_participants
+        WHERE chat_participants.room_id = chat_rooms.id AND chat_participants.user_id = auth.uid()
+    )
 );
 
-ALTER TABLE public.chat_participants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read for participants" ON "public"."chat_participants"
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.chat_participants AS p2
-    WHERE p2.room_id = chat_participants.room_id AND p2.user_id = auth.uid()
-  )
+CREATE POLICY "Enable read access for participants" ON "public"."chat_participants" FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Allow participants to insert messages" ON "public"."chat_messages" FOR INSERT WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM chat_participants
+        WHERE chat_participants.room_id = chat_messages.room_id AND chat_participants.user_id = auth.uid()
+    )
+);
+CREATE POLICY "Allow participants to read messages" ON "public"."chat_messages" FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM chat_participants
+        WHERE chat_participants.room_id = chat_messages.room_id AND chat_participants.user_id = auth.uid()
+    )
 );
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read for participants" ON "public"."chat_messages"
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.chat_participants
-    WHERE chat_participants.room_id = chat_messages.room_id AND chat_participants.user_id = auth.uid()
-  )
-);
-CREATE POLICY "Enable insert for participants" ON "public"."chat_messages"
-FOR INSERT WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.chat_participants
-    WHERE chat_participants.room_id = chat_messages.room_id AND chat_participants.user_id = auth.uid()
-  )
-);
 
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow read access for vendors and buyers" ON "public"."orders"
-FOR SELECT USING (auth.uid() = buyer_id OR auth.uid() = vendor_id OR public.is_admin(auth.uid()));
-CREATE POLICY "Allow insert for authenticated users" ON "public"."orders"
-FOR INSERT TO authenticated WITH CHECK (auth.uid() = buyer_id);
+-- ADMIN-ONLY TABLES
+CREATE POLICY "Enable read access for all users" ON "public"."platform_settings" FOR SELECT USING (true);
+CREATE POLICY "Enable read access for admins" ON "public"."audit_log" FOR SELECT USING (get_my_claim('role') = '"admin"');
 
+-- SUPPORT TICKETS
+CREATE POLICY "Allow insert for ticket owners" ON "public"."support_tickets" FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Allow read for ticket owners and admins" ON "public"."support_tickets" FOR SELECT USING (auth.uid() = user_id OR get_my_claim('role') = '"admin"');
+CREATE POLICY "Allow update for admins" ON "public"."support_tickets" FOR UPDATE USING (get_my_claim('role') = '"admin"');
 
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow read for users involved in order" ON "public"."order_items"
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.orders
-    WHERE orders.id = order_items.order_id AND (orders.buyer_id = auth.uid() OR orders.vendor_id = auth.uid() OR public.is_admin(auth.uid()))
-  )
-);
-CREATE POLICY "Allow insert for authenticated users" ON "public"."order_items"
-FOR INSERT TO authenticated WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.orders
-    WHERE orders.id = order_items.order_id AND orders.buyer_id = auth.uid()
-  )
-);
+-- NOTIFICATIONS
+CREATE POLICY "Enable read for owner" ON "public"."notifications" FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Enable update for owner" ON "public"."notifications" FOR UPDATE USING (auth.uid() = user_id);
 
--- Seed initial data
-INSERT INTO public.platform_settings (key, value, description)
-VALUES ('monetization', '{"charge_for_posts": false, "post_price": 10, "start_date": null}', 'Settings for marketplace listing fees.')
-ON CONFLICT (key) DO NOTHING;
-
-INSERT INTO public.app_config (key, value)
-VALUES ('donation_goal', '50000')
-ON CONFLICT (key) DO NOTHING;
-
--- Grant usage on schema
-GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO postgres, anon, authenticated, service_role;
+    
