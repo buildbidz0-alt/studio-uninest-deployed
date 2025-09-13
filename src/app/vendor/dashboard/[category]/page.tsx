@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/lib/types';
 
 const categoryMap: { [key: string]: { label: string; component: React.FC<any> } } = {
-    'library': { label: 'Library Services', component: LibraryDashboard },
+    'library': { label: 'Library', component: LibraryDashboard },
     'food-mess': { label: 'Food Mess', component: FoodMessDashboard },
     'hostels': { label: 'Hostels', component: HostelDashboard },
     'cybercafe': { label: 'Cyber Café', component: CybercafeDashboard },
@@ -18,12 +18,17 @@ const categoryMap: { [key: string]: { label: string; component: React.FC<any> } 
 async function getVendorDataForCategory(categoryLabel: string, userId: string) {
     const supabase = createClient();
 
+    let productCategories = [categoryLabel];
+    if (categoryLabel === 'Hostels') {
+        productCategories.push('Hostel Room');
+    }
+
     const [productsRes, ordersRes] = await Promise.all([
         supabase
             .from('products')
             .select('*')
             .eq('seller_id', userId)
-            .eq('category', categoryLabel),
+            .in('category', productCategories),
         supabase
             .from('orders')
             .select(`
@@ -33,12 +38,15 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
                 status,
                 buyer_id,
                 buyer:profiles!buyer_id(full_name, avatar_url),
-                order_items!inner(
-                    products!inner(name, category)
+                order_items:order_items!inner(
+                    products:products!inner(name, category),
+                    seat_number,
+                    library_id,
+                    product_id
                 )
             `)
             .eq('vendor_id', userId)
-            .eq('order_items.products.category', categoryLabel)
+            .in('order_items.products.category', productCategories)
             .order('created_at', { ascending: false })
     ]);
 
@@ -55,7 +63,7 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
 
 
 export default async function VendorCategoryDashboardPage({ params }: { params: { category: string } }) {
-    const categoryKey = params.category;
+    const categoryKey = params.category.replace('-', ' ');
     const categoryInfo = categoryMap[categoryKey];
     const supabase = createClient();
 

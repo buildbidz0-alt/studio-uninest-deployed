@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import PageHeader from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, Users } from "lucide-react";
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,7 @@ type Competition = {
     prize: number;
     entry_fee: number;
     deadline: string;
+    competition_entries: { count: number }[];
 };
 
 export default function AdminCompetitionsPage() {
@@ -52,11 +53,11 @@ export default function AdminCompetitionsPage() {
             setLoading(true);
             const { data, error } = await supabase
                 .from('competitions')
-                .select('*')
+                .select('*, competition_entries(count)')
                 .order('created_at', { ascending: false });
 
             if (data) {
-                setCompetitions(data);
+                setCompetitions(data as any);
             }
             setLoading(false);
         };
@@ -99,13 +100,14 @@ export default function AdminCompetitionsPage() {
                                 <TableHead>Prize</TableHead>
                                 <TableHead>Entry Fee</TableHead>
                                 <TableHead>Deadline</TableHead>
+                                <TableHead>Entries</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
+                                    <TableCell colSpan={6} className="text-center h-24">
                                         <Loader2 className="mx-auto animate-spin" />
                                     </TableCell>
                                 </TableRow>
@@ -116,6 +118,12 @@ export default function AdminCompetitionsPage() {
                                         <TableCell>₹{comp.prize.toLocaleString()}</TableCell>
                                         <TableCell>₹{comp.entry_fee.toLocaleString()}</TableCell>
                                         <TableCell>{format(new Date(comp.deadline), 'PPP')}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Users className="size-4 text-muted-foreground" />
+                                                {comp.competition_entries[0]?.count || 0}
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                            <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -137,7 +145,7 @@ export default function AdminCompetitionsPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">No competitions found.</TableCell>
+                                    <TableCell colSpan={6} className="text-center h-24">No competitions found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

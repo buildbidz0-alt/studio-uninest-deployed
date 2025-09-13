@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import PageHeader from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, Users } from "lucide-react";
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +38,7 @@ type Internship = {
     stipend: number;
     location: string;
     deadline: string;
+    internship_applications: { count: number }[];
 };
 
 export default function AdminInternshipsPage() {
@@ -54,11 +55,11 @@ export default function AdminInternshipsPage() {
             setLoading(true);
             const { data, error } = await supabase
                 .from('internships')
-                .select('*')
+                .select('*, internship_applications(count)')
                 .order('created_at', { ascending: false });
 
             if (data) {
-                setInternships(data);
+                setInternships(data as any);
             }
             setLoading(false);
         };
@@ -101,13 +102,14 @@ export default function AdminInternshipsPage() {
                                 <TableHead>Stipend</TableHead>
                                 <TableHead>Location</TableHead>
                                 <TableHead>Deadline</TableHead>
+                                <TableHead>Applicants</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">
+                                    <TableCell colSpan={7} className="text-center h-24">
                                         <Loader2 className="mx-auto animate-spin" />
                                     </TableCell>
                                 </TableRow>
@@ -121,6 +123,12 @@ export default function AdminInternshipsPage() {
                                         </TableCell>
                                         <TableCell><Badge variant="outline">{item.location}</Badge></TableCell>
                                         <TableCell>{format(new Date(item.deadline), 'PPP')}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Users className="size-4 text-muted-foreground" />
+                                                {item.internship_applications[0]?.count || 0}
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -142,7 +150,7 @@ export default function AdminInternshipsPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">No internships found.</TableCell>
+                                    <TableCell colSpan={7} className="text-center h-24">No internships found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

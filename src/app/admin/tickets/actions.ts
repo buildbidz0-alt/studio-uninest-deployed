@@ -27,6 +27,7 @@ export async function updateTicketStatus(ticketId: number, status: string) {
         }
         
         revalidatePath('/admin/tickets');
+        revalidatePath(`/admin/tickets/${ticketId}`);
         return { error: null };
 
     } catch(e: any) {
