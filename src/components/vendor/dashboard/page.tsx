@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link';
 import { Library, Utensils, Bed, Laptop, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { Button } from '@/components/ui/button';
 
 const categoryDashboards = [
     { id: "library", label: "Library Hub", icon: Library, color: 'text-purple-500' },
@@ -27,7 +28,7 @@ export default function VendorDashboardContent({ userName, vendorCategories }: V
     <div className="space-y-8">
       <PageHeader title="Dashboard" description={`Welcome, ${userName}. Here's your main hub.`} />
 
-       {vendorSpecificDashboards.length > 0 && (
+       {vendorSpecificDashboards.length > 0 ? (
         <div>
             <h2 className="text-2xl font-bold tracking-tight mb-4">Your Service Dashboards</h2>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -51,6 +52,15 @@ export default function VendorDashboardContent({ userName, vendorCategories }: V
                 ))}
             </div>
         </div>
+       ) : (
+        <Card className="text-center p-8">
+            <CardTitle>Get Started as a Vendor</CardTitle>
+            <CardDescription className="mt-2">You haven't configured any services yet.</CardDescription>
+            <Button asChild className="mt-4">
+                <Link href="/settings">Configure Your Services</Link>
+            </Button>
+            <p className="text-xs text-muted-foreground mt-4">Go to your settings to select the services you provide (e.g., Library, Hostels).</p>
+        </Card>
        )}
     </div>
   );

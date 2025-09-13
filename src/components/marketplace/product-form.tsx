@@ -62,7 +62,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         return studentCategories;
     }
     if (role === 'vendor') {
-        const vendorCategories = (userVendorCategories || []).map((c: string) => {
+        const categoriesFromProfile = (userVendorCategories || []).map((c: string) => {
             if (c === 'library') return 'Library';
             if (c === 'food mess') return 'Food Mess';
             if (c === 'cybercafe') return 'Cyber Café';
@@ -70,11 +70,18 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
             return c;
         }).flat();
         
-        const categories = [...vendorCategories];
-        if (!categories.includes('Other Products')) {
-          categories.push("Other Products");
+        const finalCategories = [...categoriesFromProfile];
+        if (!finalCategories.includes('Other Products')) {
+          finalCategories.push("Other Products");
         }
-        return isEditMode ? allCategories : [...new Set(categories)];
+        
+        // In edit mode, we must include the product's current category even if it's no longer in the vendor's profile.
+        // This prevents the form from breaking if the vendor's permissions changed.
+        if (isEditMode && product?.category && !finalCategories.includes(product.category)) {
+            finalCategories.push(product.category);
+        }
+
+        return [...new Set(finalCategories)];
     }
     return allCategories;
   }

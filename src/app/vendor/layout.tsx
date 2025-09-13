@@ -35,22 +35,16 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // This is the critical authorization logic.
-    // We MUST wait for the auth state to finish loading before making a decision.
     if (!loading) {
       if (role === 'vendor') {
-        // If the user is a vendor, they are authorized.
         setIsAuthorized(true);
       } else {
-        // If the user is not a vendor, they should not be in this layout.
-        // Redirect them to the home page.
+        // If not a vendor, redirect away. This is the final safeguard.
         router.push('/');
       }
     }
   }, [role, loading, router]);
   
-  // While loading or before authorization is confirmed, show a loading screen.
-  // This prevents rendering the page content incorrectly before the redirect can happen.
   if (loading || !isAuthorized) {
     return (
         <div className="flex h-screen items-center justify-center">
@@ -60,7 +54,6 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  // Once authorized, render the full vendor layout.
   return (
     <SidebarProvider>
       <Sidebar>
