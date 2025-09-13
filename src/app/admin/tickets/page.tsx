@@ -1,4 +1,5 @@
 
+
 import PageHeader from "@/components/admin/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +8,9 @@ import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TicketStatusChanger from "@/components/admin/tickets/ticket-status-changer";
+import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 export const revalidate = 0; // Force dynamic rendering
 
@@ -21,6 +25,7 @@ export default async function AdminTicketsPage() {
             category,
             status,
             priority,
+            screenshot_url,
             user:profiles (
                 id,
                 full_name,
@@ -44,6 +49,7 @@ export default async function AdminTicketsPage() {
                                 <TableHead>User</TableHead>
                                 <TableHead>Subject</TableHead>
                                 <TableHead>Category</TableHead>
+                                <TableHead>Screenshot</TableHead>
                                 <TableHead>Submitted</TableHead>
                                 <TableHead>Status</TableHead>
                             </TableRow>
@@ -51,7 +57,7 @@ export default async function AdminTicketsPage() {
                         <TableBody>
                             {!tickets || tickets.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         No support tickets found.
                                     </TableCell>
                                 </TableRow>
@@ -71,6 +77,17 @@ export default async function AdminTicketsPage() {
                                         </TableCell>
                                         <TableCell className="font-medium max-w-xs truncate">{ticket.subject}</TableCell>
                                         <TableCell><Badge variant="outline">{ticket.category}</Badge></TableCell>
+                                        <TableCell>
+                                            {ticket.screenshot_url ? (
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <a href={ticket.screenshot_url} target="_blank" rel="noopener noreferrer">
+                                                        View <ExternalLink className="ml-2 size-3" />
+                                                    </a>
+                                                </Button>
+                                            ) : (
+                                                <span className="text-muted-foreground text-xs">None</span>
+                                            )}
+                                        </TableCell>
                                         <TableCell>{format(new Date(ticket.created_at), 'PPP')}</TableCell>
                                         <TableCell>
                                             <TicketStatusChanger ticketId={ticket.id} currentStatus={ticket.status} />

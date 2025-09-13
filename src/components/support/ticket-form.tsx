@@ -19,6 +19,7 @@ const formSchema = z.object({
   category: z.string({ required_error: 'Please select a category.' }),
   subject: z.string().min(5, 'Subject must be at least 5 characters.'),
   description: z.string().min(20, 'Please provide a detailed description of the issue.'),
+  screenshot: z.instanceof(File).optional(),
 });
 
 export default function SupportTicketForm() {
@@ -34,6 +35,25 @@ export default function SupportTicketForm() {
     },
   });
 
+  const uploadFile = async (file: File): Promise<string | null> => {
+    if (!supabase) return null;
+    const filePath = `public/${user?.id}/${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from('support-tickets')
+      .upload(filePath, file);
+    
+    if (uploadError) {
+      console.error('Upload Error:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('support-tickets')
+      .getPublicUrl(filePath);
+      
+    return publicUrl;
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !supabase) {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to submit a ticket.' });
@@ -41,12 +61,23 @@ export default function SupportTicketForm() {
     }
     
     setIsLoading(true);
+
+    let screenshotUrl: string | null = null;
+    if (values.screenshot) {
+      screenshotUrl = await uploadFile(values.screenshot);
+      if (!screenshotUrl) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload screenshot.' });
+        setIsLoading(false);
+        return;
+      }
+    }
     
     const { error } = await supabase.from('support_tickets').insert({
         user_id: user.id,
         category: values.category,
         subject: values.subject,
         description: values.description,
+        screenshot_url: screenshotUrl,
     });
 
     setIsLoading(false);
@@ -117,6 +148,19 @@ export default function SupportTicketForm() {
                       className="min-h-[150px]"
                       {...field}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="screenshot"
+              render={({ field: { onChange, value, ...rest } }) => (
+                <FormItem>
+                  <FormLabel>Screenshot (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -122,3 +122,16 @@ export type MonetizationSettings = {
     post_price: number;
     start_date: string | null;
 };
+
+export type SupportTicket = {
+  id: number;
+  created_at: string;
+  user_id: string;
+  category: string;
+  subject: string;
+  description: string;
+  status: 'Open' | 'In Progress' | 'Closed' | 'Archived';
+  priority: 'Low' | 'Medium' | 'High';
+  screenshot_url?: string | null;
+};
+
