@@ -31,7 +31,10 @@ export default function ChatLayout() {
   }, [authLoading, user]);
 
   const fetchRooms = useCallback(async () => {
-    if (!user || !supabase) return;
+    if (!user || !supabase) {
+        setLoadingRooms(false);
+        return;
+    };
 
     setLoadingRooms(true);
 
@@ -139,7 +142,7 @@ export default function ChatLayout() {
   };
 
   const ChatListScreen = () => (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full">
        <header className="p-4 space-y-4 bg-card border-b">
           <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-primary">Messages</h1>
@@ -154,8 +157,8 @@ export default function ChatLayout() {
           </div>
       </header>
        {loadingRooms ? (
-            <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="animate-spin text-primary size-8" />
+            <div className="flex items-center justify-center flex-1">
+                <Loader2 className="size-8 animate-spin text-primary" />
             </div>
         ) : (
           <ChatList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={handleSelectRoom} />
@@ -163,10 +166,18 @@ export default function ChatLayout() {
     </div>
   )
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-        <Loader2 className="animate-spin text-primary size-8" />
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+        <p>Please log in to view your chats.</p>
       </div>
     );
   }
