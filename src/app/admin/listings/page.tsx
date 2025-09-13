@@ -6,34 +6,40 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { Product, Profile } from "@/lib/types";
+import Link from 'next/link';
 
 // Explicitly define the types for clarity
 type ProductWithProfile = Product & {
-    profiles: Pick<Profile, 'full_name' | 'email'> | null;
+    profiles: Pick<Profile, 'full_name' | 'email' | 'handle'> | null;
 };
 
 
 export default async function AdminListingsPage() {
     const supabase = createClient();
     
-    // 1. Fetch all products and all profiles in parallel
-    const [productsRes, profilesRes] = await Promise.all([
-        supabase.from('products').select('*'),
-        supabase.from('profiles').select('id, full_name, email')
-    ]);
+    // Use a direct join in the query for efficiency
+    const { data, error } = await supabase
+        .from('products')
+        .select(`
+            *,
+            profiles:seller_id (
+                full_name,
+                email,
+                handle
+            )
+        `)
+        .order('created_at', { ascending: false });
 
-    const products = productsRes.data || [];
-    const profiles = profilesRes.data || [];
+    if (error) {
+        return (
+            <div className="space-y-8">
+                <PageHeader title="Listing Management" description="Error loading marketplace listings." />
+                <p>Could not fetch data: {error.message}</p>
+            </div>
+        )
+    }
 
-    // Create a quick-access map for profiles
-    const profilesMap = new Map(profiles.map(p => [p.id, p]));
-
-    // 2. Manually join the data in code for robustness
-    const listings: ProductWithProfile[] = products.map(product => ({
-        ...product,
-        profiles: profilesMap.get(product.seller_id) || null,
-    }));
-
+    const listings: ProductWithProfile[] = (data as any) || [];
 
     return (
         <div className="space-y-8">
@@ -52,19 +58,25 @@ export default async function AdminListingsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {listings && listings.length === 0 ? (
+                            {listings.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center h-24">
                                         No listings found.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                listings?.map(listing => (
+                                listings.map(listing => (
                                     <TableRow key={listing.id}>
-                                        <TableCell className="font-medium">{listing.name}</TableCell>
+                                        <TableCell className="font-medium">
+                                            <Link href={`/marketplace/${listing.id}`} className="hover:underline">
+                                                {listing.name}
+                                            </Link>
+                                        </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{listing.profiles?.full_name || 'N/A'}</div>
-                                            <div className="text-sm text-muted-foreground">{listing.profiles?.email || 'No email'}</div>
+                                            <Link href={`/profile/${listing.profiles?.handle}`} className="hover:underline">
+                                                <div className="font-medium">{listing.profiles?.full_name || 'N/A'}</div>
+                                                <div className="text-sm text-muted-foreground">{listing.profiles?.email || 'No email'}</div>
+                                            </Link>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{listing.category}</Badge>

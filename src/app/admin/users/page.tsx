@@ -35,8 +35,10 @@ export default async function AdminUsersPage() {
                 console.warn("Could not fetch all profiles, some user data may be incomplete.", profileError);
             }
 
+            const profilesMap = new Map(profiles?.map(p => [p.id, p]));
+
             users = authUsers.map(authUser => {
-                const profile = profiles?.find(p => p.id === authUser.id);
+                const profile = profilesMap.get(authUser.id);
                 // Roles are now sourced from user_metadata first, which is the source of truth
                 return {
                     id: authUser.id,

@@ -7,8 +7,6 @@ import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TicketStatusChanger from "@/components/admin/tickets/ticket-status-changer";
-import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import type { SupportTicket, Profile } from "@/lib/types";
 
@@ -21,27 +19,24 @@ type TicketWithProfile = SupportTicket & {
 export default async function AdminTicketsPage() {
     const supabase = createClient();
     
-    // 1. Fetch tickets and profiles in parallel
-    const [ticketsRes, profilesRes] = await Promise.all([
-        supabase.from('support_tickets').select('*').order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, full_name, avatar_url')
-    ]);
+    // Fetch tickets and join with profiles directly
+    const { data: ticketsData, error } = await supabase
+        .from('support_tickets')
+        .select(`
+            *,
+            profiles:user_id (
+                id,
+                full_name,
+                avatar_url
+            )
+        `)
+        .order('created_at', { ascending: false });
 
-    if (ticketsRes.error) {
-        return <div>Error loading tickets: {ticketsRes.error.message}</div>
+    if (error) {
+        return <div>Error loading tickets: {error.message}</div>
     }
 
-    const ticketsData = ticketsRes.data || [];
-    const profilesData = profilesRes.data || [];
-
-    // 2. Create a quick-access map for profiles
-    const profilesMap = new Map(profilesData.map(p => [p.id, p]));
-
-    // 3. Manually join the data in code
-    const tickets: TicketWithProfile[] = ticketsData.map(ticket => ({
-        ...ticket,
-        profiles: profilesMap.get(ticket.user_id) || null,
-    }));
+    const tickets: TicketWithProfile[] = (ticketsData as any) || [];
 
     return (
         <div className="space-y-8">
@@ -80,7 +75,11 @@ export default async function AdminTicketsPage() {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="font-medium max-w-xs truncate">{ticket.subject}</TableCell>
+                                        <TableCell className="font-medium max-w-xs truncate">
+                                            <Link href={`/admin/tickets/${ticket.id}`} className="hover:underline">
+                                                {ticket.subject}
+                                            </Link>
+                                        </TableCell>
                                         <TableCell><Badge variant="outline">{ticket.category}</Badge></TableCell>
                                         <TableCell>{format(new Date(ticket.created_at), 'PPP')}</TableCell>
                                         <TableCell>
