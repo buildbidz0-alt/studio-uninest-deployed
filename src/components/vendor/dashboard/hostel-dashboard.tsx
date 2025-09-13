@@ -67,21 +67,23 @@ export default function HostelDashboard({ products, orders }: HostelDashboardPro
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" disabled><Calendar className="mr-2"/> Manage Bookings</Button>
-                        <Button asChild><Link href="/marketplace/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
+                        <Button asChild><Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
                     </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                      {rooms.length > 0 ? (
                         rooms.map(room => (
-                            <div key={room.id} className="p-4 rounded-lg border-2 bg-green-100 dark:bg-green-900/50 border-green-200 dark:border-green-800">
-                                <div className="flex justify-between items-center">
-                                    <p className="font-bold text-lg truncate" title={room.name}>{room.name}</p>
+                             <Link key={room.id} href={`/vendor/products/${room.id}/edit`}>
+                                <div className="p-4 rounded-lg border-2 bg-green-100 dark:bg-green-900/50 border-green-200 dark:border-green-800 hover:border-primary hover:bg-primary/10 transition-colors">
+                                    <div className="flex justify-between items-center">
+                                        <p className="font-bold text-lg truncate" title={room.name}>{room.name}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2 text-sm">
+                                        <IndianRupee className="size-4"/>
+                                        <span>{room.price.toLocaleString()}</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 mt-2 text-sm">
-                                    <IndianRupee className="size-4"/>
-                                    <span>{room.price.toLocaleString()}</span>
-                                </div>
-                            </div>
+                            </Link>
                         ))
                     ) : (
                          <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet.</p>
