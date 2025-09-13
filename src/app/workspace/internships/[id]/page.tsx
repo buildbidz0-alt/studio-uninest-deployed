@@ -40,6 +40,10 @@ export default async function InternshipDetailPage({ params }: InternshipDetailP
     if (error || !internship) {
         notFound();
     }
+    
+    // In a real app, you would have an 'internship_applications' table.
+    // For now, we will return an empty array as a placeholder.
+    const applicants: any[] = [];
 
-    return <InternshipDetailClient internship={internship} />;
+    return <InternshipDetailClient internship={internship} initialApplicants={applicants} />;
 }

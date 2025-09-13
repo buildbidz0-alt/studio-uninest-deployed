@@ -3,13 +3,15 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Calendar, IndianRupee, Loader2, FileText, Share2 } from 'lucide-react';
+import { Trophy, Calendar, IndianRupee, Loader2, FileText, Share2, Users } from 'lucide-react';
 import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 type Competition = {
     id: number;
@@ -22,15 +24,50 @@ type Competition = {
     details_pdf_url: string | null;
 };
 
-type CompetitionDetailClientProps = {
-    competition: Competition;
+type Applicant = {
+    user_id: string;
+    profiles: {
+        full_name: string;
+        avatar_url: string | null;
+    } | null;
 }
 
-export default function CompetitionDetailClient({ competition }: CompetitionDetailClientProps) {
+type CompetitionDetailClientProps = {
+    competition: Competition;
+    initialApplicants: Applicant[];
+}
+
+export default function CompetitionDetailClient({ competition, initialApplicants }: CompetitionDetailClientProps) {
     const { openCheckout, isLoaded } = useRazorpay();
     const { toast } = useToast();
     const { user, supabase } = useAuth();
     const [isApplying, setIsApplying] = useState(false);
+    const [applicants, setApplicants] = useState(initialApplicants);
+
+    const hasApplied = applicants.some(app => app.user_id === user?.id);
+
+    useEffect(() => {
+        if (!supabase) return;
+        const channel = supabase
+            .channel(`competition-entries-${competition.id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'competition_entries',
+                filter: `competition_id=eq.${competition.id}`
+            }, async (payload) => {
+                const newEntry = payload.new as { user_id: string };
+                const { data: profile } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', newEntry.user_id).single();
+                if (profile) {
+                    setApplicants(prev => [...prev, { user_id: newEntry.user_id, profiles: profile }]);
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        }
+    }, [supabase, competition.id]);
 
     const handleApply = async () => {
         if (!user || !supabase) {
@@ -130,9 +167,9 @@ export default function CompetitionDetailClient({ competition }: CompetitionDeta
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-                <Button size="lg" className="flex-1" onClick={handleApply} disabled={(!isLoaded && competition.entry_fee > 0) || isApplying}>
+                <Button size="lg" className="flex-1" onClick={handleApply} disabled={(!isLoaded && competition.entry_fee > 0) || isApplying || hasApplied}>
                     {isApplying ? <Loader2 className="mr-2 animate-spin" /> : null}
-                    Apply Now
+                    {hasApplied ? 'Applied' : 'Apply Now'}
                 </Button>
                 {competition.details_pdf_url && (
                     <Button size="lg" variant="outline" className="flex-1" asChild>
@@ -147,6 +184,32 @@ export default function CompetitionDetailClient({ competition }: CompetitionDeta
                     Share
                 </Button>
             </div>
+            
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users />
+                        Applicants ({applicants.length})
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {applicants.length > 0 ? (
+                        <div className="flex flex-wrap gap-4">
+                            {applicants.map(applicant => (
+                                <div key={applicant.user_id} className="flex flex-col items-center gap-2">
+                                    <Avatar>
+                                        <AvatarImage src={applicant.profiles?.avatar_url || ''} />
+                                        <AvatarFallback>{applicant.profiles?.full_name?.[0]}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-xs text-center w-20 truncate">{applicant.profiles?.full_name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground">Be the first to apply!</p>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

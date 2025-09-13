@@ -41,5 +41,17 @@ export default async function CompetitionDetailPage({ params }: CompetitionDetai
         notFound();
     }
 
-    return <CompetitionDetailClient competition={competition} />;
+    const { data: entries, error: entriesError } = await supabase
+        .from('competition_entries')
+        .select(`
+            user_id,
+            profiles (
+                full_name,
+                avatar_url
+            )
+        `)
+        .eq('competition_id', competition.id);
+
+
+    return <CompetitionDetailClient competition={competition} initialApplicants={entries || []} />;
 }

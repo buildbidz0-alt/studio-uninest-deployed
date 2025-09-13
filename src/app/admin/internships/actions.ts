@@ -4,6 +4,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 
+const getSupabaseAdmin = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+        throw new Error('Supabase service role key is not configured.');
+    }
+    return createClient(supabaseUrl, supabaseServiceKey);
+}
+
 const uploadFile = async (supabaseAdmin: any, file: File, bucket: string): Promise<string | null> => {
     if (!file) return null;
     const filePath = `admin/${Date.now()}-${file.name}`;
@@ -24,56 +34,72 @@ const uploadFile = async (supabaseAdmin: any, file: File, bucket: string): Promi
 }
 
 export async function createInternship(formData: FormData) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+    try {
+        const supabaseAdmin = getSupabaseAdmin();
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-        return { error: 'Supabase service role key is not configured.' };
-    }
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        const rawFormData = {
+            role: formData.get('role') as string,
+            company: formData.get('company') as string,
+            stipend: Number(formData.get('stipend')),
+            stipend_period: formData.get('stipend_period') as string,
+            location: formData.get('location') as string,
+            deadline: formData.get('deadline') as string,
+            image: formData.get('image') as File | null,
+            details_pdf: formData.get('details_pdf') as File | null,
+        };
 
-    const rawFormData = {
-        role: formData.get('role') as string,
-        company: formData.get('company') as string,
-        stipend: Number(formData.get('stipend')),
-        stipend_period: formData.get('stipend_period') as string,
-        location: formData.get('location') as string,
-        deadline: formData.get('deadline') as string,
-        image: formData.get('image') as File | null,
-        details_pdf: formData.get('details_pdf') as File | null,
-    };
+        let imageUrl: string | null = null;
+        let pdfUrl: string | null = null;
 
-    let imageUrl: string | null = null;
-    let pdfUrl: string | null = null;
-
-    if (rawFormData.image && rawFormData.image.size > 0) {
-        imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'internships');
-        if (!imageUrl) {
-            return { error: 'Failed to upload image.' };
+        if (rawFormData.image && rawFormData.image.size > 0) {
+            imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'internships');
+            if (!imageUrl) {
+                return { error: 'Failed to upload image.' };
+            }
         }
-    }
-    if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
-        pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'internships');
-        if (!pdfUrl) {
-            return { error: 'Failed to upload PDF.' };
+        if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
+            pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'internships');
+            if (!pdfUrl) {
+                return { error: 'Failed to upload PDF.' };
+            }
         }
+
+        const { error } = await supabaseAdmin.from('internships').insert({
+          role: rawFormData.role,
+          company: rawFormData.company,
+          stipend: rawFormData.stipend,
+          stipend_period: rawFormData.stipend_period,
+          location: rawFormData.location,
+          deadline: new Date(rawFormData.deadline).toISOString(),
+          image_url: imageUrl,
+          details_pdf_url: pdfUrl,
+        });
+
+        if (error) {
+            return { error: error.message };
+        }
+
+        revalidatePath('/admin/internships');
+        revalidatePath('/workspace/internships');
+        return { error: null };
+    } catch(e: any) {
+        return { error: e.message };
     }
+}
 
-    const { error } = await supabaseAdmin.from('internships').insert({
-      role: rawFormData.role,
-      company: rawFormData.company,
-      stipend: rawFormData.stipend,
-      stipend_period: rawFormData.stipend_period,
-      location: rawFormData.location,
-      deadline: new Date(rawFormData.deadline).toISOString(),
-      image_url: imageUrl,
-      details_pdf_url: pdfUrl,
-    });
+export async function deleteInternship(id: number) {
+    try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const { error } = await supabaseAdmin.from('internships').delete().eq('id', id);
 
-    if (error) {
-        return { error: error.message };
+        if (error) {
+            return { error: error.message };
+        }
+        
+        revalidatePath('/admin/internships');
+        revalidatePath('/workspace/internships');
+        return { error: null };
+    } catch(e: any) {
+        return { error: e.message };
     }
-
-    revalidatePath('/admin/internships');
-    return { error: null };
 }
