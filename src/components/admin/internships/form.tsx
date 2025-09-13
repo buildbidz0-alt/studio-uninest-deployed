@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/hooks/use-auth';
+import { createInternship } from '@/app/admin/internships/actions';
 
 const formSchema = z.object({
   role: z.string().min(3, 'Role must be at least 3 characters.'),
@@ -24,15 +24,14 @@ const formSchema = z.object({
   stipend_period: z.string().optional(),
   location: z.string().min(2, 'Location is required.'),
   deadline: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
-  image: z.instanceof(File).optional(),
-  details_pdf: z.instanceof(File).optional(),
+  image: z.any().optional(),
+  details_pdf: z.any().optional(),
 });
 
 export default function InternshipForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { supabase, user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -45,65 +44,24 @@ export default function InternshipForm() {
     },
   });
 
-  const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
-    if (!supabase || !user) return null;
-    const filePath = `${user.id}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file);
-    
-    if (uploadError) {
-      console.error('Upload Error:', uploadError);
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
-      
-    return publicUrl;
-  }
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!supabase) return;
     setIsLoading(true);
-    
-    let imageUrl: string | undefined = undefined;
-    let pdfUrl: string | undefined = undefined;
 
-    if (values.image) {
-        const url = await uploadFile(values.image, 'internships');
-        if (!url) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload image.' });
-            setIsLoading(false);
-            return;
-        }
-        imageUrl = url;
-    }
+    const formData = new FormData();
+    // Manually append because file objects can be tricky
+    formData.append('role', values.role);
+    formData.append('company', values.company);
+    formData.append('stipend', values.stipend.toString());
+    formData.append('stipend_period', values.stipend_period || 'monthly');
+    formData.append('location', values.location);
+    formData.append('deadline', values.deadline);
+    if (values.image) formData.append('image', values.image);
+    if (values.details_pdf) formData.append('details_pdf', values.details_pdf);
 
-    if (values.details_pdf) {
-        const url = await uploadFile(values.details_pdf, 'internships');
-        if (!url) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to upload PDF.' });
-            setIsLoading(false);
-            return;
-        }
-        pdfUrl = url;
-    }
+    const result = await createInternship(formData);
 
-    const { error } = await supabase.from('internships').insert({
-      role: values.role,
-      company: values.company,
-      stipend: values.stipend,
-      stipend_period: values.stipend_period,
-      location: values.location,
-      deadline: new Date(values.deadline).toISOString(),
-      image_url: imageUrl,
-      details_pdf_url: pdfUrl,
-    });
-
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    if (result.error) {
+      toast({ variant: 'destructive', title: 'Error', description: result.error });
     } else {
       toast({ title: 'Success!', description: 'Internship created successfully.' });
       router.refresh();
