@@ -2,11 +2,17 @@
 import PageHeader from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
-import { PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default async function AdminCompetitionsPage() {
     const supabase = createClient();
@@ -45,7 +51,17 @@ export default async function AdminCompetitionsPage() {
                                         <TableCell>₹{comp.prize.toLocaleString()}</TableCell>
                                         <TableCell>₹{comp.entry_fee.toLocaleString()}</TableCell>
                                         <TableCell>{format(new Date(comp.deadline), 'PPP')}</TableCell>
-                                        <TableCell className="text-right">{/* Actions */}</TableCell>
+                                        <TableCell className="text-right">
+                                           <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
