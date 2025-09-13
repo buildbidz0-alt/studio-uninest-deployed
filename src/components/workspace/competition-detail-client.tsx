@@ -136,6 +136,30 @@ export default function CompetitionDetailClient({ competition, initialApplicants
             setIsApplying(false);
         }
     };
+    
+    const handleShare = async () => {
+        const shareData = {
+            title: competition.title,
+            text: `Check out this competition on UniNest: ${competition.title}`,
+            url: window.location.href,
+        };
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                // User might have cancelled the share, so we don't show an error.
+                console.log("Share was cancelled or failed", err);
+            }
+        } else {
+            // Fallback for browsers that don't support Web Share API
+            try {
+                await navigator.clipboard.writeText(shareData.url);
+                toast({ title: 'Link Copied!', description: 'Competition link copied to clipboard.' });
+            } catch (err) {
+                toast({ variant: 'destructive', title: 'Failed to copy link' });
+            }
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto p-4 space-y-8">
@@ -179,7 +203,7 @@ export default function CompetitionDetailClient({ competition, initialApplicants
                         </a>
                     </Button>
                 )}
-                <Button size="lg" variant="ghost" className="flex-1">
+                <Button size="lg" variant="ghost" className="flex-1" onClick={handleShare}>
                     <Share2 className="mr-2"/>
                     Share
                 </Button>

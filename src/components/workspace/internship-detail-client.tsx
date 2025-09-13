@@ -47,6 +47,28 @@ export default function InternshipDetailClient({ internship, initialApplicants }
     // In a real app, this should be checked against the database
     // For now, we assume user hasn't applied unless they click.
     // A more robust solution would pass the application status from the server.
+    
+    const handleShare = async () => {
+        const shareData = {
+            title: `${internship.role} at ${internship.company}`,
+            text: `Check out this internship on UniNest: ${internship.role} at ${internship.company}`,
+            url: window.location.href,
+        };
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.log("Share was cancelled or failed", err);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareData.url);
+                toast({ title: 'Link Copied!', description: 'Internship link copied to clipboard.' });
+            } catch (err) {
+                toast({ variant: 'destructive', title: 'Failed to copy link' });
+            }
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto p-4 space-y-8">
@@ -95,7 +117,7 @@ export default function InternshipDetailClient({ internship, initialApplicants }
                         </a>
                     </Button>
                 )}
-                <Button size="lg" variant="ghost" className="flex-1">
+                <Button size="lg" variant="ghost" className="flex-1" onClick={handleShare}>
                     <Share2 className="mr-2"/>
                     Share
                 </Button>
