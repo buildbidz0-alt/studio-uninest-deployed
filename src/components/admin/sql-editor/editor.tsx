@@ -11,7 +11,23 @@ import { Loader2, Play, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const setupQueries = `
--- Run this query to create the support tickets table.
+-- Run this query FIRST to enable the SQL Editor.
+CREATE OR REPLACE FUNCTION execute_sql(query text)
+RETURNS json
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    result_json json;
+BEGIN
+    EXECUTE 'SELECT json_agg(t) FROM (' || query || ') t' INTO result_json;
+    RETURN result_json;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION '{"error": "%" }', SQLERRM;
+END;
+$$;
+
+-- Then, run this query to create the support tickets table.
 CREATE TABLE support_tickets (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -24,7 +40,7 @@ CREATE TABLE support_tickets (
     screenshot_url TEXT
 );
 
--- Enable Row-Level Security
+-- Enable Row-Level Security for tickets
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for RLS
@@ -38,38 +54,13 @@ ON support_tickets FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
+-- Admins can do anything
 CREATE POLICY "Admins can manage all tickets"
 ON support_tickets FOR ALL
-TO service_role; -- Or use a custom admin role if you have one
+TO service_role;
 
 
--- The queries below have already been run. You can delete them after running the one above.
--- Creates a function to get or create a chat room between two users
-CREATE OR REPLACE FUNCTION get_or_create_chat_room(p_user_id1 uuid, p_user_id2 uuid)
-RETURNS TABLE(id uuid) AS $$
-DECLARE
-    v_room_id uuid;
-BEGIN
-    -- Try to find an existing room
-    SELECT cr.id INTO v_room_id
-    FROM chat_rooms cr
-    JOIN chat_participants cp1 ON cr.id = cp1.room_id
-    JOIN chat_participants cp2 ON cr.id = cp2.room_id
-    WHERE cp1.user_id = p_user_id1 AND cp2.user_id = p_user_id2
-    LIMIT 1;
-
-    -- If no room is found, create a new one
-    IF v_room_id IS NULL THEN
-        INSERT INTO chat_rooms DEFAULT VALUES RETURNING chat_rooms.id INTO v_room_id;
-        INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id1);
-        INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id2);
-    END IF;
-
-    -- Return the room ID
-    RETURN QUERY SELECT v_room_id;
-END;
-$$ LANGUAGE plpgsql;
-
+-- The queries below have already been run. You can delete them.
 -- **REVISED AND FIXED** Creates a function to get all chat rooms for a specific user
 CREATE OR REPLACE FUNCTION get_user_chat_rooms(p_user_id uuid)
 RETURNS TABLE(
@@ -128,6 +119,32 @@ BEGIN
     LEFT JOIN unread_counts uc ON cr.id = uc.room_id
     WHERE cr.id IN (SELECT room_id FROM user_rooms)
     ORDER BY lm.created_at DESC NULLS LAST;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Creates a function to get or create a chat room between two users
+CREATE OR REPLACE FUNCTION get_or_create_chat_room(p_user_id1 uuid, p_user_id2 uuid)
+RETURNS TABLE(id uuid) AS $$
+DECLARE
+    v_room_id uuid;
+BEGIN
+    -- Try to find an existing room
+    SELECT cr.id INTO v_room_id
+    FROM chat_rooms cr
+    JOIN chat_participants cp1 ON cr.id = cp1.room_id
+    JOIN chat_participants cp2 ON cr.id = cp2.room_id
+    WHERE cp1.user_id = p_user_id1 AND cp2.user_id = p_user_id2
+    LIMIT 1;
+
+    -- If no room is found, create a new one
+    IF v_room_id IS NULL THEN
+        INSERT INTO chat_rooms DEFAULT VALUES RETURNING chat_rooms.id INTO v_room_id;
+        INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id1);
+        INSERT INTO chat_participants (room_id, user_id) VALUES (v_room_id, p_user_id2);
+    END IF;
+
+    -- Return the room ID
+    RETURN QUERY SELECT v_room_id;
 END;
 $$ LANGUAGE plpgsql;
 
