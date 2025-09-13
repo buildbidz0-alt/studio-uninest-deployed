@@ -49,7 +49,7 @@ export default function ProfileClient() {
 
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select(`*`)
+            .select('*')
             .eq('handle', handle)
             .single();
         
@@ -156,6 +156,7 @@ export default function ProfileClient() {
   }
 
   const avatarUrl = isMyProfile ? user?.user_metadata?.avatar_url : profile.avatar_url;
+  const profileFullName = profile.full_name || 'Anonymous User';
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -165,10 +166,10 @@ export default function ProfileClient() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:gap-4 -mt-16">
             <Avatar className="size-24 md:size-32 border-4 border-card">
               <AvatarImage src={avatarUrl || undefined} />
-              <AvatarFallback className="text-4xl">{profile.full_name?.[0].toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-4xl">{profileFullName[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="mt-2 sm:mt-0 flex-grow">
-              <h1 className="text-2xl md:text-3xl font-bold font-headline">{profile.full_name}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold font-headline">{profileFullName}</h1>
               <p className="text-muted-foreground">@{profile.handle}</p>
             </div>
             <div className="mt-2 sm:mt-0 ml-auto">
