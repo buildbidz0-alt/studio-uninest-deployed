@@ -57,11 +57,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
   const isEditMode = !!product;
 
   const getAvailableCategories = () => {
-    if (role === 'student') {
-        return studentCategories;
-    }
     if (role === 'vendor') {
-        const categoriesFromProfile = (userVendorCategories || []).map((c: string) => {
+        const vendorServices = (userVendorCategories || []).map((c: string) => {
             if (c === 'library') return 'Library';
             if (c === 'food mess') return 'Food Mess';
             if (c === 'cybercafe') return 'Cyber Café';
@@ -69,16 +66,15 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
             return c;
         }).flat();
         
-        const finalCategories = [...categoriesFromProfile, ...studentCategories];
-        
-        if (isEditMode && product?.category && !finalCategories.includes(product.category)) {
-            finalCategories.push(product.category);
+        // In edit mode, ensure the product's current category is in the list
+        if (isEditMode && product?.category && !vendorServices.includes(product.category)) {
+            vendorServices.push(product.category);
         }
-
-        return [...new Set(finalCategories)];
+        return [...new Set(vendorServices)]; // Use Set to remove duplicates
     }
-    // Fallback for admin or other roles
-    return ["Library", "Hostels", "Hostel Room", "Food Mess", "Cyber Café", "Books", "Other Products"];
+    
+    // For students, only allow these categories
+    return studentCategories;
   }
 
   const availableCategories = getAvailableCategories();
@@ -266,14 +262,19 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                     <FormField control={form.control} name="category" render={({ field }) => (
                         <FormItem>
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditMode}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditMode || availableCategories.length === 0}>
                             <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder={availableCategories.length === 0 ? "No categories available for your account" : "Select a category"} />
+                            </SelectTrigger>
                             </FormControl>
                             <SelectContent>
                             {availableCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                             </SelectContent>
                         </Select>
+                        {role === 'vendor' && availableCategories.length === 0 && (
+                            <p className="text-sm text-muted-foreground">Go to <a href="/settings" className="underline text-primary">Settings</a> to select your vendor categories.</p>
+                        )}
                             <FormMessage />
                         </FormItem>
                     )} />
