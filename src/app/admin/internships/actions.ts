@@ -44,21 +44,22 @@ export async function createInternship(formData: FormData) {
             stipend_period: formData.get('stipend_period') as string,
             location: formData.get('location') as string,
             deadline: formData.get('deadline') as string,
-            image: formData.get('image') as File | null,
-            details_pdf: formData.get('details_pdf') as File | null,
         };
+
+        const imageFile = formData.get('image') as File | null;
+        const pdfFile = formData.get('details_pdf') as File | null;
 
         let imageUrl: string | null = null;
         let pdfUrl: string | null = null;
 
-        if (rawFormData.image && rawFormData.image.size > 0) {
-            imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'internships');
+        if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'internships');
             if (!imageUrl) {
                 return { error: 'Failed to upload image.' };
             }
         }
-        if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
-            pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'internships');
+        if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
+            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'internships');
             if (!pdfUrl) {
                 return { error: 'Failed to upload PDF.' };
             }
@@ -97,21 +98,22 @@ export async function updateInternship(id: number, formData: FormData) {
             stipend_period: formData.get('stipend_period') as string,
             location: formData.get('location') as string,
             deadline: formData.get('deadline') as string,
-            image: formData.get('image') as File | null,
-            details_pdf: formData.get('details_pdf') as File | null,
         };
+
+        const imageFile = formData.get('image') as File | null;
+        const pdfFile = formData.get('details_pdf') as File | null;
         
         const { data: existing } = await supabaseAdmin.from('internships').select('image_url, details_pdf_url').eq('id', id).single();
         
         let imageUrl = existing?.image_url || null;
         let pdfUrl = existing?.details_pdf_url || null;
 
-        if (rawFormData.image && rawFormData.image.size > 0) {
-            imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'internships');
+        if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'internships');
             if (!imageUrl) return { error: 'Failed to upload image.' };
         }
-        if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
-            pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'internships');
+        if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
+            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'internships');
             if (!pdfUrl) return { error: 'Failed to upload PDF.' };
         }
 

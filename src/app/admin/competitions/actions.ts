@@ -43,21 +43,22 @@ export async function createCompetition(formData: FormData) {
             prize: Number(formData.get('prize')),
             entry_fee: Number(formData.get('entry_fee')),
             deadline: formData.get('deadline') as string,
-            image: formData.get('image') as File | null,
-            details_pdf: formData.get('details_pdf') as File | null,
         };
+
+        const imageFile = formData.get('image') as File | null;
+        const pdfFile = formData.get('details_pdf') as File | null;
 
         let imageUrl: string | null = null;
         let pdfUrl: string | null = null;
 
-        if (rawFormData.image && rawFormData.image.size > 0) {
-            imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'competitions');
+        if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'competitions');
             if (!imageUrl) {
                 return { error: 'Failed to upload banner image.' };
             }
         }
-        if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
-            pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'competitions');
+        if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
+            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'competitions');
             if (!pdfUrl) {
                 return { error: 'Failed to upload details PDF.' };
             }
@@ -94,21 +95,22 @@ export async function updateCompetition(id: number, formData: FormData) {
             prize: Number(formData.get('prize')),
             entry_fee: Number(formData.get('entry_fee')),
             deadline: formData.get('deadline') as string,
-            image: formData.get('image') as File | null,
-            details_pdf: formData.get('details_pdf') as File | null,
         };
+
+        const imageFile = formData.get('image') as File | null;
+        const pdfFile = formData.get('details_pdf') as File | null;
 
         const { data: existing } = await supabaseAdmin.from('competitions').select('image_url, details_pdf_url').eq('id', id).single();
         
         let imageUrl = existing?.image_url || null;
         let pdfUrl = existing?.details_pdf_url || null;
 
-        if (rawFormData.image && rawFormData.image.size > 0) {
-            imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'competitions');
+        if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'competitions');
             if (!imageUrl) return { error: 'Failed to upload banner image.' };
         }
-        if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
-            pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'competitions');
+        if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
+            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'competitions');
             if (!pdfUrl) return { error: 'Failed to upload details PDF.' };
         }
 
