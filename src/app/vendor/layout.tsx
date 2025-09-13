@@ -39,7 +39,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
       if (role === 'vendor' || role === 'admin') { // Also allow admins to see vendor dashboard
         setIsAuthorized(true);
       } else {
-        // If not a vendor, redirect away. This is the final safeguard.
+        // If not a vendor or admin, redirect away. This is the final safeguard.
         router.push('/');
       }
     }
