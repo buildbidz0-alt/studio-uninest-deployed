@@ -148,12 +148,14 @@ export function MobileBottomNav() {
   const { user } = useAuth();
   const role = getRole(user);
 
+  const profileLink = user ? `/profile/${user.user_metadata?.handle}` : '/login';
+
   const defaultNavItems = [
       { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
       { href: '/marketplace', label: 'Market', icon: ShoppingBag, roles: ['student', 'vendor', 'guest', 'admin'] },
       { href: '/social', label: 'Social', icon: Users, roles: ['student', 'guest', 'admin'] },
       { href: '/workspace', label: 'Work', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
-      { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
+      { href: profileLink, label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
       { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
     ];
 
@@ -163,7 +165,7 @@ export function MobileBottomNav() {
       items = [
         { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'guest', 'admin'] },
         { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'guest', 'admin'] },
-        { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'admin'] },
+        { href: profileLink, label: 'Profile', icon: 'avatar', roles: ['student', 'admin'] },
         { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
       ];
     }
@@ -171,7 +173,7 @@ export function MobileBottomNav() {
       items = [
         { href: '/workspace/competitions', label: 'Competitions', icon: Trophy, roles: ['student', 'vendor', 'guest', 'admin'] },
         { href: '/workspace/internships', label: 'Internships', icon: Briefcase, roles: ['student', 'vendor', 'guest', 'admin'] },
-        { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
+        { href: profileLink, label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
         { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
       ];
     }
@@ -186,8 +188,8 @@ export function MobileBottomNav() {
         {navItems.map(item => {
           let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
 
-          if (item.href === '/profile') {
-            isActive = pathname === '/profile' || pathname.startsWith('/settings');
+          if (item.label === 'Profile') {
+            isActive = pathname.startsWith('/profile') || pathname.startsWith('/settings');
           }
 
           return (

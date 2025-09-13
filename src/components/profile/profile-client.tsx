@@ -8,14 +8,13 @@ import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Edit, Loader2, Package, Newspaper, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useParams, useRouter, notFound } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
 import type { PostWithAuthor, Product, Profile } from '@/lib/types';
 import ProductCard from '../marketplace/product-card';
 import PostCard from '../feed/post-card';
 import { useToast } from '@/hooks/use-toast';
 import UserListCard from './user-list-card';
-import { notFound } from 'next/navigation';
 
 type ProfileWithCounts = Profile & {
     follower_count: number;
@@ -30,33 +29,75 @@ type ProfileContent = {
 }
 
 type ProfileClientProps = {
-    initialProfile: ProfileWithCounts | null;
-    initialContent: ProfileContent | null;
+    initialProfile?: ProfileWithCounts;
+    initialContent?: ProfileContent;
 }
 
 export default function ProfileClient({ initialProfile, initialContent }: ProfileClientProps) {
   const { user, loading: authLoading, supabase } = useAuth();
   const { toast } = useToast();
   const params = useParams();
-  const router = useRouter();
   const handleFromParams = params.handle as string | undefined;
 
-  const [profile, setProfile] = useState<ProfileWithCounts | null>(initialProfile);
+  const [profile, setProfile] = useState<ProfileWithCounts | null>(initialProfile || null);
   const [profileContent, setProfileContent] = useState<ProfileContent>(initialContent || { listings: [], posts: [], followers: [], following: [] });
+  const [loading, setLoading] = useState(!initialProfile);
   
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
-  const isMyProfile = !handleFromParams || (user?.user_metadata?.handle === handleFromParams);
+  const isMyProfile = handleFromParams === user?.user_metadata?.handle;
+
+  useEffect(() => {
+    // If it's not the user's own profile page, the data is pre-fetched via server component
+    // If it IS the user's own profile page, we might need to fetch it client-side if not passed
+    if (authLoading) return;
+
+    if (!handleFromParams) {
+        // This is the /profile route
+        if (user) {
+            // If user is logged in, redirect to their profile page
+            const userHandle = user.user_metadata?.handle;
+            if (userHandle) {
+                window.location.replace(`/profile/${userHandle}`);
+            } else {
+                // Handle case where user has no handle (e.g. first login)
+                // Maybe redirect to settings
+                window.location.replace('/settings');
+            }
+        } else {
+            // Not logged in, redirect to login
+            window.location.replace('/login');
+        }
+        return; // Stop execution to allow for redirect
+    }
+
+    if (!initialProfile) {
+        // This case is for when data is not pre-fetched, e.g. client-side navigation
+        const fetchProfile = async () => {
+            if (!supabase || !handleFromParams) return;
+            
+            // This is a simplified fetch, ideally it would be one RPC call like on the server
+            const { data, error } = await supabase.from('profiles').select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)').eq('handle', handleFromParams).single();
+            
+            if (error || !data) {
+                setProfile(null);
+            } else {
+                setProfile(data as any);
+            }
+            setLoading(false);
+        }
+        fetchProfile();
+    }
+  }, [handleFromParams, authLoading, user, supabase, initialProfile]);
+
 
   useEffect(() => {
     const checkFollowingStatus = async () => {
         if (!user || !profile || isMyProfile || !supabase) return;
         
         const { count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', user.id).eq('following_id', profile.id);
-        if (count && count > 0) {
-            setIsFollowing(true);
-        }
+        setIsFollowing(count ? count > 0 : false);
     };
     checkFollowingStatus();
   }, [user, profile, isMyProfile, supabase]);
@@ -94,7 +135,7 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
       toast({ title: 'Action not fully implemented in profile view.' });
   }
 
-  if (authLoading) {
+  if (loading || authLoading) {
     return (
       <div className="flex h-[calc(100vh-150px)] items-center justify-center">
         <Loader2 className="animate-spin size-10 text-primary" />

@@ -54,6 +54,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
       )
   }
 
+  const profileLink = user ? `/profile/${user.user_metadata?.handle}` : '/login';
 
   return (
     <SidebarProvider>
@@ -72,7 +73,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         <SidebarFooter>
           {user ? (
             <div className="flex items-center justify-between">
-                <Link href="/profile" className="flex-1 overflow-hidden">
+                <Link href={profileLink} className="flex-1 overflow-hidden">
                   <div className="flex items-center gap-3">
                     <Avatar className="size-9">
                       <AvatarImage src={user.user_metadata?.avatar_url || ''} alt="User avatar" />
