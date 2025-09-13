@@ -21,7 +21,6 @@ export default function LibraryDashboard() {
             if (!user || !supabase) return;
             setLoading(true);
 
-            // Fetch books (products in "Library Services" category)
             const { data: productsData } = await supabase
                 .from('products')
                 .select('*')
@@ -32,7 +31,6 @@ export default function LibraryDashboard() {
                 setBooks(productsData as Product[]);
             }
 
-            // Fetch bookings (orders for library services)
             const { data: ordersData, error } = await supabase
                 .from('orders')
                 .select(`
@@ -40,16 +38,19 @@ export default function LibraryDashboard() {
                     created_at,
                     status,
                     buyer:profiles!buyer_id(full_name),
-                    order_items!inner(products!inner(name, category))
+                    order_items!inner(
+                        products!inner(name, category)
+                    )
                 `)
                 .eq('vendor_id', user.id)
                 .eq('order_items.products.category', 'Library Services')
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(3);
             
             if (error) {
                 console.error("Error fetching library orders:", error);
             } else if (ordersData) {
-                setRecentBookings(ordersData.slice(0,3));
+                setRecentBookings(ordersData);
             }
 
             setLoading(false);

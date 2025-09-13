@@ -44,7 +44,12 @@ export default function CybercafeDashboard() {
             // Fetch orders for stats
              const { data: ordersData, error } = await supabase
               .from('orders')
-              .select('total_amount, order_items!inner(products!inner(category))')
+              .select(`
+                total_amount, 
+                order_items!inner(
+                    products!inner(category)
+                )
+              `)
               .eq('vendor_id', user.id)
               .eq('order_items.products.category', 'Cyber Café');
 

@@ -34,7 +34,6 @@ export default function HostelDashboard() {
                 setRooms(productsData as Product[]);
             }
             
-            // Fetch orders for revenue and activity, correctly filtered for 'Hostels'
             const { data: ordersData, error: ordersError } = await supabase
                 .from('orders')
                 .select(`
@@ -43,7 +42,9 @@ export default function HostelDashboard() {
                     total_amount,
                     buyer_id,
                     buyer:profiles!buyer_id(full_name),
-                    order_items!inner(products!inner(name, category))
+                    order_items!inner(
+                        products!inner(name, category)
+                    )
                 `)
                 .eq('vendor_id', user.id)
                 .eq('order_items.products.category', 'Hostels')

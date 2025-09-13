@@ -6,10 +6,10 @@ import { useEffect, useState, useMemo } from 'react';
 import StatsCard from '@/components/vendor/stats-card';
 import SalesChart from '@/components/vendor/sales-chart';
 import RecentOrdersTable from '@/components/vendor/recent-orders-table';
-import { DollarSign, ShoppingCart, Users, BookOpen } from 'lucide-react';
+import { DollarSign, ShoppingCart, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import type { Order } from '@/lib/types';
-import { subDays, format, startOfDay } from 'date-fns';
+import { subDays, format } from 'date-fns';
 import LibraryDashboard from './library-dashboard';
 import PageHeader from '@/components/admin/page-header';
 import FoodMessDashboard from './food-mess-dashboard';
@@ -31,17 +31,24 @@ export default function VendorDashboardContent() {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-            *,
-            order_items(*, products(name)),
-            profiles!buyer_id(*)
+            id,
+            created_at,
+            total_amount,
+            buyer_id,
+            order_items (
+                quantity,
+                products ( name )
+            ),
+            buyer:profiles (
+                id, full_name, avatar_url
+            )
         `)
         .eq('vendor_id', user.id);
       
       if (error) {
         console.error("Error fetching vendor data:", error);
       } else {
-        const ordersWithBuyer = (data || []).map(o => ({...o, buyer: o.profiles}));
-        setOrders(ordersWithBuyer as unknown as Order[]);
+        setOrders(data as unknown as Order[]);
       }
 
       setLoading(false);

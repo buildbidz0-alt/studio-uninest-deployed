@@ -43,7 +43,9 @@ export default function FoodMessDashboard() {
                     total_amount,
                     status,
                     buyer:profiles!buyer_id(full_name),
-                    order_items!inner(products!inner(name, category))
+                    order_items!inner(
+                        products!inner(name, category)
+                    )
                 `)
                 .eq('vendor_id', user.id)
                 .eq('order_items.products.category', 'Food Mess')

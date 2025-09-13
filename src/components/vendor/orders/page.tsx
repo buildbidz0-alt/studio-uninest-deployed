@@ -26,12 +26,15 @@ export default function VendorOrdersContent() {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          created_at,
+          total_amount,
+          status,
           order_items (
             quantity,
             products ( name )
           ),
-          profiles!buyer_id (
+          buyer:profiles!buyer_id (
             id, full_name, avatar_url
           )
         `)
@@ -41,8 +44,7 @@ export default function VendorOrdersContent() {
       if (error) {
         console.error("Error fetching orders:", error);
       } else {
-        const ordersWithBuyer = data.map(o => ({...o, buyer: o.profiles}));
-        setOrders(ordersWithBuyer as unknown as Order[]);
+        setOrders(data as unknown as Order[]);
       }
       setLoading(false);
     };
@@ -96,8 +98,7 @@ export default function VendorOrdersContent() {
                     <TableCell>₹{order.total_amount.toLocaleString()}</TableCell>
                     <TableCell>{format(new Date(order.created_at), 'PPP')}</TableCell>
                     <TableCell>
-                        {/* Status logic can be added later */}
-                        <Badge>Completed</Badge>
+                        <Badge>{order.status || 'Completed'}</Badge>
                     </TableCell>
                   </TableRow>
                 ))
