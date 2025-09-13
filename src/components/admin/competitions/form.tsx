@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -29,7 +30,7 @@ export default function CompetitionForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { supabase } = useAuth();
+  const { supabase, user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,8 +43,8 @@ export default function CompetitionForm() {
   });
 
   const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
-    if (!supabase) return null;
-    const filePath = `public/${Date.now()}-${file.name}`;
+    if (!supabase || !user) return null;
+    const filePath = `${user.id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, file);

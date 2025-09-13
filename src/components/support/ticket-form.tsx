@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -36,8 +37,8 @@ export default function SupportTicketForm() {
   });
 
   const uploadFile = async (file: File): Promise<string | null> => {
-    if (!supabase) return null;
-    const filePath = `public/${user?.id}/${Date.now()}-${file.name}`;
+    if (!supabase || !user) return null;
+    const filePath = `${user.id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('support-tickets')
       .upload(filePath, file);
