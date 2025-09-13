@@ -10,32 +10,38 @@ import TicketStatusChanger from "@/components/admin/tickets/ticket-status-change
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
+import type { SupportTicket, Profile } from "@/lib/types";
 
 export const revalidate = 0; // Force dynamic rendering
 
+type TicketWithProfile = SupportTicket & {
+    profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
+}
+
 export default async function AdminTicketsPage() {
     const supabase = createClient();
-    const { data: tickets, error } = await supabase
-        .from('support_tickets')
-        .select(`
-            id,
-            created_at,
-            subject,
-            category,
-            status,
-            priority,
-            screenshot_url,
-            profiles:user_id (
-                id,
-                full_name,
-                avatar_url
-            )
-        `)
-        .order('created_at', { ascending: false });
+    
+    // 1. Fetch tickets and profiles in parallel
+    const [ticketsRes, profilesRes] = await Promise.all([
+        supabase.from('support_tickets').select('*').order('created_at', { ascending: false }),
+        supabase.from('profiles').select('id, full_name, avatar_url')
+    ]);
 
-    if (error) {
-        return <div>Error loading tickets: {error.message}</div>
+    if (ticketsRes.error) {
+        return <div>Error loading tickets: {ticketsRes.error.message}</div>
     }
+
+    const ticketsData = ticketsRes.data || [];
+    const profilesData = profilesRes.data || [];
+
+    // 2. Create a quick-access map for profiles
+    const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+
+    // 3. Manually join the data in code
+    const tickets: TicketWithProfile[] = ticketsData.map(ticket => ({
+        ...ticket,
+        profiles: profilesMap.get(ticket.user_id) || null,
+    }));
 
     return (
         <div className="space-y-8">
