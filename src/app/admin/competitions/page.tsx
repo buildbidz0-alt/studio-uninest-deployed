@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import PageHeader from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react";
@@ -28,8 +27,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { deleteCompetition } from './actions';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 type Competition = {
     id: number;
@@ -41,14 +40,13 @@ type Competition = {
 
 export default function AdminCompetitionsPage() {
     const { supabase } = useAuth();
-    const router = useRouter();
     const { toast } = useToast();
     const [competitions, setCompetitions] = useState<Competition[]>([]);
     const [loading, setLoading] = useState(true);
     const [productToDelete, setProductToDelete] = useState<Competition | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     
-    useState(() => {
+    useEffect(() => {
         const fetchCompetitions = async () => {
             if (!supabase) return;
             setLoading(true);
@@ -63,7 +61,7 @@ export default function AdminCompetitionsPage() {
             setLoading(false);
         };
         fetchCompetitions();
-    });
+    }, [supabase]);
 
     const handleDelete = async () => {
         if (!productToDelete) return;
@@ -105,7 +103,13 @@ export default function AdminCompetitionsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {competitions && competitions.length > 0 ? (
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">
+                                        <Loader2 className="mx-auto animate-spin" />
+                                    </TableCell>
+                                </TableRow>
+                            ) : competitions && competitions.length > 0 ? (
                                 competitions.map(comp => (
                                     <TableRow key={comp.id}>
                                         <TableCell className="font-medium">{comp.title}</TableCell>
@@ -118,7 +122,11 @@ export default function AdminCompetitionsPage() {
                                                     <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    <DropdownMenuItem disabled><Pencil className="mr-2 size-4" />Edit</DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/competitions/${comp.id}/edit`}>
+                                                            <Pencil className="mr-2 size-4" />Edit
+                                                        </Link>
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive" onClick={() => setProductToDelete(comp)}>
                                                         <Trash2 className="mr-2 size-4" />Delete
                                                     </DropdownMenuItem>

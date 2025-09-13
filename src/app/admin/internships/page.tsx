@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import PageHeader from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react";
@@ -30,6 +29,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { deleteInternship } from './actions';
 import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 type Internship = {
     id: number;
@@ -42,14 +42,13 @@ type Internship = {
 
 export default function AdminInternshipsPage() {
     const { supabase } = useAuth();
-    const router = useRouter();
     const { toast } = useToast();
     const [internships, setInternships] = useState<Internship[]>([]);
     const [loading, setLoading] = useState(true);
     const [productToDelete, setProductToDelete] = useState<Internship | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-     useState(() => {
+     useEffect(() => {
         const fetchInternships = async () => {
             if (!supabase) return;
             setLoading(true);
@@ -64,7 +63,7 @@ export default function AdminInternshipsPage() {
             setLoading(false);
         };
         fetchInternships();
-    });
+    }, [supabase]);
 
     const handleDelete = async () => {
         if (!productToDelete) return;
@@ -106,7 +105,13 @@ export default function AdminInternshipsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {internships && internships.length > 0 ? (
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center h-24">
+                                        <Loader2 className="mx-auto animate-spin" />
+                                    </TableCell>
+                                </TableRow>
+                            ) : internships && internships.length > 0 ? (
                                 internships.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.role}</TableCell>
@@ -122,7 +127,11 @@ export default function AdminInternshipsPage() {
                                                     <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    <DropdownMenuItem disabled><Pencil className="mr-2 size-4" />Edit</DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                      <Link href={`/admin/internships/${item.id}/edit`}>
+                                                        <Pencil className="mr-2 size-4" />Edit
+                                                      </Link>
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive" onClick={() => setProductToDelete(item)}>
                                                         <Trash2 className="mr-2 size-4" />Delete
                                                     </DropdownMenuItem>

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -11,11 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createInternship } from '@/app/admin/internships/actions';
+import { createInternship, updateInternship } from '@/app/admin/internships/actions';
+import Image from 'next/image';
+
+type Internship = {
+    id: number;
+    role: string;
+    company: string;
+    stipend: number;
+    stipend_period: string;
+    location: string;
+    deadline: string;
+    image_url: string | null;
+    details_pdf_url: string | null;
+};
 
 const formSchema = z.object({
   role: z.string().min(3, 'Role must be at least 3 characters.'),
@@ -28,7 +39,12 @@ const formSchema = z.object({
   details_pdf: z.any().optional(),
 });
 
-export default function InternshipForm() {
+type InternshipFormProps = {
+    internship?: Internship;
+};
+
+export default function InternshipForm({ internship }: InternshipFormProps) {
+  const isEditMode = !!internship;
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -36,11 +52,12 @@ export default function InternshipForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      role: '',
-      company: '',
-      stipend: 0,
-      stipend_period: 'monthly',
-      location: '',
+      role: internship?.role || '',
+      company: internship?.company || '',
+      stipend: internship?.stipend || 0,
+      stipend_period: internship?.stipend_period || 'monthly',
+      location: internship?.location || '',
+      deadline: internship ? new Date(internship.deadline).toISOString().split('T')[0] : '',
     },
   });
 
@@ -48,7 +65,6 @@ export default function InternshipForm() {
     setIsLoading(true);
 
     const formData = new FormData();
-    // Manually append because file objects can be tricky
     formData.append('role', values.role);
     formData.append('company', values.company);
     formData.append('stipend', values.stipend.toString());
@@ -58,12 +74,14 @@ export default function InternshipForm() {
     if (values.image) formData.append('image', values.image);
     if (values.details_pdf) formData.append('details_pdf', values.details_pdf);
 
-    const result = await createInternship(formData);
+    const result = isEditMode
+        ? await updateInternship(internship.id, formData)
+        : await createInternship(formData);
 
     if (result.error) {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
     } else {
-      toast({ title: 'Success!', description: 'Internship created successfully.' });
+      toast({ title: 'Success!', description: `Internship ${isEditMode ? 'updated' : 'created'} successfully.` });
       router.refresh();
       router.push('/admin/internships');
     }
@@ -74,7 +92,7 @@ export default function InternshipForm() {
   return (
     <Card>
         <CardHeader>
-            <CardTitle>Internship Details</CardTitle>
+            <CardTitle>{isEditMode ? 'Edit' : 'Create'} Internship</CardTitle>
             <CardDescription>All fields are required.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -118,15 +136,29 @@ export default function InternshipForm() {
                      )} />
                     <div className="grid md:grid-cols-2 gap-6">
                          <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
-                            <FormItem><FormLabel>Company Logo / Banner</FormLabel><FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Company Logo / Banner</FormLabel>
+                                {isEditMode && internship.image_url && (
+                                    <div className="mb-2"><Image src={internship.image_url} alt="Current banner" width={100} height={50} className="rounded-md object-cover" /></div>
+                                )}
+                                <FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
                          )} />
                          <FormField control={form.control} name="details_pdf" render={({ field: { onChange, value, ...rest } }) => (
-                            <FormItem><FormLabel>Job Description (PDF)</FormLabel><FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Job Description (PDF)</FormLabel>
+                                {isEditMode && internship.details_pdf_url && (
+                                    <div className="mb-2"><a href={internship.details_pdf_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">View current PDF</a></div>
+                                )}
+                                <FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl>
+                                <FormMessage />
+                             </FormItem>
                          )} />
                     </div>
                     <Button type="submit" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Internship
+                        {isEditMode ? 'Save Changes' : 'Create Internship'}
                     </Button>
                 </form>
             </Form>

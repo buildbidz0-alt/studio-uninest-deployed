@@ -85,6 +85,56 @@ export async function createCompetition(formData: FormData) {
     }
 }
 
+export async function updateCompetition(id: number, formData: FormData) {
+    try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const rawFormData = {
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            prize: Number(formData.get('prize')),
+            entry_fee: Number(formData.get('entry_fee')),
+            deadline: formData.get('deadline') as string,
+            image: formData.get('image') as File | null,
+            details_pdf: formData.get('details_pdf') as File | null,
+        };
+
+        const { data: existing } = await supabaseAdmin.from('competitions').select('image_url, details_pdf_url').eq('id', id).single();
+        
+        let imageUrl = existing?.image_url || null;
+        let pdfUrl = existing?.details_pdf_url || null;
+
+        if (rawFormData.image && rawFormData.image.size > 0) {
+            imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'competitions');
+            if (!imageUrl) return { error: 'Failed to upload banner image.' };
+        }
+        if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
+            pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'competitions');
+            if (!pdfUrl) return { error: 'Failed to upload details PDF.' };
+        }
+
+        const { error } = await supabaseAdmin.from('competitions').update({
+          title: rawFormData.title,
+          description: rawFormData.description,
+          prize: rawFormData.prize,
+          entry_fee: rawFormData.entry_fee,
+          deadline: new Date(rawFormData.deadline).toISOString(),
+          image_url: imageUrl,
+          details_pdf_url: pdfUrl,
+        }).eq('id', id);
+
+        if (error) {
+            return { error: error.message };
+        }
+
+        revalidatePath('/admin/competitions');
+        revalidatePath(`/admin/competitions/${id}/edit`);
+        revalidatePath('/workspace/competitions');
+        return { error: null };
+    } catch(e: any) {
+        return { error: e.message };
+    }
+}
+
 export async function deleteCompetition(id: number) {
     try {
         const supabaseAdmin = getSupabaseAdmin();

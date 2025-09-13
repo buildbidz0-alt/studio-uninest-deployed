@@ -3,10 +3,11 @@
 
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { updateTicketStatus } from '@/app/admin/tickets/actions';
+import { Loader2 } from 'lucide-react';
 
 type TicketStatusChangerProps = {
     ticketId: number;
@@ -23,23 +24,18 @@ const statusColors: { [key: string]: string } = {
 export default function TicketStatusChanger({ ticketId, currentStatus }: TicketStatusChangerProps) {
     const [status, setStatus] = useState(currentStatus);
     const [isUpdating, setIsUpdating] = useState(false);
-    const { supabase } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
 
     const handleStatusChange = async (newStatus: string) => {
-        if (!supabase) return;
         setIsUpdating(true);
         setStatus(newStatus);
         
-        const { error } = await supabase
-            .from('support_tickets')
-            .update({ status: newStatus })
-            .eq('id', ticketId);
+        const result = await updateTicketStatus(ticketId, newStatus);
 
         setIsUpdating(false);
         
-        if (error) {
+        if (result.error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update ticket status.' });
             setStatus(currentStatus); // Revert on error
         } else {
@@ -54,7 +50,7 @@ export default function TicketStatusChanger({ ticketId, currentStatus }: TicketS
                 "w-36 text-white border-0",
                 statusColors[status] || 'bg-gray-500'
             )}>
-                <SelectValue placeholder="Set status" />
+                 {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <SelectValue placeholder="Set status" />}
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="Open">Open</SelectItem>

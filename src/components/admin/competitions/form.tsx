@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -14,7 +13,19 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { createCompetition } from '@/app/admin/competitions/actions';
+import { createCompetition, updateCompetition } from '@/app/admin/competitions/actions';
+import Image from 'next/image';
+
+type Competition = {
+    id: number;
+    title: string;
+    description: string;
+    prize: number;
+    entry_fee: number;
+    deadline: string;
+    image_url: string | null;
+    details_pdf_url: string | null;
+};
 
 const formSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -26,7 +37,12 @@ const formSchema = z.object({
   details_pdf: z.any().optional(),
 });
 
-export default function CompetitionForm() {
+type CompetitionFormProps = {
+    competition?: Competition;
+};
+
+export default function CompetitionForm({ competition }: CompetitionFormProps) {
+  const isEditMode = !!competition;
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -34,10 +50,11 @@ export default function CompetitionForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      prize: 0,
-      entry_fee: 0,
+      title: competition?.title || '',
+      description: competition?.description || '',
+      prize: competition?.prize || 0,
+      entry_fee: competition?.entry_fee || 0,
+      deadline: competition ? new Date(competition.deadline).toISOString().split('T')[0] : '',
     },
   });
 
@@ -51,13 +68,15 @@ export default function CompetitionForm() {
         }
     });
 
-    const result = await createCompetition(formData);
+    const result = isEditMode 
+        ? await updateCompetition(competition.id, formData)
+        : await createCompetition(formData);
 
     if (result.error) {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
     } else {
-      toast({ title: 'Success!', description: 'Competition created successfully.' });
-      router.refresh();
+      toast({ title: 'Success!', description: `Competition ${isEditMode ? 'updated' : 'created'} successfully.` });
+      router.refresh(); // This re-fetches server-side data
       router.push('/admin/competitions');
     }
     
@@ -67,7 +86,7 @@ export default function CompetitionForm() {
   return (
     <Card>
         <CardHeader>
-            <CardTitle>Competition Details</CardTitle>
+            <CardTitle>{isEditMode ? 'Edit' : 'Create'} Competition</CardTitle>
             <CardDescription>All fields are required.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,15 +111,29 @@ export default function CompetitionForm() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                          <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
-                            <FormItem><FormLabel>Banner Image</FormLabel><FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Banner Image</FormLabel>
+                                {isEditMode && competition.image_url && (
+                                    <div className="mb-2"><Image src={competition.image_url} alt="Current banner" width={100} height={50} className="rounded-md object-cover" /></div>
+                                )}
+                                <FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
                          )} />
                          <FormField control={form.control} name="details_pdf" render={({ field: { onChange, value, ...rest } }) => (
-                            <FormItem><FormLabel>Details PDF</FormLabel><FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Details PDF</FormLabel>
+                                {isEditMode && competition.details_pdf_url && (
+                                    <div className="mb-2"><a href={competition.details_pdf_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">View current PDF</a></div>
+                                )}
+                                <FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
                          )} />
                     </div>
                     <Button type="submit" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Competition
+                        {isEditMode ? 'Save Changes' : 'Create Competition'}
                     </Button>
                 </form>
             </Form>

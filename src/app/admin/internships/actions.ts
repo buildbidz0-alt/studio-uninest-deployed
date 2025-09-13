@@ -87,6 +87,58 @@ export async function createInternship(formData: FormData) {
     }
 }
 
+export async function updateInternship(id: number, formData: FormData) {
+    try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const rawFormData = {
+            role: formData.get('role') as string,
+            company: formData.get('company') as string,
+            stipend: Number(formData.get('stipend')),
+            stipend_period: formData.get('stipend_period') as string,
+            location: formData.get('location') as string,
+            deadline: formData.get('deadline') as string,
+            image: formData.get('image') as File | null,
+            details_pdf: formData.get('details_pdf') as File | null,
+        };
+        
+        const { data: existing } = await supabaseAdmin.from('internships').select('image_url, details_pdf_url').eq('id', id).single();
+        
+        let imageUrl = existing?.image_url || null;
+        let pdfUrl = existing?.details_pdf_url || null;
+
+        if (rawFormData.image && rawFormData.image.size > 0) {
+            imageUrl = await uploadFile(supabaseAdmin, rawFormData.image, 'internships');
+            if (!imageUrl) return { error: 'Failed to upload image.' };
+        }
+        if (rawFormData.details_pdf && rawFormData.details_pdf.size > 0) {
+            pdfUrl = await uploadFile(supabaseAdmin, rawFormData.details_pdf, 'internships');
+            if (!pdfUrl) return { error: 'Failed to upload PDF.' };
+        }
+
+        const { error } = await supabaseAdmin.from('internships').update({
+          role: rawFormData.role,
+          company: rawFormData.company,
+          stipend: rawFormData.stipend,
+          stipend_period: rawFormData.stipend_period,
+          location: rawFormData.location,
+          deadline: new Date(rawFormData.deadline).toISOString(),
+          image_url: imageUrl,
+          details_pdf_url: pdfUrl,
+        }).eq('id', id);
+
+        if (error) {
+            return { error: error.message };
+        }
+
+        revalidatePath('/admin/internships');
+        revalidatePath(`/admin/internships/${id}/edit`);
+        revalidatePath('/workspace/internships');
+        return { error: null };
+    } catch(e: any) {
+        return { error: e.message };
+    }
+}
+
 export async function deleteInternship(id: number) {
     try {
         const supabaseAdmin = getSupabaseAdmin();

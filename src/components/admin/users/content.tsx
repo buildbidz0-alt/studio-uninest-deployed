@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from 'date-fns';
-import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import {
@@ -19,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, UserCog } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { promoteUser } from "@/app/admin/users/actions";
 
 export type UserProfile = {
     id: string;
@@ -36,27 +36,19 @@ type AdminUsersContentProps = {
 
 export default function AdminUsersContent({ initialUsers, initialError }: AdminUsersContentProps) {
     const [users, setUsers] = useState<UserProfile[]>(initialUsers);
-    const [loading, setLoading] = useState(false); // Used for actions now, not initial fetch
-    const { supabase } = useAuth();
     const { toast } = useToast();
+    const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
     const makeAdmin = async (userId: string) => {
-        if (!supabase) return;
-        
-        try {
-            const response = await fetch('/api/admin/promote-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId }),
-            });
-            const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to promote user');
-            }
-            toast({ title: 'Success', description: result.message });
+        setUpdatingUserId(userId);
+        const result = await promoteUser(userId);
+        setUpdatingUserId(null);
+
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        } else {
+            toast({ title: 'Success', description: 'User promoted to admin successfully.' });
             setUsers(users.map(u => u.id === userId ? { ...u, role: 'admin' } : u));
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Could not update user role.' });
         }
     }
 
@@ -110,17 +102,21 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                                         {format(new Date(user.created_at), 'PPP')}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onClick={() => makeAdmin(user.id)} disabled={user.role === 'admin'}>
-                                                    <UserCog className="mr-2 size-4" />
-                                                    Make Admin
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        {updatingUserId === user.id ? (
+                                            <Loader2 className="animate-spin" />
+                                        ) : (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => makeAdmin(user.id)} disabled={user.role === 'admin'}>
+                                                        <UserCog className="mr-2 size-4" />
+                                                        Make Admin
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))
