@@ -154,36 +154,31 @@ export function MobileBottomNav() {
       { href: '/social', label: 'Social', icon: Users, roles: ['student', 'guest', 'admin'] },
       { href: '/workspace', label: 'Work', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
       { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
+      { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
     ];
 
-
   const getNavItems = () => {
+    let items = defaultNavItems;
     if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat')) {
-      return [
+      items = [
         { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'guest', 'admin'] },
         { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'guest', 'admin'] },
         { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'admin'] },
+        { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
       ];
     }
     if (pathname.startsWith('/workspace')) {
-      return [
+      items = [
         { href: '/workspace/competitions', label: 'Competitions', icon: Trophy, roles: ['student', 'vendor', 'guest', 'admin'] },
         { href: '/workspace/internships', label: 'Internships', icon: Briefcase, roles: ['student', 'vendor', 'guest', 'admin'] },
         { href: '/profile', label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
+        { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
       ];
     }
-    // Default main navigation
-    return defaultNavItems;
+    return items.filter(item => item.roles.includes(role));
   };
-
-  const navItems = getNavItems().filter(item => item.roles.includes(role));
   
-  if (!user && !navItems.some(item => item.href === '/login')) {
-      const profileItemIndex = navItems.findIndex(item => item.href === '/profile');
-      if (profileItemIndex !== -1) {
-          navItems[profileItemIndex] = { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] };
-      }
-  }
+  const navItems = getNavItems();
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
