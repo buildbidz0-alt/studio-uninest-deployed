@@ -127,27 +127,29 @@ export default function SettingsContent() {
         opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
         vendor_categories: values.role === 'vendor' ? values.vendorCategories : [],
     };
-
+    
+    // Step 1: Update Auth User Metadata
     const { data: authData, error: authError } = await supabase.auth.updateUser({ data: userData });
 
     if (authError) {
-        toast({ variant: 'destructive', title: 'Error', description: authError.message });
+        toast({ variant: 'destructive', title: 'Auth Error', description: authError.message });
         setIsProfileLoading(false);
         return;
     }
     
-    // Also update the public profiles table
+    // Step 2: Update Public Profiles Table
     const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
             full_name: values.fullName,
             handle: values.handle,
             bio: values.bio,
+            role: values.role, // This is the crucial fix
          })
         .eq('id', user.id);
 
     if (profileError) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not update public profile.' });
+      toast({ variant: 'destructive', title: 'Profile Error', description: 'Could not update public profile. ' + profileError.message });
     } else {
       toast({ title: 'Profile Updated', description: 'Your profile has been updated successfully.' });
       // This will trigger a re-render in useAuth hook and update the UI
