@@ -36,7 +36,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loading) {
-      if (role === 'vendor') {
+      if (role === 'vendor' || role === 'admin') { // Also allow admins to see vendor dashboard
         setIsAuthorized(true);
       } else {
         // If not a vendor, redirect away. This is the final safeguard.

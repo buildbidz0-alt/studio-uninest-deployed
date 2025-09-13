@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -56,7 +57,7 @@ export default function LoginForm() {
         setIsLoading(false);
         return;
     }
-    const { error } = await supabase.auth.signInWithPassword(values);
+    const { data, error } = await supabase.auth.signInWithPassword(values);
 
     if (error) {
       toast({
@@ -65,8 +66,16 @@ export default function LoginForm() {
         description: error.message,
       });
     } else {
-      router.push('/');
       toast({ title: 'Welcome back!' });
+      // Role-based redirection
+      const userRole = data.user?.user_metadata?.role;
+      if (userRole === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (userRole === 'vendor') {
+        router.push('/vendor/dashboard');
+      } else {
+        router.push('/');
+      }
     }
     setIsLoading(false);
   }
