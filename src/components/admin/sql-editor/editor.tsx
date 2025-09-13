@@ -36,7 +36,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Creates a function to get all chat rooms for a specific user
+-- **REVISED AND FIXED** Creates a function to get all chat rooms for a specific user
 CREATE OR REPLACE FUNCTION get_user_chat_rooms(p_user_id uuid)
 RETURNS TABLE(
     id uuid,
@@ -49,40 +49,51 @@ RETURNS TABLE(
 ) AS $$
 BEGIN
     RETURN QUERY
-    WITH last_messages AS (
-        SELECT
-            room_id,
-            MAX(created_at) as max_created_at
-        FROM chat_messages
-        GROUP BY room_id
+    WITH user_rooms AS (
+      SELECT room_id FROM chat_participants WHERE user_id = p_user_id
+    ),
+    other_participants AS (
+      SELECT
+        ur.room_id,
+        p.full_name,
+        p.avatar_url
+      FROM user_rooms ur
+      JOIN chat_participants cp ON ur.room_id = cp.room_id AND cp.user_id != p_user_id
+      JOIN profiles p ON cp.user_id = p.id
+    ),
+    last_messages AS (
+      SELECT DISTINCT ON (room_id)
+        room_id,
+        content,
+        created_at
+      FROM chat_messages
+      WHERE room_id IN (SELECT room_id FROM user_rooms)
+      ORDER BY room_id, created_at DESC
     ),
     unread_counts AS (
-        SELECT
-            cm.room_id,
-            COUNT(*) AS unread
-        FROM chat_messages cm
-        WHERE cm.room_id IN (SELECT room_id FROM chat_participants WHERE user_id = p_user_id)
-          AND cm.user_id != p_user_id
-          AND cm.is_read = false
-        GROUP BY cm.room_id
+      SELECT
+        room_id,
+        count(*) as unread
+      FROM chat_messages
+      WHERE room_id IN (SELECT room_id FROM user_rooms)
+        AND user_id != p_user_id
+        AND is_read = false
+      GROUP BY room_id
     )
     SELECT
-        cr.id,
-        cr.created_at,
-        p.full_name AS name,
-        p.avatar_url AS avatar,
-        cm.content AS last_message,
-        cm.created_at AS last_message_timestamp,
-        COALESCE(uc.unread, 0) AS unread_count
-    FROM chat_participants cp_user
-    JOIN chat_rooms cr ON cp_user.room_id = cr.id
-    JOIN chat_participants cp_other ON cr.id = cp_other.room_id AND cp_other.user_id != p_user_id
-    JOIN profiles p ON cp_other.user_id = p.id
+      cr.id,
+      cr.created_at,
+      op.full_name AS name,
+      op.avatar_url AS avatar,
+      lm.content AS last_message,
+      lm.created_at AS last_message_timestamp,
+      COALESCE(uc.unread, 0) AS unread_count
+    FROM chat_rooms cr
+    JOIN other_participants op ON cr.id = op.room_id
     LEFT JOIN last_messages lm ON cr.id = lm.room_id
-    LEFT JOIN chat_messages cm ON lm.room_id = cm.room_id AND lm.max_created_at = cm.created_at
     LEFT JOIN unread_counts uc ON cr.id = uc.room_id
-    WHERE cp_user.user_id = p_user_id
-    ORDER BY cm.created_at DESC NULLS LAST;
+    WHERE cr.id IN (SELECT room_id FROM user_rooms)
+    ORDER BY lm.created_at DESC NULLS LAST;
 END;
 $$ LANGUAGE plpgsql;
 
