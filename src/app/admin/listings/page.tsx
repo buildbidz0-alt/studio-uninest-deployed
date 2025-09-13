@@ -12,7 +12,7 @@ export default async function AdminListingsPage() {
         .from('products')
         .select(`
             *,
-            profiles:seller_id (
+            profiles:seller_id!left(
                 full_name,
                 email
             )
@@ -46,8 +46,8 @@ export default async function AdminListingsPage() {
                                     <TableRow key={listing.id}>
                                         <TableCell className="font-medium">{listing.name}</TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{listing.profiles?.full_name}</div>
-                                            <div className="text-sm text-muted-foreground">{listing.profiles?.email}</div>
+                                            <div className="font-medium">{listing.profiles?.full_name || 'N/A'}</div>
+                                            <div className="text-sm text-muted-foreground">{listing.profiles?.email || 'No email'}</div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{listing.category}</Badge>
