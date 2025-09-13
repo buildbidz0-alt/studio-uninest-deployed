@@ -14,12 +14,14 @@ export type Profile = {
 export type Room = {
   id: string;
   created_at: string;
-  participants: {
-    profile: Profile
-  }[];
-  // Computed properties, not in DB
-  name?: string;
-  avatar?: string;
+  // Computed properties from DB function
+  name: string | null;
+  avatar: string | null;
+  last_message: string | null;
+  last_message_timestamp: string | null;
+  // Computed on client
+  unreadCount?: number;
+  participants?: { profile: Profile }[]; // Keep for compatibility if needed elsewhere
 };
 
 export type Message = {
@@ -134,4 +136,3 @@ export type SupportTicket = {
   priority: 'Low' | 'Medium' | 'High';
   screenshot_url?: string | null;
 };
-

@@ -6,7 +6,7 @@ import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { Room } from '@/lib/types';
-import { format, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday, formatDistanceToNowStrict } from 'date-fns';
 
 type ChatListProps = {
   rooms: Room[];
@@ -14,14 +14,12 @@ type ChatListProps = {
   onSelectRoom: (room: Room) => void;
 };
 
-function formatTimestamp(date: Date) {
-    if (isToday(date)) {
-        return format(date, 'p'); // e.g., 4:30 PM
-    }
-    if (isYesterday(date)) {
-        return 'Yesterday';
-    }
-    return format(date, 'dd/MM/yyyy');
+function formatTimestamp(timestamp: string | null) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
+
+    return formatDistanceToNowStrict(date, { addSuffix: true });
 }
 
 
@@ -41,22 +39,21 @@ export default function ChatList({ rooms, selectedRoom, onSelectRoom }: ChatList
                 )}
               >
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={room.avatar} alt={room.name} data-ai-hint="person face" />
-                  <AvatarFallback>{room.name?.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={room.avatar || `https://picsum.photos/seed/${room.id}/40`} alt={room.name || 'Chat'} data-ai-hint="person face" />
+                  <AvatarFallback>{room.name?.charAt(0) || 'C'}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 truncate border-b border-border pb-3">
                   <div className="flex justify-between items-center">
                     <p className="font-semibold text-lg truncate">{room.name}</p>
                     <p className={cn(
-                        "text-xs",
+                        "text-xs flex-shrink-0 ml-2",
                         room.unreadCount && room.unreadCount > 0 ? "text-primary font-bold" : "text-muted-foreground"
                     )}>
-                        {/* {room.lastMessageTimestamp ? formatTimestamp(new Date(room.lastMessageTimestamp)) : ''} */}
-                        {formatTimestamp(new Date(room.created_at))}
+                        {formatTimestamp(room.last_message_timestamp)}
                     </p>
                   </div>
                    <div className="flex justify-between items-center mt-1">
-                        <p className="text-sm text-muted-foreground truncate">{room.lastMessage || 'Select to view messages'}</p>
+                        <p className="text-sm text-muted-foreground truncate">{room.last_message || 'Select to view messages'}</p>
                         {room.unreadCount && room.unreadCount > 0 && (
                             <div className="flex-shrink-0 ml-2 size-5 primary-gradient rounded-full flex items-center justify-center text-xs text-white font-bold">
                                 {room.unreadCount}

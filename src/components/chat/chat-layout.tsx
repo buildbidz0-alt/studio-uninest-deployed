@@ -33,69 +33,16 @@ export default function ChatLayout() {
     if (user && supabase) {
       const fetchRooms = async () => {
         setLoadingRooms(true);
-        // Step 1: Fetch all room IDs the user is part of
-        const { data: participantData, error: participantError } = await supabase
-          .from('chat_room_participants')
-          .select('room_id')
-          .eq('user_id', user.id);
+        const { data, error } = await supabase.rpc('get_user_chat_rooms', {
+          p_user_id: user.id
+        });
 
-        if (participantError) {
-          console.error('Error fetching user rooms:', participantError);
+        if (error) {
+          console.error('Error fetching chat rooms with RPC:', error);
           toast({ variant: 'destructive', title: 'Error loading chats' });
-          setLoadingRooms(false);
-          return;
+        } else {
+          setRooms(data as Room[] || []);
         }
-
-        const roomIds = participantData.map(p => p.room_id);
-        if (roomIds.length === 0) {
-            setRooms([]);
-            setLoadingRooms(false);
-            return;
-        }
-        
-        // Step 2: Fetch all participants for those rooms
-        const { data: allParticipants, error: allParticipantsError } = await supabase
-            .from('chat_room_participants')
-            .select(`
-                room_id,
-                profile:profiles ( id, full_name, avatar_url )
-            `)
-            .in('room_id', roomIds);
-
-        if (allParticipantsError) {
-            console.error('Error fetching participants:', allParticipantsError);
-            toast({ variant: 'destructive', title: 'Error loading chat details' });
-            setLoadingRooms(false);
-            return;
-        }
-
-        // Step 3: Process the data to build the Room objects
-        const roomsMap = new Map<string, Room>();
-        for (const p of allParticipants) {
-            if (!p.room_id || !p.profile) continue;
-
-            const otherParticipant = p.profile.id !== user.id ? p.profile : null;
-
-            if (!roomsMap.has(p.room_id)) {
-                roomsMap.set(p.room_id, {
-                    id: p.room_id,
-                    created_at: '', // This can be fetched if needed, but not essential for display
-                    participants: [],
-                    name: 'Chat', // Default name
-                    avatar: `https://picsum.photos/seed/${p.room_id}/40`,
-                });
-            }
-
-            const room = roomsMap.get(p.room_id)!;
-            room.participants.push({ profile: p.profile });
-
-            if (otherParticipant) {
-                room.name = otherParticipant.full_name || 'Chat';
-                room.avatar = otherParticipant.avatar_url || `https://picsum.photos/seed/${p.room_id}/40`;
-            }
-        }
-        
-        setRooms(Array.from(roomsMap.values()));
         setLoadingRooms(false);
       }
       fetchRooms();
