@@ -1,11 +1,8 @@
 
-
-
-
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, ShoppingBag, BookOpen, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users, Trophy, Briefcase, User as UserIcon, LifeBuoy, Sparkles } from 'lucide-react';
+import { Home, Newspaper, ShoppingBag, BookOpen, UserCog, LogOut, Settings, Heart, LayoutGrid, Info, MessageSquare, Users, Trophy, Briefcase, User as UserIcon, LifeBuoy, Sparkles, ArrowLeft } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -135,32 +132,43 @@ export function MobileBottomNav() {
   const profileLink = user ? `/profile/${user.user_metadata?.handle}` : '/login';
 
   const defaultNavItems = [
-      { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
-      { href: '/marketplace', label: 'Market', icon: ShoppingBag, roles: ['student', 'vendor', 'guest', 'admin'] },
-      { href: '/social', label: 'Social', icon: Users, roles: ['student', 'guest', 'admin'] },
-      { href: '/workspace', label: 'Work', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
-      { href: profileLink, label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
-      { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
-    ];
+    { href: '/', label: 'Home', icon: Home, roles: ['student', 'vendor', 'guest', 'admin'] },
+    { href: '/marketplace', label: 'Market', icon: ShoppingBag, roles: ['student', 'vendor', 'guest', 'admin'] },
+    { href: '/social', label: 'Social', icon: Users, roles: ['student', 'guest', 'admin'] },
+    { href: '/workspace', label: 'Work', icon: LayoutGrid, roles: ['student', 'vendor', 'guest', 'admin'] },
+    { href: profileLink, label: 'Profile', icon: 'avatar', roles: ['student', 'vendor', 'admin'] },
+    { href: '/login', label: 'Login', icon: UserIcon, roles: ['guest'] },
+  ];
 
-  const getNavItems = () => {
-    let items = defaultNavItems;
-    // No special nav for vendor role on mobile, they use the default
-    
-    return items.filter(item => item.roles.includes(role));
-  };
+  const socialNavItems = [
+    { href: '/social', label: 'Back', icon: ArrowLeft, roles: ['student', 'guest', 'admin'] },
+    { href: '/feed', label: 'Feed', icon: Newspaper, roles: ['student', 'guest', 'admin'] },
+    { href: '/chat', label: 'Messages', icon: MessageSquare, roles: ['student', 'guest', 'admin'] },
+    { href: '/ai/chat', label: 'AI', icon: Sparkles, roles: ['student', 'guest', 'admin'] },
+  ];
+
+  const workspaceNavItems = [
+    { href: '/workspace', label: 'Back', icon: ArrowLeft, roles: ['student', 'vendor', 'guest', 'admin'] },
+    { href: '/workspace/competitions', label: 'Compete', icon: Trophy, roles: ['student', 'vendor', 'guest', 'admin'] },
+    { href: '/workspace/internships', label: 'Intern', icon: Briefcase, roles: ['student', 'vendor', 'guest', 'admin'] },
+  ];
+
+  let navItems;
+  if (pathname.startsWith('/social') || pathname.startsWith('/feed') || pathname.startsWith('/chat') || pathname.startsWith('/ai/chat')) {
+    navItems = socialNavItems.filter(item => item.roles.includes(role));
+  } else if (pathname.startsWith('/workspace/')) {
+    navItems = workspaceNavItems.filter(item => item.roles.includes(role));
+  } else {
+    navItems = defaultNavItems.filter(item => item.roles.includes(role));
+  }
   
-  const navItems = getNavItems();
-
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t shadow-t-lg z-50">
       <div className="grid h-full w-full" style={{ gridTemplateColumns: `repeat(${navItems.length}, 1fr)`}}>
         {navItems.map(item => {
-          let isActive = item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
-
-          if (item.label === 'Profile') {
-            isActive = pathname.startsWith('/profile') || pathname.startsWith('/settings');
-          }
+          let isActive = pathname === item.href;
+          // Special case for 'Back' button to not be active
+          if (item.label === 'Back') isActive = false;
 
           return (
             <Link
