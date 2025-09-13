@@ -3,12 +3,71 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import ProfileClient from '@/components/profile/profile-client';
 import { createClient } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
+import type { Product, PostWithAuthor, Profile } from '@/lib/types';
 
-type Props = {
+type ProfilePageProps = {
   params: { handle: string }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+async function getProfileData(handle: string) {
+    const supabase = createClient();
+    
+    // 1. Get the profile
+    const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('handle', handle)
+        .single();
+    
+    if (profileError || !profileData) {
+        return null;
+    }
+    
+    const userId = profileData.id;
+
+    // 2. Get counts
+    const { count: follower_count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('following_id', userId);
+    const { count: following_count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
+
+    const profileWithCounts = {
+        ...profileData,
+        follower_count: follower_count ?? 0,
+        following_count: following_count ?? 0,
+    };
+
+    // 3. Get related content
+    const [
+        listingsRes,
+        postsRes,
+        followersRes,
+        followingRes,
+        likedPostsRes
+    ] = await Promise.all([
+        supabase.from('products').select('*, profiles:seller_id(full_name)').eq('seller_id', userId),
+        supabase.from('posts').select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`).eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('followers').select('follower:follower_id(*)').eq('following_id', userId),
+        supabase.from('followers').select('following:following_id(*)').eq('follower_id', userId),
+        supabase.auth.getUser().then(({data: { user }}) => {
+            if (!user) return { data: [] };
+            return supabase.from('likes').select('post_id').eq('user_id', user.id);
+        })
+    ]);
+
+    const likedPostIds = new Set(likedPostsRes.data?.map(p => p.post_id) || []);
+
+    const content = {
+        listings: (listingsRes.data as any[] || []).map(p => ({ ...p, seller: p.profiles })) as Product[],
+        posts: (postsRes.data || []).map(p => ({ ...p, isLiked: likedPostIds.has(p.id) })) as PostWithAuthor[],
+        followers: (followersRes.data?.map((f: any) => f.follower) as Profile[]) || [],
+        following: (followingRes.data?.map((f: any) => f.following) as Profile[]) || [],
+    };
+    
+    return { profile: profileWithCounts, content };
+}
+
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const supabase = createClient();
   const handle = params.handle;
 
@@ -31,14 +90,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 
-function PublicProfilePage() {
-  return <ProfileClient />;
-}
+export default async function PublicProfilePage({ params }: ProfilePageProps) {
+    const profileData = await getProfileData(params.handle);
+    
+    if (!profileData) {
+        notFound();
+    }
+    
+    const { profile, content } = profileData;
 
-export default function Page() {
-  return (
-    <Suspense fallback={<div>Loading profile...</div>}>
-      <PublicProfilePage />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<div>Loading profile...</div>}>
+            <ProfileClient initialProfile={profile} initialContent={content} />
+        </Suspense>
+    );
 }
