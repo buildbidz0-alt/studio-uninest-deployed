@@ -125,7 +125,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
     
         try {
-            // Step 1: Check if a room already exists.
+            // Step 1: Check if a room already exists with the seller.
             const { data, error: rpcError } = await supabase.rpc('get_chat_room_with_user', {
                 p_user_id: product.seller_id
             });
@@ -169,7 +169,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
     }, [currentUser, supabase, toast, router, product.seller_id]);
     
     const canInteract = currentUser && currentUser.id !== product.seller_id;
-    const isPhysicalProduct = ['Books', 'Other Products'].includes(product.category);
+    const isContactOnly = ['Books', 'Other Products', 'Cyber Café'].includes(product.category);
 
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-8">
@@ -213,7 +213,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
 
                     {canInteract && (
                         <div className="flex flex-col sm:flex-row gap-4">
-                            {isPhysicalProduct ? (
+                            {isContactOnly ? (
                                 <Button size="lg" className="flex-1 text-lg" onClick={handleChat}>
                                     <MessageSquare className="mr-2" />
                                     Contact Seller

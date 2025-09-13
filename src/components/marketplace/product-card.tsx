@@ -25,7 +25,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
   const canContact = user && user.id !== product.seller_id;
   const isLibrary = product.category === 'Library';
   const isHostel = product.category === 'Hostels';
-  const isPhysicalProduct = ['Books', 'Other Products'].includes(product.category);
+  const isContactOnly = ['Books', 'Other Products', 'Cyber Café'].includes(product.category);
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
     e.stopPropagation();
@@ -65,7 +65,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                     {isLibrary ? `₹${product.price.toLocaleString()}/seat` : isHostel ? 'View Details' : `₹${product.price.toLocaleString()}`}
                 </p>
                 <div className='flex gap-2'>
-                {canContact && isPhysicalProduct ? (
+                {canContact && isContactOnly ? (
                     <Button onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id))}>
                         <MessageSquare className="mr-2 size-4"/>
                         Contact Seller
@@ -79,7 +79,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                 
                 {isLibrary || isHostel ? (
                     <Button>{isHostel ? 'View Rooms' : 'Book Seat'}</Button>
-                ) : !isPhysicalProduct ? (
+                ) : !isContactOnly ? (
                     <Button onClick={(e) => handleButtonClick(e, () => onBuyNow(product))} disabled={!canContact || !isRazorpayLoaded || isBuying}>
                         {isBuying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Buy Now
