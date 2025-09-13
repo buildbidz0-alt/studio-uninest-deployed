@@ -13,7 +13,6 @@ export type Profile = {
 
 export type Room = {
   id: string;
-  created_at: string;
   name: string | null;
   avatar: string | null;
   last_message: string | null;
