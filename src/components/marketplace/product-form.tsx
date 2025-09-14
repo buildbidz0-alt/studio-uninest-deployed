@@ -29,7 +29,6 @@ const formSchema = z.object({
   category: z.string({ required_error: "Please select a category." }),
   image: z.any().optional(),
   location: z.string().optional(),
-  total_seats: z.coerce.number().min(1, "Total seats must be at least 1.").optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -43,8 +42,6 @@ type ProductFormProps = {
     category: string;
     image_url: string | null;
     location: string | null;
-    total_seats: number | null;
-    parent_product_id?: number | null;
   };
   chargeForPosts?: boolean;
   postPrice?: number;
@@ -87,7 +84,6 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
       price: product?.price || 0,
       category: product?.category || '',
       location: product?.location || '',
-      total_seats: product?.total_seats || undefined,
     },
   });
   
@@ -225,17 +221,9 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                         <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your product, its condition, etc." {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     
-                    <div className="grid md:grid-cols-2 gap-6">
-                         <FormField control={form.control} name="price" render={({ field }) => (
-                            <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Price per Seat (INR)' : selectedCategory === 'Hostel Room' ? 'Price per month (INR)' : 'Price (INR)'}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-
-                        {selectedCategory === 'Library' && (
-                            <FormField control={form.control} name="total_seats" render={({ field }) => (
-                                <FormItem><FormLabel>Total Seats</FormLabel><FormControl><Input type="number" placeholder="50" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        )}
-                    </div>
+                    <FormField control={form.control} name="price" render={({ field }) => (
+                        <FormItem><FormLabel>{selectedCategory === 'Library' ? 'Price per Seat (INR)' : selectedCategory === 'Hostel Room' ? 'Price per month (INR)' : 'Price (INR)'}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
 
                     {isLibraryOrHostel && (
                         <FormField control={form.control} name="location" render={({ field }) => (
@@ -271,3 +259,5 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
     </Card>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -76,3 +77,5 @@ export async function updateSettings(settings: unknown) {
     return { error: e.message };
   }
 }
+
+    

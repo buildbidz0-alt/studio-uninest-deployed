@@ -45,16 +45,12 @@ const vendorCategoriesList = [
 const profileFormSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
   email: z.string().email(),
-  handle: z.string().min(3, { message: 'Handle must be at least 3 characters.' }),
+  handle: z.string().min(3, { message: 'Handle must be at least 3 characters.' }).regex(/^[a-z0-9_]+$/, 'Handle can only contain lowercase letters, numbers, and underscores.'),
   contactNumber: z.string().optional(),
   bio: z.string().max(200, 'Bio must not exceed 200 characters.').optional(),
   openingHours: z.string().max(200, 'Opening hours must not exceed 200 characters.').optional(),
   role: z.enum(['student', 'vendor']),
   vendorCategories: z.array(z.string()).optional(),
-  libraryDetails: z.object({
-      totalSeats: z.coerce.number().optional(),
-      price: z.coerce.number().optional(),
-  }).optional(),
 });
 
 const passwordFormSchema = z.object({
@@ -68,7 +64,7 @@ const passwordFormSchema = z.object({
 
 export default function SettingsContent() {
   const { toast } = useToast();
-  const { user, loading, supabase, role } = useAuth();
+  const { user, loading, supabase, role, vendorCategories: userVendorCategories } = useAuth();
   const { openCheckout, isLoaded } = useRazorpay();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
@@ -92,11 +88,9 @@ export default function SettingsContent() {
       openingHours: user?.user_metadata?.opening_hours || '',
       role: user?.user_metadata?.role || 'student',
       vendorCategories: user?.user_metadata?.vendor_categories || [],
-      libraryDetails: user?.user_metadata?.library_details || { totalSeats: 0, price: 0 },
     },
   });
   
-  const isLibraryVendor = profileForm.watch('vendorCategories')?.includes('library');
   const watchedVendorCategories = profileForm.watch('vendorCategories');
   const isVendorActive = user?.user_metadata?.is_vendor_active || false;
   
@@ -131,7 +125,6 @@ export default function SettingsContent() {
         openingHours: user.user_metadata?.opening_hours || '',
         role: user.user_metadata?.role || 'student',
         vendorCategories: user.user_metadata?.vendor_categories || [],
-        libraryDetails: user.user_metadata?.library_details || { totalSeats: 50, price: 10 },
       })
       if (user.user_metadata?.banner_url) {
         setBannerPreviewUrl(user.user_metadata.banner_url);
@@ -212,7 +205,6 @@ export default function SettingsContent() {
         vendor_categories: values.role === 'vendor' ? values.vendorCategories : [],
         is_vendor_active: values.role === 'vendor' ? isNowActive : false,
         last_payment_id: paymentId || user.user_metadata?.last_payment_id,
-        library_details: values.role === 'vendor' && values.vendorCategories?.includes('library') ? values.libraryDetails : undefined,
     };
     
     const { error: authError } = await supabase.auth.updateUser({ data: userData });
@@ -232,31 +224,6 @@ export default function SettingsContent() {
     if (profileError) {
       toast({ variant: 'destructive', title: 'Profile Error', description: 'Could not update public profile. ' + profileError.message });
     } else {
-        if (values.role === 'vendor' && values.vendorCategories?.includes('library') && values.libraryDetails?.totalSeats) {
-             const { data: libraryProduct, error: upsertError } = await supabase.from('products').upsert({
-                seller_id: user.id,
-                category: 'Library',
-                name: values.fullName,
-                total_seats: values.libraryDetails.totalSeats,
-                price: values.libraryDetails.price || 0,
-                description: values.bio || `A library managed by ${values.fullName}`,
-             }, { onConflict: 'seller_id, category' }).select().single();
-             
-             if (upsertError) {
-                console.error("Failed to upsert library product:", upsertError);
-             } else if (libraryProduct) {
-                 const seatProducts = Array.from({ length: values.libraryDetails.totalSeats }, (_, i) => ({
-                    name: `Seat ${i + 1}`,
-                    category: 'Library Seat',
-                    price: values.libraryDetails?.price || 0,
-                    seller_id: user.id,
-                    parent_product_id: libraryProduct.id,
-                    description: `Seat ${i+1} at ${values.fullName}`
-                }));
-                 await supabase.from('products').delete().eq('parent_product_id', libraryProduct.id);
-                 await supabase.from('products').insert(seatProducts);
-             }
-        }
       toast({ title: 'Profile Updated', description: 'Your profile has been updated successfully.' });
       window.location.reload();
     }
@@ -630,16 +597,16 @@ export default function SettingsContent() {
                 )}
               />
               
-              {isLibraryVendor && (
+              {profileForm.watch('role') === 'vendor' && (
                   <Card className="bg-muted/50 p-4">
-                    <h4 className="font-semibold mb-2">Library Configuration</h4>
+                    <h4 className="font-semibold mb-2">Business Details</h4>
                      <FormField
                         control={profileForm.control}
                         name="openingHours"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Time Slots / Shifts</FormLabel>
-                            <FormDescription>List each available shift on a new line (e.g., 9am-1pm).</FormDescription>
+                            <FormLabel>Opening Hours / Time Slots</FormLabel>
+                            <FormDescription>For libraries or services, list each available shift on a new line (e.g., 9am-1pm).</FormDescription>
                             <FormControl>
                             <Textarea placeholder={"9am - 1pm\n2pm - 8pm"} className="resize-none" {...field} />
                             </FormControl>
@@ -714,3 +681,5 @@ export default function SettingsContent() {
     </div>
   );
 }
+
+    
