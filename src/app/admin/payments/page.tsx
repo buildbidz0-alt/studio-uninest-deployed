@@ -28,7 +28,7 @@ export default async function AdminPaymentsPage() {
         ...(donations || []).map(d => ({
             id: d.razorpay_payment_id || `donation-${d.id}`,
             amount: d.amount,
-            currency: d.currency,
+            currency: d.currency || 'INR',
             type: 'Donation',
             created_at: d.created_at,
             user: d.profiles ? { full_name: d.profiles.full_name, email: d.profiles.email } : {full_name: 'Anonymous', email: null}

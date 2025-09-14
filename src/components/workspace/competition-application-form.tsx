@@ -47,15 +47,21 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
   });
 
   const saveEntry = async (paymentId?: string) => {
-    if (!supabase) return;
-    const { error } = await supabase.from('competition_entries').insert({
-        competition_id: competition.id,
-        user_id: user.id,
-        razorpay_payment_id: paymentId,
+      const verificationResponse = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          razorpay_payment_id: paymentId,
+          type: 'competition_entry',
+          userId: user.id,
+          competitionId: competition.id,
+        })
     });
+    
+    const result = await verificationResponse.json();
 
-    if (error) {
-        toast({ variant: 'destructive', title: 'Error Saving Entry', description: 'Your payment was received, but we failed to save your entry. Please contact support.' });
+    if (!verificationResponse.ok) {
+        toast({ variant: 'destructive', title: 'Error Saving Entry', description: result.error || 'Your payment was processed, but we failed to save your entry. Please contact support.' });
         setIsLoading(false);
     } else {
         toast({ title: 'Entry Successful!', description: `You have successfully entered ${competition.title}.` });
@@ -67,7 +73,10 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     setIsLoading(true);
 
     if (competition.entry_fee <= 0) {
-        await saveEntry();
+        // This flow needs to be updated if free entries are ever implemented server-side
+        toast({ title: 'Success', description: 'Free entry recorded (simulation).' });
+        router.push(`/workspace/competitions/${competition.id}`);
+        setIsLoading(false);
         return;
     }
 
@@ -92,7 +101,26 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
           name: `Entry Fee: ${competition.title}`,
           order_id: order.id,
           handler: async (paymentResponse: any) => {
-            await saveEntry(paymentResponse.razorpay_payment_id);
+            const verificationResponse = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: order.id,
+                    razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                    razorpay_signature: paymentResponse.razorpay_signature,
+                    type: 'competition_entry',
+                    userId: user.id,
+                    competitionId: competition.id,
+                })
+            });
+
+            const result = await verificationResponse.json();
+             if (!verificationResponse.ok) {
+                toast({ variant: 'destructive', title: 'Error Saving Entry', description: result.error || 'Your payment was processed, but we failed to save your entry. Please contact support.' });
+            } else {
+                toast({ title: 'Entry Successful!', description: `You have successfully entered ${competition.title}.` });
+                router.push(`/workspace/competitions/${competition.id}`);
+            }
           },
           modal: { ondismiss: () => setIsLoading(false) },
           prefill: { name: values.name, email: values.email },
