@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -114,29 +113,25 @@ export default function LibraryDetailClient({ library, initialSeatProducts, init
 
         try {
             const { data: existingRoom, error: findRoomError } = await supabase
-                .rpc('get_mutual_private_room', { p_user1_id: currentUser.id, p_user2_id: library.seller_id });
+                .rpc('get_mutual_private_room', {
+                    p_user1_id: currentUser.id,
+                    p_user2_id: library.seller_id,
+                });
 
             if (findRoomError) throw findRoomError;
 
-            if (existingRoom && existingRoom.length > 0) {
+            if (existingRoom && existingRoom.id) {
                 router.push('/chat');
                 return;
             }
 
-            const { data: newRoom, error: newRoomError } = await supabase
-                .from('chat_rooms')
-                .insert({ is_private: true }).select('id').single();
+            const { data: newRoomId, error: newRoomError } = await supabase
+                .rpc('create_chat_room_with_participants', {
+                    p_user1_id: currentUser.id,
+                    p_user2_id: library.seller_id,
+                });
             
             if (newRoomError) throw newRoomError;
-
-            const { error: participantsError } = await supabase
-                .from('chat_room_participants')
-                .insert([
-                    { room_id: newRoom.id, user_id: currentUser.id },
-                    { room_id: newRoom.id, user_id: library.seller_id },
-                ]);
-
-            if (participantsError) throw participantsError;
             
             router.push('/chat');
         } catch (error) {

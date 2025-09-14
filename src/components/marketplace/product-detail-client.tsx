@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -129,7 +128,6 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-            // Step 1: Find a private room that has exactly two participants: the current user and the seller.
             const { data: existingRoom, error: findRoomError } = await supabase
                 .rpc('get_mutual_private_room', {
                     p_user1_id: currentUser.id,
@@ -138,32 +136,19 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
 
             if (findRoomError) throw findRoomError;
             
-            if (existingRoom && existingRoom.length > 0) {
-                // A room already exists, navigate to chat.
+            if (existingRoom && existingRoom.id) {
                 router.push('/chat');
                 return;
             }
 
-            // Step 2: If no room exists, create a new one.
-            const { data: newRoom, error: newRoomError } = await supabase
-                .from('chat_rooms')
-                .insert({ is_private: true })
-                .select('id')
-                .single();
+            const { data: newRoomId, error: newRoomError } = await supabase
+                .rpc('create_chat_room_with_participants', {
+                    p_user1_id: currentUser.id,
+                    p_user2_id: product.seller_id,
+                });
             
             if (newRoomError) throw newRoomError;
-
-            // Step 3: Add both users as participants to the new room.
-            const { error: participantsError } = await supabase
-                .from('chat_room_participants')
-                .insert([
-                    { room_id: newRoom.id, user_id: currentUser.id },
-                    { room_id: newRoom.id, user_id: product.seller_id },
-                ]);
-
-            if (participantsError) throw participantsError;
             
-            // Navigate to the chat page.
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);

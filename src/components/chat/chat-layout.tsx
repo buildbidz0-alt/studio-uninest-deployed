@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -36,7 +35,6 @@ export default function ChatLayout() {
     }
     setLoadingRooms(true);
     try {
-      // Call the new RPC function
       const { data, error } = await supabase.rpc('get_chat_rooms_for_user', { p_user_id: user.id });
 
       if (error) {
@@ -46,10 +44,10 @@ export default function ChatLayout() {
       setRooms(data || []);
 
     } catch (error: any) {
-      console.error('Error fetching user rooms:', error);
-      toast({ variant: 'destructive', title: 'Error loading chats', description: error.message });
+        console.error('Error fetching user rooms:', error);
+        toast({ variant: 'destructive', title: 'Error loading chats', description: 'Could not fetch your chat rooms. Please try refreshing.' });
     } finally {
-      setLoadingRooms(false);
+        setLoadingRooms(false);
     }
   }, [user, supabase, toast]);
   
