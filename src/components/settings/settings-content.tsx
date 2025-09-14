@@ -35,7 +35,7 @@ import { Checkbox } from '../ui/checkbox';
 
 const vendorCategoriesList = [
     { id: "library", label: "Library", icon: Book },
-    { id: "food mess", label: "Food Mess", icon: Utensils },
+    { id: "food-mess", label: "Food Mess", icon: Utensils },
     { id: "cybercafe", label: "Cyber Café", icon: Laptop },
     { id: "hostels", label: "Hostels", icon: Bed },
 ] as const;
@@ -125,7 +125,7 @@ export default function SettingsContent() {
         bio: values.bio,
         role: values.role,
         opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
-        vendor_categories: values.role === 'vendor' ? values.vendorCategories : [],
+        vendor_categories: values.role === 'vendor' ? values.vendorCategories.map(c => c.replace('-', ' ')) : [],
     };
     
     // Step 1: Update Auth User Metadata

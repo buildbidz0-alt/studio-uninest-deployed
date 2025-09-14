@@ -34,7 +34,7 @@ import { Bed, Book, Utensils, Laptop } from 'lucide-react';
 
 const vendorCategories = [
     { id: "library", label: "Library", icon: Book },
-    { id: "food mess", label: "Food Mess", icon: Utensils },
+    { id: "food-mess", label: "Food Mess", icon: Utensils },
     { id: "cybercafe", label: "Cyber Café", icon: Laptop },
     { id: "hostels", label: "Hostels", icon: Bed },
 ] as const;
@@ -98,7 +98,7 @@ export default function SignupForm() {
         data: {
           role: role,
           full_name: values.fullName,
-          vendor_categories: role === 'vendor' ? values.vendorCategories : undefined
+          vendor_categories: role === 'vendor' ? values.vendorCategories.map(c => c.replace('-', ' ')) : undefined
         }
       }
     });

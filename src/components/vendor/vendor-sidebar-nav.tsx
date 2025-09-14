@@ -16,7 +16,7 @@ const generalNavItems = [
 
 const categoryDashboards = [
     { id: "library", label: "Library Hub", icon: Library },
-    { id: "food mess", label: "Food Mess Hub", icon: Utensils },
+    { id: "food-mess", label: "Food Mess Hub", icon: Utensils },
     { id: "hostels", label: "Hostel Hub", icon: Bed },
     { id: "cybercafe", label: "Cybercafé Hub", icon: Laptop },
 ];
@@ -26,7 +26,7 @@ export function VendorSidebarNav() {
   const pathname = usePathname();
   const { vendorCategories } = useAuth();
   
-  const vendorSpecificDashboards = categoryDashboards.filter(dash => vendorCategories.includes(dash.id));
+  const vendorSpecificDashboards = categoryDashboards.filter(dash => vendorCategories.includes(dash.id.replace('-', ' ')));
 
   return (
     <SidebarMenu>
@@ -62,9 +62,9 @@ export function VendorSidebarNav() {
                      <SidebarMenuItem key={item.id}>
                         <SidebarMenuButton
                             asChild
-                            isActive={pathname === `/vendor/dashboard/${item.id.replace(' ', '-')}`}
+                            isActive={pathname === `/vendor/dashboard/${item.id}`}
                         >
-                            <Link href={`/vendor/dashboard/${item.id.replace(' ', '-')}`}>
+                            <Link href={`/vendor/dashboard/${item.id}`}>
                             <item.icon className="size-4" />
                             <span>{item.label}</span>
                             </Link>
