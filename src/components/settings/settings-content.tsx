@@ -217,7 +217,6 @@ export default function SettingsContent() {
     const { error: profileError } = await supabase.from('profiles').update({ 
         full_name: values.fullName,
         handle: values.handle,
-        bio: values.bio,
         role: values.role,
      }).eq('id', user.id);
 

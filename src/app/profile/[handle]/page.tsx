@@ -1,4 +1,5 @@
 
+
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import ProfileClient from '@/components/profile/profile-client';
@@ -53,8 +54,14 @@ async function getProfileData(handle: string) {
     };
     
     const isMyProfile = user ? user.id === profileData.id : false;
+
+    // Get bio from auth.users table user_metadata
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId);
+    const bio = authUser?.user_metadata?.bio || null;
     
-    return { profile: { ...profileData, isMyProfile } as any, content };
+    const fullProfile = { ...profileData, bio, isMyProfile };
+    
+    return { profile: fullProfile as any, content };
 }
 
 
@@ -64,7 +71,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, bio')
+    .select('full_name')
     .eq('handle', handle)
     .single();
 
@@ -74,9 +81,18 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
     };
   }
 
+  // Fetch bio separately from auth user metadata
+  const { data: authUser } = await supabase
+    .from('users')
+    .select('raw_user_meta_data')
+    .eq('raw_app_meta_data->>handle', handle)
+    .single();
+
+  const bio = authUser?.raw_user_meta_data?.bio || `View the profile of ${profile.full_name} on UniNest.`;
+
   return {
     title: `${profile.full_name} (@${handle}) | UniNest`,
-    description: profile.bio || `View the profile of ${profile.full_name} on UniNest.`,
+    description: bio,
   };
 }
 
