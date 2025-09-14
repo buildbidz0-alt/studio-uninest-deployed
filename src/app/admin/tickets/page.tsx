@@ -25,12 +25,13 @@ export default async function AdminTicketsPage() {
         .from('support_tickets')
         .select(`
             *,
-            profiles:user_id (
+            profiles (
                 id,
                 full_name,
                 avatar_url
             )
         `)
+        .eq('user_id', 'profiles.id')
         .order('created_at', { ascending: false });
 
     if (error) {
