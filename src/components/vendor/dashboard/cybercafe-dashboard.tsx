@@ -111,7 +111,7 @@ export default function CybercafeDashboard({ products, orders }: CybercafeDashbo
                                 </div>
                             ))
                          ) : (
-                            <p className="text-muted-foreground text-center py-10">No service plans found.</p>
+                            <p className="text-muted-foreground text-center py-10">No service plans found. <Link href="/vendor/products/new" className="text-primary underline">Add a plan</Link>.</p>
                          )}
                     </CardContent>
                 </Card>

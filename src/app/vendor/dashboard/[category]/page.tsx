@@ -35,42 +35,41 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         return { products: [], orders: [] };
     }
     
-    // Fetch orders relevant to the vendor and specific product categories
-    const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-            id,
-            created_at,
-            total_amount,
-            status,
-            booking_slot,
-            buyer_id,
-            buyer:profiles!buyer_id(full_name, avatar_url),
-            order_items:order_items (
-                seat_number,
-                library_id,
-                product_id,
-                products ( name, category )
-            )
-        `)
-        .eq('vendor_id', userId)
-        .order('created_at', { ascending: false });
+    // Fetch orders relevant to the vendor's products in the current category
+    const productIds = (productsData || []).map(p => p.id);
+
+    const { data: ordersData, error: ordersError } = productIds.length > 0
+        ? await supabase
+            .from('orders')
+            .select(`
+                id,
+                created_at,
+                total_amount,
+                status,
+                booking_slot,
+                buyer_id,
+                buyer:profiles!buyer_id(full_name, avatar_url),
+                order_items:order_items!inner(
+                    seat_number,
+                    library_id,
+                    product_id,
+                    products ( name, category )
+                )
+            `)
+            .eq('vendor_id', userId)
+            .in('order_items.product_id', productIds)
+            .order('created_at', { ascending: false })
+        : { data: [], error: null };
+
 
     if (ordersError) {
         console.error('Error fetching orders for vendor dashboard:', ordersError);
         return { products: (productsData as Product[]) || [], orders: [] };
     }
 
-    // Filter orders on the server to ensure they match the current dashboard's category
-    const relevantOrders = (ordersData || []).filter(order =>
-      order.order_items.some((item: any) =>
-        item.products && productCategories.includes(item.products.category)
-      )
-    );
-
     return {
         products: (productsData as Product[]) || [],
-        orders: (relevantOrders as any[]) || [],
+        orders: (ordersData as any[]) || [],
     };
 }
 

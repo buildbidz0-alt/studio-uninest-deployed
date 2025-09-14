@@ -26,7 +26,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
     const hostels = products.filter(p => p.category === 'Hostels');
     const rooms = products.filter(p => p.category === 'Hostel Room');
 
-    const pendingApprovals = orders.filter(o => o.status === 'pending_approval' && o.order_items.some((oi: any) => oi.products?.category === 'Hostel Room'));
+    const pendingApprovals = orders.filter(o => o.status === 'pending_approval');
 
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     const uniqueTenants = new Set(orders.map(o => o.buyer_id)).size;
@@ -130,7 +130,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
                             </TableBody>
                         </Table>
                     ) : (
-                         <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet.</p>
+                         <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet. <Link href="/vendor/products/new" className="text-primary underline">Add a room now</Link>.</p>
                     )}
                 </CardContent>
             </Card>
