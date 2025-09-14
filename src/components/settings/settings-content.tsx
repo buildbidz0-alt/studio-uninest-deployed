@@ -35,7 +35,7 @@ import { Checkbox } from '../ui/checkbox';
 
 const vendorCategoriesList = [
     { id: "library", label: "Library", icon: Book },
-    { id: "food-mess", label: "Food Mess", icon: Utensils },
+    { id: "food mess", label: "Food Mess", icon: Utensils },
     { id: "cybercafe", label: "Cyber Café", icon: Laptop },
     { id: "hostels", label: "Hostels", icon: Bed },
 ] as const;
@@ -66,7 +66,7 @@ const passwordFormSchema = z.object({
 
 export default function SettingsContent() {
   const { toast } = useToast();
-  const { user, loading, supabase, role } = useAuth();
+  const { user, loading, supabase, role, vendorCategories: userVendorCategories } = useAuth();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
@@ -167,7 +167,7 @@ export default function SettingsContent() {
     setIsProfileLoading(false);
   }
 
-  async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
+  async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>>) {
     setIsPasswordLoading(true);
     const { error } = await supabase.auth.updateUser({
       password: values.newPassword,
@@ -525,51 +525,27 @@ export default function SettingsContent() {
                   </FormItem>
                 )}
               />
-              {profileForm.watch('role') === 'vendor' && (
-                <FormField
-                    control={profileForm.control}
-                    name="openingHours"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Opening Hours / Shifts</FormLabel>
-                         <FormDescription>For libraries, list each shift on a new line (e.g., 9am-1pm).</FormDescription>
-                        <FormControl>
-                        <Textarea placeholder="e.g., Mon-Fri: 9am-5pm, Sat: 10am-2pm" className="resize-none" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-              )}
-               {isLibraryVendor && (
+              
+              {isLibraryVendor && (
                   <Card className="bg-muted/50 p-4">
                     <h4 className="font-semibold mb-2">Library Configuration</h4>
-                     <div className="grid sm:grid-cols-2 gap-4">
-                         <FormField
-                            control={profileForm.control}
-                            name="libraryDetails.totalSeats"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Total Seats</FormLabel>
-                                <FormControl><Input type="number" placeholder="50" {...field} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={profileForm.control}
-                            name="libraryDetails.price"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Price per Month</FormLabel>
-                                <FormControl><Input type="number" placeholder="1000" {...field} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                     </div>
+                     <FormField
+                        control={profileForm.control}
+                        name="openingHours"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Time Slots / Shifts</FormLabel>
+                            <FormDescription>List each available shift on a new line (e.g., 9am-1pm).</FormDescription>
+                            <FormControl>
+                            <Textarea placeholder={"9am - 1pm\n2pm - 8pm"} className="resize-none" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                   </Card>
                )}
+
               <Button type="submit" disabled={isProfileLoading}>
                 {isProfileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes

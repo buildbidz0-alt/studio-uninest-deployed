@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ type FoodMessDashboardProps = {
 };
 
 export default function FoodMessDashboard({ products, orders }: FoodMessDashboardProps) {
-    const menuItems = products;
+    const menuItems = products.filter(p => p.category === 'Food Mess');
     const recentOrders = orders.slice(0, 3);
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     
