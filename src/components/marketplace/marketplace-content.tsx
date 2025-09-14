@@ -186,16 +186,16 @@ export default function MarketplaceContent() {
         }
 
         try {
-            // Step 1: Find if a private room with these two users already exists.
-            const { data: existingRooms, error: existingRoomsError } = await supabase
-                .rpc('get_mutual_private_room_id', {
-                    user1_id: user.id,
-                    user2_id: sellerId
+            // Step 1: Find a private room that has exactly two participants: the current user and the seller.
+            const { data: existingRoom, error: findRoomError } = await supabase
+                .rpc('get_mutual_private_room', {
+                    p_user1_id: user.id,
+                    p_user2_id: sellerId,
                 });
+            
+            if (findRoomError) throw findRoomError;
 
-            if (existingRoomsError) throw existingRoomsError;
-
-            if (existingRooms && existingRooms.length > 0 && existingRooms[0].room_id) {
+            if (existingRoom && existingRoom.length > 0) {
                 // A room already exists, navigate to chat.
                 router.push('/chat');
                 return;
