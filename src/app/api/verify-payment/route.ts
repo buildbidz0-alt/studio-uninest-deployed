@@ -28,24 +28,27 @@ export async function POST(request: NextRequest) {
     } = body;
     
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keySecret) {
-        return NextResponse.json({ error: 'Razorpay secret not configured.' }, { status: 500 });
-    }
-
+    
     if (!userId) {
         return NextResponse.json({ error: 'User ID is missing.' }, { status: 400 });
     }
 
-    // 1. Verify Razorpay Signature
-    const shasum = crypto.createHmac('sha256', keySecret);
-    shasum.update(`${orderId}|${razorpay_payment_id}`);
-    const digest = shasum.digest('hex');
+    // 1. Verify Razorpay Signature only if it's a paid transaction
+    if (orderId && razorpay_payment_id && razorpay_signature) {
+        if (!keySecret) {
+            return NextResponse.json({ error: 'Razorpay secret not configured.' }, { status: 500 });
+        }
+        const shasum = crypto.createHmac('sha256', keySecret);
+        shasum.update(`${orderId}|${razorpay_payment_id}`);
+        const digest = shasum.digest('hex');
 
-    if (digest !== razorpay_signature) {
-        return NextResponse.json({ error: 'Invalid payment signature.' }, { status: 400 });
+        if (digest !== razorpay_signature) {
+            return NextResponse.json({ error: 'Invalid payment signature.' }, { status: 400 });
+        }
     }
 
-    // 2. Signature is valid, now save the record using admin client
+
+    // 2. Signature is valid (or not required), now save the record using admin client
     try {
         const supabaseAdmin = getSupabaseAdmin();
         
