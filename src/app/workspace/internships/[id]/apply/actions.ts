@@ -55,7 +55,7 @@ export async function submitApplication(formData: FormData) {
         let resumeUrl: string | null = null;
         
         if (resumeFile && resumeFile instanceof File && resumeFile.size > 0) {
-            resumeUrl = await uploadFile(supabaseAdmin, resumeFile, 'internships', user.id);
+            resumeUrl = await uploadFile(supabaseAdmin, resumeFile, 'products', user.id);
             if (!resumeUrl) {
                 return { error: 'Failed to upload resume.' };
             }
