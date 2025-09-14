@@ -1,4 +1,5 @@
 
+
 import PageHeader from "@/components/admin/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +25,7 @@ export default async function AdminPaymentsPage() {
     const supabase = createClient();
     
     const { data: donations } = await supabase.from('donations').select('*, profiles(full_name, email)');
-    const { data: competitionEntries } = await supabase.from('competition_entries').select('*, profiles(full_name, email), competitions(title, entry_fee)');
+    const { data: competitionEntries } = await supabase.from('competition_entries').select('*, profiles(full_name, email), competitions(entry_fee)');
 
     const payments: Payment[] = [
         ...(donations || []).map(d => ({

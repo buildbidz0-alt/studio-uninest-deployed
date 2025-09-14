@@ -1,4 +1,5 @@
 
+
 import type { Metadata } from 'next';
 import DonateContent from '@/components/donate/donate-content';
 import { createClient } from '@/lib/supabase/server';

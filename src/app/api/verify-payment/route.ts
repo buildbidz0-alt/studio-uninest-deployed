@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Razorpay secret not configured.' }, { status: 500 });
     }
 
+    if (!userId) {
+        return NextResponse.json({ error: 'User ID is missing.' }, { status: 400 });
+    }
+
     // 1. Verify Razorpay Signature
     const shasum = crypto.createHmac('sha256', keySecret);
     shasum.update(`${orderId}|${razorpay_payment_id}`);
