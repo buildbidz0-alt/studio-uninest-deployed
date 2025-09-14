@@ -1,4 +1,6 @@
 
+'use client';
+
 import PageHeader from "@/components/admin/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +13,8 @@ import Link from "next/link";
 import type { SupportTicket, Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export const revalidate = 0; // Force dynamic rendering
 
@@ -18,32 +22,61 @@ type TicketWithProfile = SupportTicket & {
     profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
 }
 
-export default async function AdminTicketsPage() {
-    const supabase = createClient();
-    
-    // Fetch tickets and join with profiles directly
-    const { data: ticketsData, error } = await supabase
-        .from('support_tickets')
-        .select(`
-            *,
-            profiles (
-                id,
-                full_name,
-                avatar_url
-            )
-        `)
-        .order('created_at', { ascending: false });
+export default function AdminTicketsPage() {
+    const [tickets, setTickets] = useState<TicketWithProfile[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        const fetchTickets = async () => {
+            // Since this is a client component, we create a client-side Supabase instance.
+            // Note: It's better to pass data from a server component parent if possible, 
+            // but for this fix, we'll fetch on the client.
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            );
+            
+            const { data: ticketsData, error: fetchError } = await supabase
+                .from('support_tickets')
+                .select(`
+                    *,
+                    profiles (
+                        id,
+                        full_name,
+                        avatar_url
+                    )
+                `)
+                .order('created_at', { ascending: false });
+
+            if (fetchError) {
+                setError(`Error loading tickets: ${fetchError.message}`);
+            } else {
+                setTickets((ticketsData as any) || []);
+            }
+            setLoading(false);
+        };
+
+        fetchTickets();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <Loader2 className="size-8 animate-spin" />
+            </div>
+        )
+    }
 
     if (error) {
         return (
             <div className="space-y-8">
                 <PageHeader title="Support Tickets" description="Review and manage user feedback and issues." />
-                <p>Error loading tickets: {error.message}</p>
+                <p>{error}</p>
             </div>
         )
     }
-
-    const tickets: TicketWithProfile[] = (ticketsData as any) || [];
 
     return (
         <div className="space-y-8">
@@ -69,7 +102,7 @@ export default async function AdminTicketsPage() {
                                 </TableRow>
                             ) : (
                                 tickets.map(ticket => (
-                                    <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/50" onClick={() => (window.location.href = `/admin/tickets/${ticket.id}`)}>
+                                    <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/admin/tickets/${ticket.id}`)}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="size-9">
