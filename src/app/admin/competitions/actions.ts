@@ -14,17 +14,22 @@ const getSupabaseAdmin = () => {
     return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-const uploadFile = async (supabaseAdmin: any, file: File, bucket: string): Promise<string | null> => {
+const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
     if (!file || file.size === 0) return null;
     
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl) {
-        console.error('Supabase URL is not configured.');
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+        console.error('Supabase credentials for storage are not configured.');
         return null;
     }
+    
+    // Create a new client specifically for storage with the service key
+    const supabaseStorageAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     const filePath = `admin/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabaseStorageAdmin.storage
       .from(bucket)
       .upload(filePath, file);
     
@@ -58,13 +63,13 @@ export async function createCompetition(formData: FormData) {
         let pdfUrl: string | null = null;
 
         if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'competitions');
+            imageUrl = await uploadFile(imageFile, 'competitions');
             if (!imageUrl) {
                 return { error: 'Failed to upload banner image.' };
             }
         }
         if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
-            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'competitions');
+            pdfUrl = await uploadFile(pdfFile, 'competitions');
             if (!pdfUrl) {
                 return { error: 'Failed to upload details PDF.' };
             }
@@ -112,11 +117,11 @@ export async function updateCompetition(id: number, formData: FormData) {
         let pdfUrl = existing?.details_pdf_url || null;
 
         if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'competitions');
+            imageUrl = await uploadFile(imageFile, 'competitions');
             if (!imageUrl) return { error: 'Failed to upload banner image.' };
         }
         if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
-            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'competitions');
+            pdfUrl = await uploadFile(pdfFile, 'competitions');
             if (!pdfUrl) return { error: 'Failed to upload details PDF.' };
         }
 
