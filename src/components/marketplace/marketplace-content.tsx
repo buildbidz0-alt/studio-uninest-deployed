@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -195,24 +196,24 @@ export default function MarketplaceContent() {
         }
 
         try {
-            const { data: existingRoom } = await supabase.rpc('get_mutual_private_room', { p_user1_id: user.id, p_user2_id: sellerId });
-
-            if (existingRoom && existingRoom.length > 0) {
-                router.push('/chat');
-                return;
-            }
-
-            const { data: newRoomId, error: newRoomError } = await supabase.rpc('create_chat_room_with_participants', { p_user1_id: user.id, p_user2_id: sellerId });
-            
-            if (newRoomError) throw newRoomError;
-            
-            const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
-                room_id: newRoomId,
-                user_id: user.id,
-                content: `Hi, I'm interested in "${productName}".`,
+            const { data: roomId, error: rpcError } = await supabase.rpc('create_or_get_private_chat_room', {
+                p_user1_id: user.id,
+                p_user2_id: sellerId,
             });
 
-            if (welcomeMessageError) throw welcomeMessageError;
+            if (rpcError) throw rpcError;
+            
+            // Check if a welcome message is needed
+            const { count } = await supabase.from('chat_messages').select('*', { count: 'exact', head: true }).eq('room_id', roomId);
+
+            if (count === 0) {
+                 const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
+                    room_id: roomId,
+                    user_id: user.id,
+                    content: `Hi, I'm interested in "${productName}".`,
+                });
+                if (welcomeMessageError) throw welcomeMessageError;
+            }
 
             router.push('/chat');
         } catch (error) {

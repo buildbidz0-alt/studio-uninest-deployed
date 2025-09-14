@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -128,23 +129,23 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-            const { data: existingRoom } = await supabase.rpc('get_mutual_private_room', { p_user1_id: currentUser.id, p_user2_id: product.seller_id });
-
-            if (existingRoom && existingRoom.length > 0) {
-                router.push('/chat');
-                return;
-            }
-
-            const { data: newRoomId, error: newRoomError } = await supabase.rpc('create_chat_room_with_participants', { p_user1_id: currentUser.id, p_user2_id: product.seller_id });
-
-            if (newRoomError) throw newRoomError;
-            
-            const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
-                room_id: newRoomId,
-                user_id: currentUser.id,
-                content: `Hi, I'm interested in "${product.name}".`,
+            const { data: roomId, error: rpcError } = await supabase.rpc('create_or_get_private_chat_room', {
+                p_user1_id: currentUser.id,
+                p_user2_id: product.seller_id,
             });
-            if (welcomeMessageError) throw welcomeMessageError;
+
+            if (rpcError) throw rpcError;
+            
+            const { count } = await supabase.from('chat_messages').select('*', { count: 'exact', head: true }).eq('room_id', roomId);
+
+            if (count === 0) {
+                 const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
+                    room_id: roomId,
+                    user_id: currentUser.id,
+                    content: `Hi, I'm interested in "${product.name}".`,
+                });
+                if (welcomeMessageError) throw welcomeMessageError;
+            }
 
             router.push('/chat');
         } catch (error) {
