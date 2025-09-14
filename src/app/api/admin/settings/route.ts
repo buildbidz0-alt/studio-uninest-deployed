@@ -41,15 +41,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request body', details: parsedBody.error.flatten() }, { status: 400 });
     }
 
-    // 4. Update the settings in the database
+    // 4. Upsert the settings in the database
     const { error: dbError } = await supabase
         .from('platform_settings')
-        .update({ value: parsedBody.data })
-        .eq('key', 'monetization');
+        .upsert({ 
+            key: 'monetization', 
+            value: parsedBody.data 
+        }, { 
+            onConflict: 'key' 
+        });
 
     if (dbError) {
-        console.error('Error updating settings:', dbError);
-        return NextResponse.json({ error: 'Failed to update settings in database' }, { status: 500 });
+        console.error('Error upserting settings:', dbError);
+        return NextResponse.json({ error: 'Failed to save settings in database' }, { status: 500 });
     }
 
     return NextResponse.json({ message: 'Settings updated successfully' }, { status: 200 });
