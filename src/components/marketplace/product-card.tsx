@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -34,7 +35,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
   }
 
   const getCardLink = () => {
-    if (isLibraryOrHostel) return `/marketplace/library/${product.id}`;
+    if (product.category === 'Library') return `/marketplace/library/${product.id}`;
     if (product.category === 'Hostels') return `/hostels/${product.id}`;
     return `/marketplace/${product.id}`;
   }

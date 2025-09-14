@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -150,13 +151,21 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         }
 
         try {
-            const { data: roomId, error: rpcError } = await supabase.rpc('create_or_get_private_chat_room', {
-                p_user1_id: currentUser.id,
-                p_user2_id: hostel.seller_id,
-            });
+            const { data: newRoom, error: createRoomError } = await supabase
+                .from('chat_rooms')
+                .insert({})
+                .select()
+                .single();
 
-            if (rpcError) throw rpcError;
-            
+            if (createRoomError || !newRoom) {
+                throw createRoomError || new Error("Failed to create chat room.");
+            }
+
+            await supabase.from('chat_messages').insert([
+                { room_id: newRoom.id, user_id: currentUser.id, content: `Hi, I have a question about ${hostel.name}.` },
+                { room_id: newRoom.id, user_id: hostel.seller_id, content: '' }
+            ]);
+
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);

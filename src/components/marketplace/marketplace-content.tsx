@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -196,13 +197,24 @@ export default function MarketplaceContent() {
         }
 
         try {
-            const { data: roomId, error: rpcError } = await supabase.rpc('create_or_get_private_chat_room', {
-                p_user1_id: user.id,
-                p_user2_id: sellerId,
-            });
+            const { data: newRoom, error: createRoomError } = await supabase
+                .from('chat_rooms')
+                .insert({})
+                .select()
+                .single();
 
-            if (rpcError) throw rpcError;
-            
+            if (createRoomError || !newRoom) {
+                throw createRoomError || new Error("Failed to create chat room.");
+            }
+
+            // Send a "system" or initial message to associate users with the room
+            await supabase.from('chat_messages').insert([
+                { room_id: newRoom.id, user_id: user.id, content: `Hi, I'm interested in "${productName}".` },
+                // This second message is a trick to ensure the seller is part of the room's message history.
+                // A better long-term solution is a proper participants table.
+                { room_id: newRoom.id, user_id: sellerId, content: '' } 
+            ]);
+
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -129,13 +130,21 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-            const { data: roomId, error: rpcError } = await supabase.rpc('create_or_get_private_chat_room', {
-                p_user1_id: currentUser.id,
-                p_user2_id: product.seller_id,
-            });
+            const { data: newRoom, error: createRoomError } = await supabase
+                .from('chat_rooms')
+                .insert({})
+                .select()
+                .single();
 
-            if (rpcError) throw rpcError;
-            
+            if (createRoomError || !newRoom) {
+                throw createRoomError || new Error("Failed to create chat room.");
+            }
+
+            await supabase.from('chat_messages').insert([
+                { room_id: newRoom.id, user_id: currentUser.id, content: `Hi, I'm interested in "${product.name}".` },
+                { room_id: newRoom.id, user_id: product.seller_id, content: '' }
+            ]);
+
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);
@@ -189,22 +198,17 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
 
                     {canInteract && (
                         <div className="flex flex-col sm:flex-row gap-4">
-                            {isContactOnly ? (
-                                <Button size="lg" className="flex-1 text-lg" onClick={handleChat}>
-                                    <MessageSquare className="mr-2" />
-                                    Contact Seller
+                            
+                            <Button size="lg" className="flex-1 text-lg" onClick={handleChat}>
+                                <MessageSquare className="mr-2" />
+                                Contact Seller
+                            </Button>
+                            
+                            {!isContactOnly && (
+                                <Button size="lg" className="flex-1 text-lg" onClick={handleBuyNow} disabled={!isLoaded || isBuying}>
+                                    {isBuying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingBag className="mr-2" />}
+                                    Buy Now
                                 </Button>
-                            ) : (
-                                <>
-                                    <Button size="lg" className="flex-1 text-lg" onClick={handleBuyNow} disabled={!isLoaded || isBuying}>
-                                        {isBuying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingBag className="mr-2" />}
-                                        Buy Now
-                                    </Button>
-                                     <Button size="lg" variant="outline" className="flex-1 text-lg" onClick={handleChat}>
-                                        <MessageSquare className="mr-2" />
-                                        Chat with Seller
-                                    </Button>
-                                </>
                             )}
                         </div>
                     )}
