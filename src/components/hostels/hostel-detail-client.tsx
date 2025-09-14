@@ -157,17 +157,6 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
 
             if (rpcError) throw rpcError;
             
-            const { count } = await supabase.from('chat_messages').select('*', { count: 'exact', head: true }).eq('room_id', roomId);
-
-            if (count === 0) {
-                 const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
-                    room_id: roomId,
-                    user_id: currentUser.id,
-                    content: `Hi, I have a question about ${hostel.name}.`,
-                });
-                if (welcomeMessageError) throw welcomeMessageError;
-            }
-
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);

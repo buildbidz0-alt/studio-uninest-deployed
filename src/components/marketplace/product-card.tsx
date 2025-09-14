@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -24,10 +25,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
     : 'Anonymous';
   
   const canContact = user && user.id !== product.seller_id;
-  const isLibrary = product.category === 'Library';
-  const isHostel = product.category === 'Hostels';
-  const isDirectPurchase = ['Food Mess'].includes(product.category);
-  const isContactFirst = ['Books', 'Other Products', 'Cyber Café'].includes(product.category);
+  const isLibraryOrHostel = product.category === 'Library' || product.category === 'Hostels';
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
     e.stopPropagation();
@@ -36,8 +34,8 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
   }
 
   const getCardLink = () => {
-    if (isLibrary) return `/marketplace/library/${product.id}`;
-    if (isHostel) return `/hostels/${product.id}`;
+    if (isLibraryOrHostel) return `/marketplace/library/${product.id}`;
+    if (product.category === 'Hostels') return `/hostels/${product.id}`;
     return `/marketplace/${product.id}`;
   }
 
@@ -65,19 +63,23 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
         <CardFooter className="p-4 pt-0 mt-auto">
             <div className="flex items-center justify-between w-full gap-2">
                 <p className="text-xl font-bold text-primary">
-                    {isLibrary ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
+                    {product.category === 'Library' ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
                 </p>
                 <div className='flex gap-2'>
-                {canContact && (isContactFirst || isDirectPurchase) ? (
-                    <Button onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id, product.name))}>
+                {canContact ? (
+                    <Button variant="outline" size="sm" onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id, product.name))}>
                         <MessageSquare className="mr-2 size-4"/>
-                        Contact Seller
-                    </Button>
-                ) : isLibrary || isHostel ? (
-                    <Button>
-                      View Details
+                        Contact
                     </Button>
                 ) : null}
+                
+                {isLibraryOrHostel ? (
+                    <Button size="sm">View Details</Button>
+                ) : (
+                    <Button size="sm" disabled={isBuying} onClick={(e) => handleButtonClick(e, () => onBuyNow(product))}>
+                      {isBuying ? <Loader2 className="animate-spin" /> : 'Buy Now'}
+                    </Button>
+                )}
                 </div>
             </div>
         </CardFooter>

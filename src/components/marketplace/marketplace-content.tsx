@@ -203,18 +203,6 @@ export default function MarketplaceContent() {
 
             if (rpcError) throw rpcError;
             
-            // Check if a welcome message is needed
-            const { count } = await supabase.from('chat_messages').select('*', { count: 'exact', head: true }).eq('room_id', roomId);
-
-            if (count === 0) {
-                 const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
-                    room_id: roomId,
-                    user_id: user.id,
-                    content: `Hi, I'm interested in "${productName}".`,
-                });
-                if (welcomeMessageError) throw welcomeMessageError;
-            }
-
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);
