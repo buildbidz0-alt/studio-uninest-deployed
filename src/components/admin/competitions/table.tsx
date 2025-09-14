@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Pencil, Users } from "lucide-react";
+import { MoreHorizontal, Trash2, Pencil, Users, Trophy } from "lucide-react";
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -110,6 +110,11 @@ export default function CompetitionsTable({ competitions: initialCompetitions, e
                                                     <DropdownMenuItem asChild>
                                                         <Link href={`/admin/competitions/${comp.id}/edit`}>
                                                             <Pencil className="mr-2 size-4" />Edit
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                     <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/competitions/${comp.id}/results`}>
+                                                            <Trophy className="mr-2 size-4" />Declare Winner
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>

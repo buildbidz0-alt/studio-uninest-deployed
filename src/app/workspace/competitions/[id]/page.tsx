@@ -31,12 +31,15 @@ export async function generateMetadata({ params }: CompetitionDetailPageProps): 
 
 export default async function CompetitionDetailPage({ params }: CompetitionDetailPageProps) {
     const supabase = createClient();
-    const { data: competition, error } = await supabase
+    
+    let competitionQuery = supabase
         .from('competitions')
-        .select('*')
+        .select('*, winner:winner_id(full_name, avatar_url)')
         .eq('id', params.id)
         .single();
-    
+        
+    const { data: competition, error } = await competitionQuery;
+
     if (error || !competition) {
         notFound();
     }
@@ -53,5 +56,5 @@ export default async function CompetitionDetailPage({ params }: CompetitionDetai
         .eq('competition_id', competition.id);
 
 
-    return <CompetitionDetailClient competition={competition} initialApplicants={entries || []} />;
+    return <CompetitionDetailClient competition={competition as any} initialApplicants={entries || []} />;
 }
