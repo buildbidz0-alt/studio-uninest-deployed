@@ -6,7 +6,7 @@ import TopDonorsTable from '@/components/admin/top-donors-table';
 
 type AggregatedDonor = {
   name: string;
-  email: string;
+  userId: string;
   avatar: string | null;
   total: number;
 };
@@ -16,10 +16,10 @@ export default async function AdminDashboardPage() {
   const { data: topDonors, error } = await supabase
       .from('donations')
       .select(`
+          user_id,
           amount,
           profiles (
               full_name,
-              email,
               avatar_url
           )
       `)
@@ -29,13 +29,13 @@ export default async function AdminDashboardPage() {
   // Manual aggregation in JS
   const aggregatedDonors: AggregatedDonor[] = (topDonors || []).reduce((acc: any[], current) => {
       if (!current.profiles) return acc;
-      const existing = acc.find(d => d.email === current.profiles!.email);
+      const existing = acc.find(d => d.userId === current.user_id);
       if (existing) {
           existing.total += current.amount;
       } else {
           acc.push({
               name: current.profiles.full_name,
-              email: current.profiles.email,
+              userId: current.user_id,
               avatar: current.profiles.avatar_url,
               total: current.amount
           });
@@ -47,7 +47,7 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader title="Dashboard" description="An overview of your platform's performance." />
-      <AdminDashboardContent topDonors={aggregatedDonors} />
+      <AdminDashboardContent topDonors={aggregatedDonors as any[]} />
     </div>
   );
 }

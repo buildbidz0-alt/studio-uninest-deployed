@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 type AggregatedDonor = {
   name: string;
-  email: string;
+  userId: string;
   avatar: string | null;
   total: number;
 };
@@ -34,7 +34,7 @@ export default function TopDonorsTable({ donors }: TopDonorsTableProps) {
           <TableBody>
             {donors && donors.length > 0 ? (
                 donors.map((donor) => (
-                <TableRow key={donor.email}>
+                <TableRow key={donor.userId}>
                     <TableCell>
                     <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
@@ -43,7 +43,6 @@ export default function TopDonorsTable({ donors }: TopDonorsTableProps) {
                         </Avatar>
                         <div className="grid gap-0.5">
                         <p className="font-medium leading-none">{donor.name}</p>
-                        <p className="text-xs text-muted-foreground">{donor.email}</p>
                         </div>
                     </div>
                     </TableCell>

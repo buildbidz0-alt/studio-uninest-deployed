@@ -35,7 +35,7 @@ type Donor = {
     name: string | null;
     avatar: string | null;
     amount: number;
-    email: string | null; // Add email to uniquely identify donors
+    userId: string;
 }
 
 type DonateContentProps = {
@@ -66,7 +66,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
           // Fetch profile for the new donation
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url, email')
+            .select('full_name, avatar_url')
             .eq('id', newDonation.user_id)
             .single();
 
@@ -76,11 +76,11 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
               name: profileData?.full_name || 'Anonymous',
               avatar: profileData?.avatar_url,
               amount: newDonation.amount,
-              email: profileData?.email,
+              userId: newDonation.user_id,
           };
 
           setDonors(prevDonors => {
-              const existingDonorIndex = prevDonors.findIndex(d => d.email === newDonorInfo.email);
+              const existingDonorIndex = prevDonors.findIndex(d => d.userId === newDonorInfo.userId);
               let updatedDonors;
               if (existingDonorIndex > -1) {
                   updatedDonors = [...prevDonors];
@@ -251,7 +251,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
             </CardHeader>
             <CardContent className="space-y-6">
                 {topDonors.length > 0 ? topDonors.map((donor, index) => (
-                    <div key={donor.email || index} className="flex items-center gap-4 p-3 rounded-lg bg-primary/10 border-2 border-primary/20">
+                    <div key={donor.userId || index} className="flex items-center gap-4 p-3 rounded-lg bg-primary/10 border-2 border-primary/20">
                        <span className={cn("text-3xl font-bold w-8 text-center", medalColors[index])}>
                          {['🥇', '🥈', '🥉'][index]}
                        </span>
@@ -274,7 +274,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
                   <ScrollArea className="h-64">
                     <div className="space-y-4 pr-4">
                         {otherDonors.map((donor, index) => (
-                             <div key={donor.email || index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                             <div key={donor.userId || index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="size-9">
                                         {donor.avatar && <AvatarImage src={donor.avatar} alt={donor.name || 'Anonymous'} data-ai-hint="person face" />}
@@ -307,5 +307,3 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
     </div>
   );
 }
-
-    
