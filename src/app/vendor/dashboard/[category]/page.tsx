@@ -19,6 +19,7 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
     const supabase = createClient();
 
     let productCategories = [categoryLabel];
+    // Special handling for hostels to include rooms
     if (categoryLabel === 'Hostels') {
         productCategories.push('Hostel Room');
     }
@@ -34,6 +35,7 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         return { products: [], orders: [] };
     }
     
+    // Fetch orders relevant to the vendor and specific product categories
     const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -41,6 +43,7 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
             created_at,
             total_amount,
             status,
+            booking_slot,
             buyer_id,
             buyer:profiles!buyer_id(full_name, avatar_url),
             order_items:order_items (
@@ -55,10 +58,10 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
 
     if (ordersError) {
         console.error('Error fetching orders for vendor dashboard:', ordersError);
-        // Continue with products data even if orders fail
         return { products: (productsData as Product[]) || [], orders: [] };
     }
 
+    // Filter orders on the server to ensure they match the current dashboard's category
     const relevantOrders = (ordersData || []).filter(order =>
       order.order_items.some((item: any) =>
         item.products && productCategories.includes(item.products.category)

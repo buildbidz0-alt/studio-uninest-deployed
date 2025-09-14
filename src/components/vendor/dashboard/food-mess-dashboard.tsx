@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -88,8 +87,8 @@ export default function FoodMessDashboard({ products, orders }: FoodMessDashboar
                         <CardDescription>Update your daily menu and prices.</CardDescription>
                     </div>
                     <Button asChild>
-                        <Link href="/marketplace/new">
-                            <PlusCircle className="mr-2"/> Add Item
+                        <Link href="/vendor/products/new">
+                            <PlusCircle className="mr-2"/> Add Menu Item
                         </Link>
                     </Button>
                 </CardHeader>
@@ -118,7 +117,7 @@ export default function FoodMessDashboard({ products, orders }: FoodMessDashboar
                             </TableBody>
                         </Table>
                     ) : (
-                         <p className="text-muted-foreground text-center py-10">No menu items found. <Link href="/marketplace/new" className="text-primary underline">Add one now</Link>.</p>
+                         <p className="text-muted-foreground text-center py-10">No menu items found. <Link href="/vendor/products/new" className="text-primary underline">Add one now</Link>.</p>
                     )}
                 </CardContent>
             </Card>

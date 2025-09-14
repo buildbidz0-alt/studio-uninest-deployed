@@ -54,7 +54,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
                 <h2 className="text-2xl font-bold">No Hostel Found</h2>
                 <p className="text-muted-foreground mt-2">You haven't created a hostel listing yet.</p>
                 <Button asChild className="mt-4">
-                    <Link href="/marketplace/new"><PlusCircle className="mr-2"/> Create Hostel Listing</Link>
+                    <Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Create Hostel Listing</Link>
                 </Button>
             </div>
        )
@@ -103,7 +103,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
                         <CardTitle className="flex items-center gap-2"><Bed className="text-primary"/> Room Listings</CardTitle>
                         <CardDescription>Manage your available rooms.</CardDescription>
                     </div>
-                    <Button asChild><Link href="/marketplace/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
+                    <Button asChild><Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
                 </CardHeader>
                  <CardContent>
                      {rooms.length > 0 ? (

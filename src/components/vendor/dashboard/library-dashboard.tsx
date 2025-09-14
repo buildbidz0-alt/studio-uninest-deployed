@@ -55,7 +55,7 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
                 <h2 className="text-2xl font-bold">No Library Found</h2>
                 <p className="text-muted-foreground mt-2">You haven't created a library listing yet.</p>
                 <Button asChild className="mt-4">
-                    <Link href="/marketplace/new"><PlusCircle className="mr-2"/> Create Library Listing</Link>
+                    <Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Create Library Listing</Link>
                 </Button>
             </div>
         )

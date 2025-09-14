@@ -94,7 +94,7 @@ export default function CybercafeDashboard({ products, orders }: CybercafeDashbo
                             <CardDescription>Manage your service pricing.</CardDescription>
                         </div>
                         <Button asChild>
-                           <Link href="/marketplace/new">
+                           <Link href="/vendor/products/new">
                              <PlusCircle className="mr-2"/> Add New Plan
                            </Link>
                         </Button>
