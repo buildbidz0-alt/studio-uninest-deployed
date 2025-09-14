@@ -4,7 +4,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Calendar, IndianRupee, Loader2, FileText, Share2, Users } from 'lucide-react';
-import { useRazorpay } from '@/hooks/use-razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
@@ -13,6 +12,7 @@ import { format } from 'date-fns';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
+import Link from 'next/link';
 
 type Competition = {
     id: number;
@@ -45,10 +45,8 @@ type CompetitionDetailClientProps = {
 }
 
 export default function CompetitionDetailClient({ competition: initialCompetition, initialApplicants }: CompetitionDetailClientProps) {
-    const { openCheckout, isLoaded } = useRazorpay();
     const { toast } = useToast();
     const { user, supabase } = useAuth();
-    const [isApplying, setIsApplying] = useState(false);
     const [applicants, setApplicants] = useState(initialApplicants);
     const [competition, setCompetition] = useState(initialCompetition);
 
@@ -94,74 +92,6 @@ export default function CompetitionDetailClient({ competition: initialCompetitio
             supabase.removeChannel(entriesChannel);
         }
     }, [supabase, competition.id]);
-
-    const handleApply = async () => {
-        if (!user || !supabase) {
-            toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to apply for competitions.' });
-            return;
-        }
-
-        setIsApplying(true);
-
-        if (competition.entry_fee <= 0) {
-            const { error } = await supabase.from('competition_entries').insert({
-                competition_id: competition.id,
-                user_id: user.id,
-            });
-            if (error) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not process your free application.' });
-            } else {
-                toast({ title: 'Application Successful!', description: `You have successfully applied for ${competition.title}.` });
-            }
-            setIsApplying(false);
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/create-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: competition.entry_fee * 100, currency: 'INR' }),
-            });
-
-            if (!response.ok) {
-                const orderError = await response.json();
-                throw new Error(orderError.error || 'Failed to create order');
-            }
-            
-            const order = await response.json();
-
-            const options = {
-              key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-              amount: order.amount,
-              currency: order.currency,
-              name: `Entry Fee: ${competition.title}`,
-              description: `Payment for ${competition.title}`,
-              order_id: order.id,
-              handler: async function (paymentResponse: any) {
-                const { error } = await supabase.from('competition_entries').insert({
-                    competition_id: competition.id,
-                    user_id: user.id,
-                    razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                });
-                 if (error) {
-                    toast({ variant: 'destructive', title: 'Error Saving Application', description: 'Payment received, but failed to save your application. Please contact support.' });
-                } else {
-                    toast({ title: 'Payment Successful!', description: `You are now registered for ${competition.title}.` });
-                }
-              },
-              modal: { ondismiss: () => setIsApplying(false) },
-              prefill: { name: user.user_metadata?.full_name || '', email: user.email || '' },
-              notes: { type: 'competition', competitionId: competition.id, userId: user.id },
-              theme: { color: '#1B365D' },
-            };
-            openCheckout(options);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Application Failed', description: error instanceof Error ? error.message : 'Could not connect to payment gateway.' });
-            setIsApplying(false);
-        }
-    };
     
     const handleShare = async () => {
         const shareData = {
@@ -223,9 +153,10 @@ export default function CompetitionDetailClient({ competition: initialCompetitio
                         <p>{competition.description}</p>
                     </div>
                      <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t mt-6">
-                        <Button size="lg" className="flex-1" onClick={handleApply} disabled={(!isLoaded && competition.entry_fee > 0) || isApplying || hasApplied || isCompetitionOver}>
-                            {isApplying ? <Loader2 className="mr-2 animate-spin" /> : null}
-                            {hasApplied ? 'Applied' : isCompetitionOver ? 'Deadline Passed' : 'Apply Now'}
+                        <Button size="lg" className="flex-1" disabled={hasApplied || isCompetitionOver} asChild>
+                           <Link href={`/workspace/competitions/${competition.id}/apply`}>
+                             {hasApplied ? 'Applied' : isCompetitionOver ? 'Deadline Passed' : 'Apply Now'}
+                           </Link>
                         </Button>
                         {competition.details_pdf_url && (
                             <Button size="lg" variant="outline" className="flex-1" asChild>
