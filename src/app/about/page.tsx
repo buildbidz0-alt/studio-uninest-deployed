@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, BookOpen, Store, Library, Rocket, Globe, UserCheck, Sparkles, Users } from 'lucide-react';
+import { GraduationCap, BookOpen, Store, Library, Rocket, Globe, UserCheck, Sparkles, Users, Instagram } from 'lucide-react';
 import AnimatedCounter from '@/components/animated-counter';
 
 export const metadata: Metadata = {
@@ -139,6 +139,11 @@ export default function AboutPage() {
             </Button>
              <Button size="lg" variant="outline" className="text-lg" asChild>
                 <Link href="/donate">Support with a Donation 💙</Link>
+            </Button>
+            <Button size="lg" variant="outline" className="text-lg" asChild>
+                <Link href="https://www.instagram.com/uninest_x?igsh=MXhyaXhybmFndzY0NQ==" target="_blank" rel="noopener noreferrer">
+                    <Instagram className="mr-2"/> Follow on Instagram
+                </Link>
             </Button>
           </div>
         </section>
