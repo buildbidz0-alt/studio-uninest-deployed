@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -39,52 +40,52 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
   }
 
   return (
-    <Link href={getCardLink()} className="flex flex-col h-full group">
-        <Card className="overflow-hidden shadow-sm transition-shadow group-hover:shadow-lg flex flex-col flex-grow">
-        <CardHeader className="p-0">
-            <div className="relative aspect-[16/9]">
-            <Image
-                src={product.image_url || 'https://picsum.photos/seed/product/400/225'}
-                alt={product.name}
-                width={400}
-                height={225}
-                data-ai-hint="product image"
-                className="object-cover transition-transform group-hover:scale-105"
-            />
-            </div>
-        </CardHeader>
-        <CardContent className="p-4 flex-grow">
-            <Badge variant="secondary" className="mb-2 capitalize">{product.category}</Badge>
+    <Card className="overflow-hidden shadow-sm transition-shadow hover:shadow-lg flex flex-col flex-grow group">
+    <CardHeader className="p-0">
+        <Link href={getCardLink()} className="relative aspect-[16/9] block">
+        <Image
+            src={product.image_url || 'https://picsum.photos/seed/product/400/225'}
+            alt={product.name}
+            width={400}
+            height={225}
+            data-ai-hint="product image"
+            className="object-cover transition-transform group-hover:scale-105"
+        />
+        </Link>
+    </CardHeader>
+    <CardContent className="p-4 flex-grow">
+        <Badge variant="secondary" className="mb-2 capitalize">{product.category}</Badge>
+        <Link href={getCardLink()}>
             <CardTitle className="text-lg font-semibold leading-snug mb-2 h-12 overflow-hidden group-hover:text-primary transition-colors">{product.name}</CardTitle>
-            <p className="text-sm text-muted-foreground mb-4 h-10 overflow-hidden text-ellipsis">{product.description}</p>
-            <p className="text-sm">Sold by <span className="font-medium text-primary">{sellerName}</span></p>
-        </CardContent>
-        <CardFooter className="p-4 pt-0 mt-auto">
-            <div className="flex items-center justify-between w-full gap-2">
-                <p className="text-xl font-bold text-primary">
-                    {product.category === 'Library' ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
-                </p>
-                <div className='flex gap-2'>
-                {canContact && (
-                    <Button variant="outline" size="sm" onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id, product.name))}>
-                        <MessageSquare className="mr-2 size-4"/>
-                        Contact
-                    </Button>
-                )}
-                
-                {isBookable ? (
-                    <Button size="sm" asChild>
-                        <Link href={getCardLink()}>View Details</Link>
-                    </Button>
-                ) : (
-                    <Button size="sm" disabled={isBuying} onClick={(e) => handleButtonClick(e, () => onBuyNow(product))}>
-                      {isBuying ? <Loader2 className="animate-spin" /> : 'Buy Now'}
-                    </Button>
-                )}
-                </div>
+        </Link>
+        <p className="text-sm text-muted-foreground mb-4 h-10 overflow-hidden text-ellipsis">{product.description}</p>
+        <p className="text-sm">Sold by <span className="font-medium text-primary">{sellerName}</span></p>
+    </CardContent>
+    <CardFooter className="p-4 pt-0 mt-auto">
+        <div className="flex items-center justify-between w-full gap-2">
+            <p className="text-xl font-bold text-primary">
+                {product.category === 'Library' ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
+            </p>
+            <div className='flex gap-2'>
+            {canContact && (
+                <Button variant="outline" size="sm" onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id, product.name))}>
+                    <MessageSquare className="mr-2 size-4"/>
+                    Contact
+                </Button>
+            )}
+            
+            {isBookable ? (
+                <Button size="sm" asChild>
+                    <Link href={getCardLink()}>View Details</Link>
+                </Button>
+            ) : (
+                <Button size="sm" disabled={isBuying} onClick={(e) => handleButtonClick(e, () => onBuyNow(product))}>
+                  {isBuying ? <Loader2 className="animate-spin" /> : 'Buy Now'}
+                </Button>
+            )}
             </div>
-        </CardFooter>
-        </Card>
-    </Link>
+        </div>
+    </CardFooter>
+    </Card>
   );
 }
