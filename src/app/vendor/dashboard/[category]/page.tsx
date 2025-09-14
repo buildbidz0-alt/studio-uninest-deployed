@@ -12,7 +12,7 @@ const categoryMap: { [key: string]: { label: string; component: React.FC<any> } 
     'library': { label: 'Library', component: LibraryDashboard },
     'food-mess': { label: 'Food Mess', component: FoodMessDashboard },
     'hostels': { label: 'Hostels', component: HostelDashboard },
-    'cybercafe': { label: 'Cyber Café', component: CybercafeDashboard },
+    'cybercafe': { label: 'Cybercafe', component: CybercafeDashboard },
 };
 
 async function getVendorDataForCategory(categoryLabel: string, userId: string) {
@@ -23,54 +23,56 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         productCategories.push('Hostel Room');
     }
 
-    // Corrected data fetching logic
-    const [productsRes, ordersRes] = await Promise.all([
-        supabase
-            .from('products')
-            .select('*')
-            .eq('seller_id', userId)
-            .in('category', productCategories),
-        supabase
-            .from('orders')
-            .select(`
-                id,
-                created_at,
-                total_amount,
-                status,
-                buyer_id,
-                buyer:profiles!buyer_id(full_name, avatar_url),
-                order_items:order_items (
-                    seat_number,
-                    library_id,
-                    product_id,
-                    products ( name, category )
-                )
-            `)
-            .eq('vendor_id', userId)
-            .order('created_at', { ascending: false })
-    ]);
+    const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('seller_id', userId)
+        .in('category', productCategories);
 
-    if (productsRes.error || ordersRes.error) {
-        console.error('Error fetching vendor data:', productsRes.error || ordersRes.error);
+    if (productsError) {
+        console.error('Error fetching products for vendor dashboard:', productsError);
         return { products: [], orders: [] };
     }
+    
+    const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+            id,
+            created_at,
+            total_amount,
+            status,
+            buyer_id,
+            buyer:profiles!buyer_id(full_name, avatar_url),
+            order_items:order_items (
+                seat_number,
+                library_id,
+                product_id,
+                products ( name, category )
+            )
+        `)
+        .eq('vendor_id', userId)
+        .order('created_at', { ascending: false });
 
-    // Filter orders in code now, which is more reliable
-    const relevantOrders = (ordersRes.data || []).filter(order =>
+    if (ordersError) {
+        console.error('Error fetching orders for vendor dashboard:', ordersError);
+        // Continue with products data even if orders fail
+        return { products: (productsData as Product[]) || [], orders: [] };
+    }
+
+    const relevantOrders = (ordersData || []).filter(order =>
       order.order_items.some((item: any) =>
         item.products && productCategories.includes(item.products.category)
       )
     );
 
     return {
-        products: (productsRes.data as Product[]) || [],
+        products: (productsData as Product[]) || [],
         orders: (relevantOrders as any[]) || [],
     };
 }
 
 
 export default async function VendorCategoryDashboardPage({ params }: { params: { category: string } }) {
-    // The slug is hyphenated, but the category in the DB has a space.
     const categoryKey = params.category;
     const categoryInfo = categoryMap[categoryKey];
     const supabase = createClient();
