@@ -13,6 +13,8 @@ type ProfilePageProps = {
 async function getProfileData(handle: string) {
     const supabase = createClient();
     
+    const { data: { user } } = await supabase.auth.getUser();
+    
     // 1. Get the profile
     const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -38,10 +40,7 @@ async function getProfileData(handle: string) {
         supabase.from('posts').select(`*, profiles:user_id ( full_name, avatar_url, handle ), likes ( count ), comments ( id )`).eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('followers').select('profiles!follower_id(*)').eq('following_id', userId),
         supabase.from('followers').select('profiles!following_id(*)').eq('follower_id', userId),
-        supabase.auth.getUser().then(({data: { user }}) => {
-            if (!user) return { data: [] };
-            return supabase.from('likes').select('post_id').eq('user_id', user.id);
-        })
+        user ? supabase.from('likes').select('post_id').eq('user_id', user.id) : Promise.resolve({ data: [] })
     ]);
 
     const likedPostIds = new Set(likedPostsRes.data?.map(p => p.post_id) || []);
@@ -53,7 +52,9 @@ async function getProfileData(handle: string) {
         following: (followingRes.data?.map((f: any) => f.profiles) as Profile[]) || [],
     };
     
-    return { profile: profileData as any, content };
+    const isMyProfile = user ? user.id === profileData.id : false;
+    
+    return { profile: { ...profileData, isMyProfile } as any, content };
 }
 
 
@@ -95,3 +96,4 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
         </Suspense>
     );
 }
+

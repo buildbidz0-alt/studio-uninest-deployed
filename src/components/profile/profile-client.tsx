@@ -8,7 +8,7 @@ import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Edit, Loader2, Package, Newspaper, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import type { PostWithAuthor, Product, Profile } from '@/lib/types';
 import ProductCard from '../marketplace/product-card';
@@ -17,8 +17,9 @@ import { useToast } from '@/hooks/use-toast';
 import UserListCard from './user-list-card';
 
 type ProfileWithCounts = Profile & {
-    follower_count: number;
-    following_count: number;
+    follower_count: { count: number }[];
+    following_count: { count: number }[];
+    isMyProfile: boolean;
 }
 
 type ProfileContent = {
@@ -29,52 +30,26 @@ type ProfileContent = {
 }
 
 type ProfileClientProps = {
-    initialProfile?: ProfileWithCounts;
-    initialContent?: ProfileContent;
+    initialProfile: ProfileWithCounts;
+    initialContent: ProfileContent;
 }
 
 export default function ProfileClient({ initialProfile, initialContent }: ProfileClientProps) {
   const { user, loading: authLoading, supabase } = useAuth();
   const { toast } = useToast();
-  const params = useParams();
-  const handleFromParams = params.handle as string | undefined;
 
-  const [profile, setProfile] = useState<ProfileWithCounts | null>(initialProfile || null);
-  const [profileContent, setProfileContent] = useState<ProfileContent>(initialContent || { listings: [], posts: [], followers: [], following: [] });
-  const [loading, setLoading] = useState(!initialProfile);
+  const [profile, setProfile] = useState<ProfileWithCounts>(initialProfile);
+  const [followerCount, setFollowerCount] = useState(initialProfile.follower_count?.[0]?.count ?? 0);
   
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
-  // The concept of "my profile" is now determined by whether we are on the /profile/[handle] route
-  // and that handle matches the logged in user's handle, OR if we are on the base /profile route.
-  const isMyProfile = (handleFromParams && user && handleFromParams === user.user_metadata?.handle) || (!handleFromParams && !!user);
-
-  useEffect(() => {
-    // If data is not pre-fetched (e.g. client-side navigation to a different user's profile)
-    if (!initialProfile && handleFromParams) {
-        const fetchProfile = async () => {
-            if (!supabase) return;
-            setLoading(true);
-            const { data, error } = await supabase.from('profiles').select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)').eq('handle', handleFromParams).single();
-            
-            if (error || !data) {
-                setProfile(null);
-            } else {
-                setProfile(data as any);
-                // In a real app, you would also fetch their content here.
-                // For now, we are relying on initialContent.
-            }
-            setLoading(false);
-        }
-        fetchProfile();
-    }
-  }, [handleFromParams, supabase, initialProfile]);
-
+  // isMyProfile is now passed down from the server component
+  const isMyProfile = profile.isMyProfile;
 
   useEffect(() => {
     const checkFollowingStatus = async () => {
-        if (!user || !profile || isMyProfile || !supabase) return;
+        if (!user || isMyProfile || !supabase) return;
         
         const { count } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', user.id).eq('following_id', profile.id);
         setIsFollowing(count ? count > 0 : false);
@@ -84,7 +59,7 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
 
 
   const handleFollowToggle = async () => {
-    if (!user || !profile || isMyProfile || !supabase) {
+    if (!user || isMyProfile || !supabase) {
         toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to follow users.' });
         return;
     }
@@ -97,7 +72,7 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
             toast({ variant: 'destructive', title: 'Error', description: 'Could not unfollow user.' });
         } else {
             setIsFollowing(false);
-            setProfile(p => p ? { ...p, follower_count: p.follower_count - 1 } : null);
+            setFollowerCount(c => c - 1);
         }
     } else {
         const { error } = await supabase.from('followers').insert({ follower_id: user.id, following_id: profile.id });
@@ -105,7 +80,7 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
             toast({ variant: 'destructive', title: 'Error', description: 'Could not follow user.' });
         } else {
             setIsFollowing(true);
-            setProfile(p => p ? { ...p, follower_count: p.follower_count + 1 } : null);
+            setFollowerCount(c => c + 1);
         }
     }
     setIsFollowLoading(false);
@@ -115,7 +90,7 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
       toast({ title: 'Action not fully implemented in profile view.' });
   }
 
-  if (loading || authLoading) {
+  if (authLoading) {
     return (
       <div className="flex h-[calc(100vh-150px)] items-center justify-center">
         <Loader2 className="animate-spin size-10 text-primary" />
@@ -129,6 +104,7 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
 
   const avatarUrl = profile.avatar_url;
   const profileFullName = profile.full_name || 'Anonymous User';
+  const followingCount = profile.following_count?.[0]?.count ?? 0;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -162,8 +138,8 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
           </div>
           <p className="mt-4 text-muted-foreground">{profile.bio || "No bio yet."}</p>
           <div className="mt-4 flex items-center gap-6 text-sm">
-             <span className="font-semibold text-foreground">{profile.following_count}</span> Following
-             <span className="font-semibold text-foreground">{profile.follower_count}</span> Followers
+             <span className="font-semibold text-foreground">{followingCount}</span> Following
+             <span className="font-semibold text-foreground">{followerCount}</span> Followers
           </div>
         </CardContent>
       </Card>
@@ -178,8 +154,8 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
         
         <TabsContent value="activity" className="mt-6">
             <div className="space-y-4">
-            {profileContent.posts.length > 0 ? (
-                profileContent.posts.map(post => (
+            {initialContent.posts.length > 0 ? (
+                initialContent.posts.map(post => (
                     <PostCard 
                         key={post.id} 
                         post={post} 
@@ -198,8 +174,8 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
         </TabsContent>
         <TabsContent value="listings" className="mt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {profileContent.listings.length > 0 ? (
-                profileContent.listings.map(listing => (
+            {initialContent.listings.length > 0 ? (
+                initialContent.listings.map(listing => (
                     <ProductCard 
                         key={listing.id} 
                         product={listing} 
@@ -216,10 +192,10 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
             </div>
         </TabsContent>
         <TabsContent value="followers" className="mt-6">
-             <UserListCard users={profileContent.followers} emptyMessage="Not followed by any users yet." />
+             <UserListCard users={initialContent.followers} emptyMessage="Not followed by any users yet." />
         </TabsContent>
         <TabsContent value="following" className="mt-6">
-            <UserListCard users={profileContent.following} emptyMessage="Not following any users yet." />
+            <UserListCard users={initialContent.following} emptyMessage="Not following any users yet." />
         </TabsContent>
       </Tabs>
     </div>
