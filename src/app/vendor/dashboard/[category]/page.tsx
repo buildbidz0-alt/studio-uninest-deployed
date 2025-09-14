@@ -23,6 +23,7 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         productCategories.push('Hostel Room');
     }
 
+    // Corrected data fetching logic
     const [productsRes, ordersRes] = await Promise.all([
         supabase
             .from('products')
@@ -38,15 +39,14 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
                 status,
                 buyer_id,
                 buyer:profiles!buyer_id(full_name, avatar_url),
-                order_items:order_items!inner(
-                    products:products!inner(name, category),
+                order_items:order_items (
                     seat_number,
                     library_id,
-                    product_id
+                    product_id,
+                    products ( name, category )
                 )
             `)
             .eq('vendor_id', userId)
-            .in('order_items.products.category', productCategories)
             .order('created_at', { ascending: false })
     ]);
 
@@ -55,15 +55,23 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         return { products: [], orders: [] };
     }
 
+    // Filter orders in code now, which is more reliable
+    const relevantOrders = (ordersRes.data || []).filter(order =>
+      order.order_items.some((item: any) =>
+        item.products && productCategories.includes(item.products.category)
+      )
+    );
+
     return {
         products: (productsRes.data as Product[]) || [],
-        orders: (ordersRes.data as any[]) || [],
+        orders: (relevantOrders as any[]) || [],
     };
 }
 
 
 export default async function VendorCategoryDashboardPage({ params }: { params: { category: string } }) {
-    const categoryKey = params.category.replace('-', ' ');
+    // The slug is hyphenated, but the category in the DB has a space.
+    const categoryKey = params.category;
     const categoryInfo = categoryMap[categoryKey];
     const supabase = createClient();
 

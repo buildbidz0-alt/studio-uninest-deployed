@@ -26,8 +26,9 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
 
     const library = products.find(p => p.category === 'Library');
 
-    const pendingApprovals = orders.filter(o => o.status === 'pending_approval' && o.order_items[0]?.library_id === library?.id);
-    const approvedBookings = orders.filter(o => o.status === 'approved' && o.order_items[0]?.library_id === library?.id);
+    const librarySpecificOrders = orders.filter(o => o.order_items.some((oi: any) => oi.library_id === library?.id));
+    const pendingApprovals = librarySpecificOrders.filter(o => o.status === 'pending_approval');
+    const approvedBookings = librarySpecificOrders.filter(o => o.status === 'approved');
     const totalSeats = library?.total_seats || 0;
 
     const handleApproval = async (orderId: number, newStatus: 'approved' | 'rejected') => {
