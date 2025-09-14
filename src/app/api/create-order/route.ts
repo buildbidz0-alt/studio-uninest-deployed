@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import Razorpay from 'razorpay';
 
 const orderSchema = z.object({
   amount: z.number().positive(),
@@ -26,30 +27,21 @@ export async function POST(request: Request) {
 
     const { amount, currency } = parsedBody.data;
     
+    const instance = new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+    });
+
     const options = {
       amount, // amount in the smallest currency unit
       currency,
       receipt: `receipt_order_${new Date().getTime()}`,
     };
 
-    // Use a direct fetch call to Razorpay API
-    const authString = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    const order = await instance.orders.create(options);
     
-    const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${authString}`,
-        },
-        body: JSON.stringify(options),
-    });
-
-    const order = await razorpayResponse.json();
-    
-    if (!razorpayResponse.ok) {
-        console.error('Razorpay API Error:', order);
-        const errorMessage = order?.error?.description || 'Failed to create Razorpay order.';
-        return NextResponse.json({ error: errorMessage }, { status: razorpayResponse.status });
+    if (!order) {
+        return NextResponse.json({ error: 'Failed to create Razorpay order.' }, { status: 500 });
     }
 
     return NextResponse.json(order, { status: 200 });
