@@ -125,9 +125,14 @@ export type PostWithAuthor = {
   isFollowed: boolean;
 };
 
-export type MonetizationSettings = {
+type MonetizationRoleSetting = {
     charge_for_posts: boolean;
     post_price: number;
+}
+
+export type MonetizationSettings = {
+    student: MonetizationRoleSetting;
+    vendor: MonetizationRoleSetting;
     start_date: string | null;
 };
 

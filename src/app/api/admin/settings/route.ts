@@ -3,9 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const settingsSchema = z.object({
+const monetizationRoleSettingSchema = z.object({
   charge_for_posts: z.boolean(),
   post_price: z.number().min(0),
+});
+
+const settingsSchema = z.object({
+  student: monetizationRoleSettingSchema,
+  vendor: monetizationRoleSettingSchema,
   start_date: z.string().datetime().nullable().optional(),
 });
 

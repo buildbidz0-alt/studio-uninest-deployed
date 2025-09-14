@@ -5,6 +5,18 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from 'next/navigation';
 import type { MonetizationSettings } from "@/lib/types";
 
+const defaultSettings: MonetizationSettings = {
+    student: {
+        charge_for_posts: false,
+        post_price: 10,
+    },
+    vendor: {
+        charge_for_posts: false,
+        post_price: 10,
+    },
+    start_date: null,
+};
+
 // This page is a wrapper to provide a vendor-specific route for the product form.
 export default async function NewVendorProductPage() {
     const supabase = createClient();
@@ -20,10 +32,17 @@ export default async function NewVendorProductPage() {
         .eq('key', 'monetization')
         .single();
         
-    const monetizationSettings = settingsData?.value as MonetizationSettings || { charge_for_posts: false, post_price: 10, start_date: null };
+    const monetizationSettings: MonetizationSettings = {
+        ...defaultSettings,
+        ...(settingsData?.value as Partial<MonetizationSettings> || {}),
+        student: { ...defaultSettings.student, ...(settingsData?.value as any)?.student },
+        vendor: { ...defaultSettings.vendor, ...(settingsData?.value as any)?.vendor },
+    };
+    
+    const roleSettings = monetizationSettings.vendor;
 
     const isChargingActive = () => {
-        if (!monetizationSettings.charge_for_posts) {
+        if (!roleSettings.charge_for_posts) {
             return false;
         }
         if (monetizationSettings.start_date) {
@@ -37,7 +56,7 @@ export default async function NewVendorProductPage() {
             <PageHeader title="Create New Product" description="Fill out the form to add a new item to your listings." />
             <ProductForm 
                 chargeForPosts={isChargingActive()}
-                postPrice={monetizationSettings.post_price}
+                postPrice={roleSettings.post_price}
             />
         </div>
     )

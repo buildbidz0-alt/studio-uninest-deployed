@@ -5,6 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import SettingsForm from "@/components/admin/settings/form";
 import type { MonetizationSettings } from "@/lib/types";
 
+const defaultSettings: MonetizationSettings = {
+    student: {
+        charge_for_posts: false,
+        post_price: 10,
+    },
+    vendor: {
+        charge_for_posts: false,
+        post_price: 10,
+    },
+    start_date: null,
+};
+
 export default async function AdminSettingsPage() {
     const supabase = createClient();
     const { data } = await supabase
@@ -13,7 +25,12 @@ export default async function AdminSettingsPage() {
         .eq('key', 'monetization')
         .single();
         
-    const settings = data?.value as MonetizationSettings || { charge_for_posts: false, post_price: 10, start_date: null };
+    const settings: MonetizationSettings = {
+        ...defaultSettings,
+        ...(data?.value as Partial<MonetizationSettings> || {}),
+        student: { ...defaultSettings.student, ...(data?.value as any)?.student },
+        vendor: { ...defaultSettings.vendor, ...(data?.value as any)?.vendor },
+    };
 
     return (
         <div className="space-y-8">

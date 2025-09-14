@@ -16,10 +16,16 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { MonetizationSettings } from '@/lib/types';
+import { Separator } from '@/components/ui/separator';
 
-const formSchema = z.object({
+const monetizationRoleSettingSchema = z.object({
   charge_for_posts: z.boolean(),
   post_price: z.coerce.number().min(0, 'Price must be a positive number.'),
+});
+
+const formSchema = z.object({
+  student: monetizationRoleSettingSchema,
+  vendor: monetizationRoleSettingSchema,
   start_date: z.date().optional().nullable(),
 });
 
@@ -34,8 +40,14 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-        charge_for_posts: currentSettings.charge_for_posts,
-        post_price: currentSettings.post_price,
+        student: {
+            charge_for_posts: currentSettings.student.charge_for_posts,
+            post_price: currentSettings.student.post_price,
+        },
+        vendor: {
+            charge_for_posts: currentSettings.vendor.charge_for_posts,
+            post_price: currentSettings.vendor.post_price,
+        },
         start_date: currentSettings.start_date ? new Date(currentSettings.start_date) : null,
     },
   });
@@ -68,48 +80,93 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-lg">
-        <FormField
-          control={form.control}
-          name="charge_for_posts"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Charge for New Listings</FormLabel>
-                <FormDescription>
-                  Enable this to charge users a fee for creating a new product listing.
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="post_price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Listing Price (INR)</FormLabel>
-              <FormControl>
-                 <Input type="number" placeholder="e.g., 10" {...field} />
-              </FormControl>
-              <FormDescription>
-                The amount to charge for each new listing if charging is enabled.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        
+        {/* Student Settings */}
+        <div className='space-y-6 rounded-lg border p-4'>
+            <h3 className="text-lg font-semibold">Student Listing Fees</h3>
+            <FormField
+            control={form.control}
+            name="student.charge_for_posts"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border bg-background p-4">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-base">Charge Students for Listings</FormLabel>
+                    <FormDescription>
+                    Enable this to charge students a fee for creating a new product listing.
+                    </FormDescription>
+                </div>
+                <FormControl>
+                    <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    />
+                </FormControl>
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="student.post_price"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Student Listing Price (INR)</FormLabel>
+                <FormControl>
+                    <Input type="number" placeholder="e.g., 10" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+
+        {/* Vendor Settings */}
+        <div className='space-y-6 rounded-lg border p-4'>
+            <h3 className="text-lg font-semibold">Vendor Listing Fees</h3>
+            <FormField
+            control={form.control}
+            name="vendor.charge_for_posts"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border bg-background p-4">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-base">Charge Vendors for Listings</FormLabel>
+                    <FormDescription>
+                     Enable this to charge vendors a fee for creating new service/product listings.
+                    </FormDescription>
+                </div>
+                <FormControl>
+                    <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    />
+                </FormControl>
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="vendor.post_price"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Vendor Listing Price (INR)</FormLabel>
+                <FormControl>
+                    <Input type="number" placeholder="e.g., 100" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+
+        <Separator />
+        
+        {/* Global Settings */}
+        <h3 className="text-lg font-semibold">Global Settings</h3>
         <FormField
           control={form.control}
           name="start_date"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Charging Start Date (Optional)</FormLabel>
+              <FormLabel>Monetization Start Date (Optional)</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -142,7 +199,7 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                If set, charging will only begin on or after this date.
+                If set, all charges will only begin on or after this date.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -150,7 +207,7 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
         />
         <Button type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Settings
+            Save All Settings
         </Button>
       </form>
     </Form>
