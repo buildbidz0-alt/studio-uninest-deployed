@@ -129,35 +129,22 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-             // Find rooms where the current user is a participant
-            const { data: userRooms, error: userRoomsError } = await supabase
-                .from('chat_room_participants')
-                .select('room_id')
-                .eq('user_id', currentUser.id);
+            // Step 1: Find if a private room with these two users already exists.
+            const { data: existingRooms, error: existingRoomsError } = await supabase
+                .rpc('get_mutual_private_room_id', {
+                    user1_id: currentUser.id,
+                    user2_id: product.seller_id
+                });
 
-            if (userRoomsError) throw userRoomsError;
+            if (existingRoomsError) throw existingRoomsError;
 
-            const userRoomIds = userRooms.map(r => r.room_id);
-
-            if (userRoomIds.length > 0) {
-                 // Check if the seller is in any of these rooms, and that the room is a private room with only 2 people
-                const { data: mutualRooms, error: mutualRoomsError } = await supabase
-                    .from('chat_room_participants')
-                    .select('room_id, chat_rooms(is_private)')
-                    .eq('user_id', product.seller_id)
-                    .in('room_id', userRoomIds);
-                
-                if (mutualRoomsError) throw mutualRoomsError;
-
-                const privateMutualRoom = mutualRooms.find(r => r.chat_rooms?.is_private);
-
-                if (privateMutualRoom) {
-                    router.push('/chat');
-                    return;
-                }
+            if (existingRooms && existingRooms.length > 0 && existingRooms[0].room_id) {
+                // A room already exists, navigate to chat.
+                router.push('/chat');
+                return;
             }
 
-            // If no mutual room is found, create a new one
+            // Step 2: If no room exists, create a new one.
             const { data: newRoom, error: newRoomError } = await supabase
                 .from('chat_rooms')
                 .insert({ is_private: true })
@@ -166,6 +153,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
             
             if (newRoomError) throw newRoomError;
 
+            // Step 3: Add both users as participants to the new room.
             const { error: participantsError } = await supabase
                 .from('chat_room_participants')
                 .insert([
@@ -175,6 +163,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
 
             if (participantsError) throw participantsError;
             
+            // Navigate to the chat page.
             router.push('/chat');
 
         } catch (error) {
@@ -198,6 +187,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
                                 fill
                                 data-ai-hint="product image"
                                 className="object-cover"
+                                priority
                             />
                         </div>
                     </Card>
@@ -280,5 +270,3 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         </div>
     );
 }
-
-    
