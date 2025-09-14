@@ -1,7 +1,7 @@
 
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 
 const getSupabaseAdmin = () => {
@@ -14,10 +14,9 @@ const getSupabaseAdmin = () => {
     return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
+const uploadFile = async (supabaseAdmin: SupabaseClient, file: File, bucket: string): Promise<string | null> => {
     if (!file || file.size === 0) return null;
     
-    const supabaseAdmin = getSupabaseAdmin();
     const filePath = `admin/${Date.now()}-${file.name}`;
     
     const { error: uploadError } = await supabaseAdmin.storage
@@ -56,13 +55,13 @@ export async function createInternship(formData: FormData) {
         let pdfUrl: string | null = null;
 
         if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-            imageUrl = await uploadFile(imageFile, 'internships');
+            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'internships');
             if (!imageUrl) {
                 return { error: 'Failed to upload image.' };
             }
         }
         if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
-            pdfUrl = await uploadFile(pdfFile, 'internships');
+            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'internships');
             if (!pdfUrl) {
                 return { error: 'Failed to upload PDF.' };
             }
@@ -112,11 +111,11 @@ export async function updateInternship(id: number, formData: FormData) {
         let pdfUrl = existing?.details_pdf_url || null;
 
         if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-            imageUrl = await uploadFile(imageFile, 'internships');
+            imageUrl = await uploadFile(supabaseAdmin, imageFile, 'internships');
             if (!imageUrl) return { error: 'Failed to upload image.' };
         }
         if (pdfFile && pdfFile instanceof File && pdfFile.size > 0) {
-            pdfUrl = await uploadFile(pdfFile, 'internships');
+            pdfUrl = await uploadFile(supabaseAdmin, pdfFile, 'internships');
             if (!pdfUrl) return { error: 'Failed to upload PDF.' };
         }
 
