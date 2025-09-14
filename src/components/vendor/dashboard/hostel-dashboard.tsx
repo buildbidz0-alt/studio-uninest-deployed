@@ -26,7 +26,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
     const hostels = products.filter(p => p.category === 'Hostels');
     const rooms = products.filter(p => p.category === 'Hostel Room');
 
-    const pendingApprovals = orders.filter(o => o.status === 'pending_approval' && o.order_items[0]?.products?.category === 'Hostel Room');
+    const pendingApprovals = orders.filter(o => o.status === 'pending_approval' && o.order_items.some((oi: any) => oi.products?.category === 'Hostel Room'));
 
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     const uniqueTenants = new Set(orders.map(o => o.buyer_id)).size;

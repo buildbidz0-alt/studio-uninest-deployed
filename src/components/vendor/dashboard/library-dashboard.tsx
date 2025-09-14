@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -28,8 +29,8 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
     const library = products.find(p => p.category === 'Library');
 
     const librarySpecificOrders = orders.filter(o => o.order_items.some((oi: any) => oi.library_id === library?.id));
-    const pendingApprovals = librarySpecificOrders.filter(o => o.status === 'pending_approval');
-    const approvedBookings = librarySpecificOrders.filter(o => o.status === 'approved');
+    const pendingApprovals = orders.filter(o => o.status === 'pending_approval');
+    const approvedBookings = orders.filter(o => o.status === 'approved');
     const totalSeats = library?.total_seats || 0;
 
     const handleApproval = async (orderId: number, newStatus: 'approved' | 'rejected') => {
