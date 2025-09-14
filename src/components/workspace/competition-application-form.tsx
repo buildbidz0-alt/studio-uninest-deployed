@@ -73,10 +73,7 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     setIsLoading(true);
 
     if (competition.entry_fee <= 0) {
-        // This flow needs to be updated if free entries are ever implemented server-side
-        toast({ title: 'Success', description: 'Free entry recorded (simulation).' });
-        router.push(`/workspace/competitions/${competition.id}`);
-        setIsLoading(false);
+        await saveEntry();
         return;
     }
 
