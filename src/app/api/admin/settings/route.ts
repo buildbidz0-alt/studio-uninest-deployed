@@ -28,9 +28,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Check if the user is an admin by checking their profile
+    // 2. Check if the user is an admin
+    const isAuthAdmin = user.user_metadata?.role === 'admin';
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') {
+    const isProfileAdmin = profile?.role === 'admin';
+
+    if (!isAuthAdmin && !isProfileAdmin) {
         return NextResponse.json({ error: 'Forbidden: Admins only' }, { status: 403 });
     }
 
