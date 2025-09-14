@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -62,10 +63,7 @@ export default function ChatLayout() {
 
         // Step 3: Get the last message for each room.
         const { data: last_messages, error: messages_error } = await supabase
-            .from('chat_messages')
-            .select('room_id, content, created_at')
-            .in('room_id', roomIds)
-            .order('created_at', { ascending: false });
+            .rpc('get_last_messages_for_rooms', { p_room_ids: roomIds });
 
         if (messages_error) throw messages_error;
         
