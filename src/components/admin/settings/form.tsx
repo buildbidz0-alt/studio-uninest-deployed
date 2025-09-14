@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -17,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { MonetizationSettings } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
+import { updateSettings } from '@/app/admin/settings/actions';
 
 const studentMonetizationSettingSchema = z.object({
   charge_for_posts: z.boolean(),
@@ -60,23 +60,17 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
-    // Prepare the data for the API, ensuring date is a string
+    // Prepare the data for the server action, ensuring date is a string
     const dataToSend = {
       ...values,
       start_date: values.start_date ? values.start_date.toISOString() : null,
     };
 
     try {
-        const response = await fetch('/api/admin/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dataToSend),
-        });
+        const result = await updateSettings(dataToSend);
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.error || 'Failed to update settings');
+        if (result.error) {
+            throw new Error(result.error);
         }
 
         toast({ title: 'Success', description: 'Settings updated successfully.' });
