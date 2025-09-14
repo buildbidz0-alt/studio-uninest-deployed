@@ -105,15 +105,26 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
         name: 'UniNest Donation',
         description: 'Support student innovation!',
         order_id: order.id,
-        handler: async function (response: any) {
-            const { error } = await supabase.from('donations').insert({
-                user_id: user?.id,
-                amount: amount,
-                currency: 'INR',
-                razorpay_payment_id: response.razorpay_payment_id
+        handler: async function (response: any, accessToken: string) {
+            const verificationResponse = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${accessToken}`, // Pass the token here
+                },
+                body: JSON.stringify({
+                    orderId: order.id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                    type: 'donation',
+                    amount: amount,
+                })
             });
-            if (error) {
-                 toast({ variant: 'destructive', title: 'Donation record failed', description: 'Your payment was successful but we couldn\'t record it. Please contact support.' });
+
+            const result = await verificationResponse.json();
+
+            if (!verificationResponse.ok) {
+                 toast({ variant: 'destructive', title: 'Donation record failed', description: result.error || 'Your payment was successful but we couldn\'t record it. Please contact support.' });
             } else {
                 router.push(`/donate/thank-you?amount=${amount}`);
             }
@@ -191,5 +202,3 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
     </Dialog>
   );
 }
-
-    

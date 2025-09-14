@@ -67,6 +67,10 @@ export function useRazorpay() {
                 title: 'Authentication Error',
                 description: 'You must be logged in to complete this payment. Please log in and try again.',
             });
+            // Also call ondismiss if available to reset UI state
+            if (options.modal && options.modal.ondismiss) {
+              options.modal.ondismiss();
+            }
             return;
         }
 

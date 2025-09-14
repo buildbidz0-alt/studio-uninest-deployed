@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -128,16 +127,19 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
         name: 'UniNest Donation',
         description: 'Support student innovation!',
         order_id: order.id,
-        handler: async function (response: any) {
+        handler: async function (response: any, accessToken: string) {
             const verificationResponse = await fetch('/api/verify-payment', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${accessToken}`, // Pass the token here
+                },
                 body: JSON.stringify({
                     orderId: order.id,
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_signature: response.razorpay_signature,
                     type: 'donation',
-                    userId: user?.id,
+                    // No longer need to pass userId, it's derived from the token
                     amount: amount,
                 })
             });

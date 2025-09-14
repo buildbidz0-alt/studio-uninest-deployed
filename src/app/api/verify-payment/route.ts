@@ -23,12 +23,13 @@ const createAuthedSupabaseClient = async (request: NextRequest) => {
         throw new Error('Authentication failed: ' + (error?.message || 'User not found'));
     }
 
+    // Return the client and the authenticated user
     return { supabase, user };
 };
 
 
 // This function creates a Supabase admin client using the service role key.
-// It should be used for operations that require elevated privileges.
+// It should be used for operations that require elevated privileges to bypass RLS.
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -41,7 +42,8 @@ const getSupabaseAdmin = () => {
 
 export async function POST(request: NextRequest) {
     try {
-        const { supabase, user } = await createAuthedSupabaseClient(request);
+        // Step 1: Authenticate the user from the token. This is the crucial step.
+        const { user } = await createAuthedSupabaseClient(request);
         const body = await request.json();
         
         const {
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
         
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
         
-        // 1. Verify Razorpay Signature if it's a paid transaction
+        // Step 2: Verify Razorpay Signature if it's a paid transaction
         if (orderId && razorpay_payment_id && razorpay_signature) {
             if (!keySecret) {
                 return NextResponse.json({ error: 'Razorpay secret not configured.' }, { status: 500 });
@@ -71,9 +73,9 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 2. Signature is valid (or not required), now save the record.
+        // Step 3: Signature is valid (or not required), now save the record.
         // It's safer to use the admin client for writes to bypass RLS,
-        // as the user's identity has already been verified.
+        // as the user's identity has now been securely verified via token.
         const supabaseAdmin = getSupabaseAdmin();
         
         if (type === 'donation') {
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
         } else if (type === 'competition_entry') {
             const { error } = await supabaseAdmin.from('competition_entries').insert({
                 competition_id: competitionId,
-                user_id: user.id, // Use the verified user ID
+                user_id: user.id, // Use the verified user ID from the token
                 razorpay_payment_id: razorpay_payment_id,
                 phone_number: phone_number,
                 whatsapp_number: whatsapp_number,
