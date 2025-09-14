@@ -30,8 +30,7 @@ export default async function CompetitionResultsPage({ params }: { params: { id:
             user_id,
             profiles (
                 id,
-                full_name,
-                email
+                full_name
             )
         `)
         .eq('competition_id', params.id);
@@ -43,7 +42,6 @@ export default async function CompetitionResultsPage({ params }: { params: { id:
     const applicants = entries.map(e => ({
         id: e.profiles?.id || e.user_id,
         name: e.profiles?.full_name || 'Unknown',
-        email: e.profiles?.email || 'No email'
     }));
 
     return (

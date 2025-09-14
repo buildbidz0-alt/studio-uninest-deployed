@@ -15,7 +15,6 @@ import { declareWinner } from "./actions";
 type Applicant = {
     id: string;
     name: string;
-    email: string;
 }
 
 type ResultsFormProps = {
@@ -70,10 +69,7 @@ export default function ResultsForm({ competitionId, applicants, currentWinnerId
                             <SelectContent>
                                 {applicants.map(applicant => (
                                     <SelectItem key={applicant.id} value={applicant.id}>
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold">{applicant.name}</span>
-                                            <span className="text-xs text-muted-foreground">{applicant.email}</span>
-                                        </div>
+                                        {applicant.name}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
