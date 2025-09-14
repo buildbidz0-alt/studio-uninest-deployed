@@ -1,3 +1,4 @@
+'use client';
 
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,7 @@ type ProductCardProps = {
   product: Product;
   user: User | null;
   onBuyNow: (product: Product) => void;
-  onChat: (sellerId: string) => void;
+  onChat: (sellerId: string, productName: string) => void;
   isBuying: boolean;
   isRazorpayLoaded: boolean;
 };
@@ -68,7 +69,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                 </p>
                 <div className='flex gap-2'>
                 {canContact && (isContactFirst || isDirectPurchase) ? (
-                    <Button onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id))}>
+                    <Button onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id, product.name))}>
                         <MessageSquare className="mr-2 size-4"/>
                         Contact Seller
                     </Button>

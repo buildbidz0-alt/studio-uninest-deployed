@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -185,7 +184,7 @@ export default function MarketplaceContent() {
     }
   }, [user, supabase, toast, openCheckout, router]);
 
-    const handleChat = useCallback(async (sellerId: string) => {
+    const handleChat = useCallback(async (sellerId: string, productName: string) => {
         if (!user || !supabase) {
             toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
             return;
@@ -196,27 +195,30 @@ export default function MarketplaceContent() {
         }
 
         try {
-            const { data: existingRoom, error: findRoomError } = await supabase
-                .rpc('get_mutual_private_room', {
-                    p_user1_id: user.id,
-                    p_user2_id: sellerId,
-                });
+            // This is a simplified check. A proper implementation would check a participants table.
+            const { data: existingMessages, error: messagesError } = await supabase
+                .from('chat_messages')
+                .select('room_id')
+                .or(`and(user_id.eq.${user.id},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${sellerId}')),and(user_id.eq.${sellerId},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${user.id}'))`)
+                .limit(1);
 
-            if (findRoomError) throw findRoomError;
+            if (messagesError) throw messagesError;
 
-            if (existingRoom && existingRoom.id) {
+            if (existingMessages && existingMessages.length > 0) {
                 router.push('/chat');
                 return;
             }
 
-            const { data: newRoomId, error: newRoomError } = await supabase
-                .rpc('create_chat_room_with_participants', {
-                    p_user1_id: user.id,
-                    p_user2_id: sellerId,
-                });
-            
+            const { data: newRoom, error: newRoomError } = await supabase.from('chat_rooms').insert({}).select().single();
             if (newRoomError) throw newRoomError;
             
+            const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
+                room_id: newRoom.id,
+                user_id: user.id,
+                content: `Hi, I'm interested in "${productName}".`,
+            });
+            if (welcomeMessageError) throw welcomeMessageError;
+
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);

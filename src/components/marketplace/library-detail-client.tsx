@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -113,33 +112,36 @@ export default function LibraryDetailClient({ library, initialSeatProducts, init
         }
 
         try {
-            const { data: existingRoom, error: findRoomError } = await supabase
-                .rpc('get_mutual_private_room', {
-                    p_user1_id: currentUser.id,
-                    p_user2_id: library.seller_id,
-                });
+            // This is a simplified check. A proper implementation would check a participants table.
+            const { data: existingMessages, error: messagesError } = await supabase
+                .from('chat_messages')
+                .select('room_id')
+                .or(`and(user_id.eq.${currentUser.id},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${library.seller_id}')),and(user_id.eq.${library.seller_id},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${currentUser.id}'))`)
+                .limit(1);
 
-            if (findRoomError) throw findRoomError;
+            if (messagesError) throw messagesError;
 
-            if (existingRoom && existingRoom.length > 0 && existingRoom[0].id) {
+            if (existingMessages && existingMessages.length > 0) {
                 router.push('/chat');
                 return;
             }
 
-            const { data: newRoomId, error: newRoomError } = await supabase
-                .rpc('create_chat_room_with_participants', {
-                    p_user1_id: currentUser.id,
-                    p_user2_id: library.seller_id,
-                });
-            
+            const { data: newRoom, error: newRoomError } = await supabase.from('chat_rooms').insert({}).select().single();
             if (newRoomError) throw newRoomError;
             
+            const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
+                room_id: newRoom.id,
+                user_id: currentUser.id,
+                content: `Hi, I have a question about ${library.name}.`,
+            });
+            if (welcomeMessageError) throw welcomeMessageError;
+
             router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
         }
-    }, [currentUser, supabase, toast, router, library.seller_id]);
+    }, [currentUser, supabase, toast, router, library.seller_id, library.name]);
 
      const handleSeatClick = (seat: Seat) => {
         if (seat.status !== 'available') {
