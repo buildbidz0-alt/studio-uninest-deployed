@@ -16,6 +16,13 @@ const getSupabaseAdmin = () => {
 
 const uploadFile = async (supabaseAdmin: any, file: File, bucket: string): Promise<string | null> => {
     if (!file || file.size === 0) return null;
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+        console.error('Supabase URL is not configured.');
+        return null;
+    }
+
     const filePath = `admin/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabaseAdmin.storage
       .from(bucket)
@@ -25,10 +32,9 @@ const uploadFile = async (supabaseAdmin: any, file: File, bucket: string): Promi
       console.error('Upload Error:', uploadError);
       return null;
     }
-
-    const { data: { publicUrl } } = supabaseAdmin.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
+    
+    // Construct the URL manually instead of making another API call
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
       
     return publicUrl;
 }
