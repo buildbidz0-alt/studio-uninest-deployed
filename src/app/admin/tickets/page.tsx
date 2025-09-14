@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TicketStatusChanger from "@/components/admin/tickets/ticket-status-changer";
 import Link from "next/link";
 import type { SupportTicket, Profile } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 
 export const revalidate = 0; // Force dynamic rendering
 
@@ -33,7 +34,12 @@ export default async function AdminTicketsPage() {
         .order('created_at', { ascending: false });
 
     if (error) {
-        return <div>Error loading tickets: {error.message}</div>
+        return (
+            <div className="space-y-8">
+                <PageHeader title="Support Tickets" description="Review and manage user feedback and issues." />
+                <p>Error loading tickets: {error.message}</p>
+            </div>
+        )
     }
 
     const tickets: TicketWithProfile[] = (ticketsData as any) || [];
