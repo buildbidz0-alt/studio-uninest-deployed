@@ -41,6 +41,7 @@ export type Product = {
   description: string;
   location: string | null;
   total_seats: number | null;
+  parent_product_id: number | null;
   status: string;
   seller: {
     id: string;

@@ -41,7 +41,7 @@ export default function LibraryDetailClient({ library, initialSeatProducts, init
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [currentOrders, setCurrentOrders] = useState(initialOrders);
 
-    const generateSeatStatus = useCallback((orders: any[]) => {
+    const generateSeatStatus = useCallback((orders: any[], seatProducts: {id: number, name: string}[]) => {
         const seatStatusMap = new Map<number, 'booked' | 'pending'>();
         orders.forEach(order => {
             const seatItem = order.order_items[0];
@@ -54,7 +54,7 @@ export default function LibraryDetailClient({ library, initialSeatProducts, init
             }
         });
 
-        const newSeats: Seat[] = initialSeatProducts.map(product => {
+        const newSeats: Seat[] = seatProducts.map(product => {
             const statusInfo = seatStatusMap.get(product.id);
             return {
                 id: product.name.split(' ')[1] || product.id.toString(), // e.g., "Seat 24" -> "24"
@@ -64,30 +64,35 @@ export default function LibraryDetailClient({ library, initialSeatProducts, init
         }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
         setSeats(newSeats);
-    }, [initialSeatProducts]);
+    }, []);
 
     useEffect(() => {
-        generateSeatStatus(currentOrders);
-    }, [currentOrders, generateSeatStatus]);
+        generateSeatStatus(currentOrders, initialSeatProducts);
+    }, [currentOrders, initialSeatProducts, generateSeatStatus]);
     
     useEffect(() => {
         if (!supabase) return;
-
+        
         const seatProductIds = initialSeatProducts.map(p => p.id);
+        
+        const fetchAndSetOrders = async () => {
+             const { data: newOrdersData } = seatProductIds.length > 0
+                ? await supabase
+                    .from('orders')
+                    .select('id, status, order_items!inner(product_id)')
+                    .eq('vendor_id', library.seller_id)
+                    .in('order_items.product_id', seatProductIds)
+                    .in('status', ['pending_approval', 'approved'])
+                : { data: [] };
+            if (newOrdersData) setCurrentOrders(newOrdersData);
+        }
+
         const channel = supabase
             .channel(`library_${library.id}_orders`)
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'orders', filter: `vendor_id=eq.${library.seller_id}` },
-                async () => {
-                     const { data: newOrdersData } = await supabase
-                        .from('orders')
-                        .select('id, status, order_items!inner(product_id)')
-                        .eq('vendor_id', library.seller_id)
-                        .in('order_items.product_id', seatProductIds)
-                        .in('status', ['pending_approval', 'approved']);
-                    if (newOrdersData) setCurrentOrders(newOrdersData);
-                }
+                fetchAndSetOrders
             )
             .subscribe();
 

@@ -63,7 +63,7 @@ export async function createProduct(formData: FormData) {
             }
         }
 
-        const { error } = await supabaseAdmin.from('products').insert({
+        const { data: newProduct, error } = await supabaseAdmin.from('products').insert({
           seller_id: user.id,
           name: rawFormData.name,
           description: rawFormData.description,
@@ -72,10 +72,22 @@ export async function createProduct(formData: FormData) {
           image_url: imageUrl,
           location: rawFormData.location,
           total_seats: rawFormData.total_seats,
-        });
+        }).select().single();
 
         if (error) {
             return { error: error.message };
+        }
+        
+        if (rawFormData.category === 'Library' && rawFormData.total_seats) {
+            const seatProducts = Array.from({ length: rawFormData.total_seats }, (_, i) => ({
+                name: `Seat ${i + 1}`,
+                category: 'Library Seat',
+                price: rawFormData.price,
+                seller_id: user.id,
+                parent_product_id: newProduct.id,
+                description: `Seat ${i+1} at ${rawFormData.name}`
+            }));
+            await supabaseAdmin.from('products').insert(seatProducts);
         }
 
         revalidatePath('/marketplace');
@@ -131,6 +143,19 @@ export async function updateProduct(id: number, formData: FormData) {
 
         if (error) {
             return { error: error.message };
+        }
+
+        if (rawFormData.category === 'Library' && rawFormData.total_seats) {
+             const seatProducts = Array.from({ length: rawFormData.total_seats }, (_, i) => ({
+                name: `Seat ${i + 1}`,
+                category: 'Library Seat',
+                price: rawFormData.price,
+                seller_id: user.id,
+                parent_product_id: id,
+                description: `Seat ${i+1} at ${rawFormData.name}`
+            }));
+             await supabaseAdmin.from('products').delete().eq('parent_product_id', id);
+             await supabaseAdmin.from('products').insert(seatProducts);
         }
 
         revalidatePath('/marketplace');

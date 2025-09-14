@@ -29,7 +29,7 @@ const formSchema = z.object({
   category: z.string({ required_error: "Please select a category." }),
   image: z.any().optional(),
   location: z.string().optional(),
-  total_seats: z.coerce.number().optional(),
+  total_seats: z.coerce.number().min(1, "Total seats must be at least 1.").optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -44,6 +44,7 @@ type ProductFormProps = {
     image_url: string | null;
     location: string | null;
     total_seats: number | null;
+    parent_product_id?: number | null;
   };
   chargeForPosts?: boolean;
   postPrice?: number;
@@ -175,6 +176,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
         await handleFormSubmit(values);
     }
   }
+  
+  const isLibraryOrHostel = selectedCategory === 'Library' || selectedCategory === 'Hostels';
 
   return (
     <Card>
@@ -234,7 +237,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                         )}
                     </div>
 
-                    {(selectedCategory === 'Library' || selectedCategory === 'Hostels') && (
+                    {isLibraryOrHostel && (
                         <FormField control={form.control} name="location" render={({ field }) => (
                                 <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g., Near Main Campus" {...field} value={field.value || ''}/></FormControl><FormMessage /></FormItem>
                         )} />
@@ -242,7 +245,7 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                    
                      <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
                         <FormItem>
-                            <FormLabel>{selectedCategory === 'Library' ? 'Library Image' : selectedCategory === 'Hostels' ? 'Hostel Image' : 'Product Image'}</FormLabel>
+                            <FormLabel>{isLibraryOrHostel ? 'Main Image' : 'Product Image'}</FormLabel>
                             {isEditMode && product.image_url && !value && (
                                 <div className="mb-4">
                                     <p className="text-sm text-muted-foreground mb-2">Current image:</p>

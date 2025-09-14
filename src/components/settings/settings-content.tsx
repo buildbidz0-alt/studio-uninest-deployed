@@ -198,7 +198,7 @@ export default function SettingsContent() {
   };
 
   async function saveProfile(values: z.infer<typeof profileFormSchema>, isNowActive: boolean, paymentId?: string) {
-    if (!user) return;
+    if (!user || !supabase) return;
     setIsProfileLoading(true);
 
     const userData = {
@@ -232,6 +232,21 @@ export default function SettingsContent() {
     if (profileError) {
       toast({ variant: 'destructive', title: 'Profile Error', description: 'Could not update public profile. ' + profileError.message });
     } else {
+        if (values.role === 'vendor' && values.vendorCategories?.includes('library') && values.libraryDetails?.totalSeats) {
+             const { data: libraryProduct } = await supabase.from('products').select('id').eq('seller_id', user.id).eq('category', 'Library').single();
+             if (libraryProduct) {
+                 const seatProducts = Array.from({ length: values.libraryDetails.totalSeats }, (_, i) => ({
+                    name: `Seat ${i + 1}`,
+                    category: 'Library Seat',
+                    price: values.libraryDetails?.price || 0,
+                    seller_id: user.id,
+                    parent_product_id: libraryProduct.id,
+                    description: `Seat ${i+1} at ${values.fullName}`
+                }));
+                 await supabase.from('products').delete().eq('parent_product_id', libraryProduct.id);
+                 await supabase.from('products').insert(seatProducts);
+             }
+        }
       toast({ title: 'Profile Updated', description: 'Your profile has been updated successfully.' });
       window.location.reload();
     }

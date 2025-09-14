@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: LibraryDetailPageProps): Prom
 
 export default async function LibraryDetailPage({ params }: LibraryDetailPageProps) {
     const supabase = createClient();
-    const { data: library, error } = await supabase
+    const { data: libraryData, error } = await supabase
         .from('products')
         .select(`
             *,
@@ -50,17 +50,26 @@ export default async function LibraryDetailPage({ params }: LibraryDetailPagePro
                 id,
                 full_name,
                 avatar_url,
-                handle,
-                user_metadata
+                handle
             )
         `)
         .eq('id', params.id)
         .eq('category', 'Library')
         .single();
-    
-    if (error || !library) {
+
+    if (error || !libraryData) {
         notFound();
     }
+
+    // Fetch user_metadata separately, as it's on the auth.users table
+    const { data: sellerAuthData } = await supabase.auth.admin.getUserById(libraryData.seller_id);
+    const library = {
+      ...libraryData,
+      seller: {
+        ...libraryData.seller,
+        user_metadata: sellerAuthData.user?.user_metadata || {},
+      }
+    };
     
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -68,17 +77,19 @@ export default async function LibraryDetailPage({ params }: LibraryDetailPagePro
     const { data: seatProducts } = await supabase
         .from('products')
         .select('id, name')
-        .eq('seller_id', library.seller_id)
+        .eq('parent_product_id', library.id)
         .eq('category', 'Library Seat');
 
     // Fetch all relevant orders to determine seat status
     const seatProductIds = (seatProducts || []).map(p => p.id);
-    const { data: orders } = await supabase
-        .from('orders')
-        .select('id, status, order_items!inner(product_id)')
-        .eq('vendor_id', library.seller_id)
-        .in('order_items.product_id', seatProductIds)
-        .in('status', ['pending_approval', 'approved']);
+    const { data: orders } = seatProductIds.length > 0
+      ? await supabase
+          .from('orders')
+          .select('id, status, order_items!inner(product_id)')
+          .eq('vendor_id', library.seller_id)
+          .in('order_items.product_id', seatProductIds)
+          .in('status', ['pending_approval', 'approved'])
+      : { data: [] };
         
     return (
       <LibraryDetailClient 
