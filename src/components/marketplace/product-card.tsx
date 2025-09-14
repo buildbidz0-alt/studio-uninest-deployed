@@ -25,7 +25,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
   const canContact = user && user.id !== product.seller_id;
   const isLibrary = product.category === 'Library';
   const isHostel = product.category === 'Hostels';
-  const isContactOnly = ['Books', 'Other Products', 'Cyber Café'].includes(product.category);
+  const isContactOnly = ['Books', 'Other Products', 'Cyber Café', 'Food Mess'].includes(product.category);
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
     e.stopPropagation();
@@ -63,7 +63,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
         <CardFooter className="p-4 pt-0 mt-auto">
             <div className="flex items-center justify-between w-full gap-2">
                 <p className="text-xl font-bold text-primary">
-                    {isLibrary ? `₹${product.price.toLocaleString()}/seat` : isHostel ? 'View Details' : `₹${product.price.toLocaleString()}`}
+                    {isLibrary ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
                 </p>
                 <div className='flex gap-2'>
                 {canContact && isContactOnly ? (
@@ -71,19 +71,11 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                         <MessageSquare className="mr-2 size-4"/>
                         Contact Seller
                     </Button>
-                ) : canContact ? (
-                     <Button variant="outline" size="icon" onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id))}>
-                        <MessageSquare className="size-4"/>
-                        <span className="sr-only">Chat with seller</span>
-                    </Button>
-                ) : null }
-                
-                {isLibrary || isHostel ? (
-                    <Button>{isHostel ? 'View Rooms' : 'Book Seat'}</Button>
-                ) : !isContactOnly ? (
-                    <Button onClick={(e) => handleButtonClick(e, () => onBuyNow(product))} disabled={!canContact || !isRazorpayLoaded || isBuying}>
-                        {isBuying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Buy Now
+                ) : isLibrary || isHostel ? (
+                    <Button asChild>
+                        <Link href={getCardLink()}>
+                          View Details
+                        </Link>
                     </Button>
                 ) : null}
                 </div>

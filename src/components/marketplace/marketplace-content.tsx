@@ -52,8 +52,18 @@ export default function MarketplaceContent() {
         `);
 
       if (selectedCategory) {
-        query = query.eq('category', selectedCategory);
+        let categoryQuery = selectedCategory;
+        if (selectedCategory === 'Other Products') {
+           // A bit of a hack to show products not in the main categories
+           query = query.not('category', 'in', '("Books", "Hostels", "Food Mess", "Cyber Café", "Library", "Hostel Room", "Library Seat")');
+        } else {
+            query = query.eq('category', selectedCategory);
+        }
+      } else {
+        // Exclude child products from main view
+        query = query.not('category', 'in', '("Hostel Room", "Library Seat")');
       }
+
 
       const { data, error } = await query.order('created_at', { ascending: false });
 
