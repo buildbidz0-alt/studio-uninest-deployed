@@ -12,7 +12,7 @@ import type { SupportTicket, Profile } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { createClient as createBrowserClient } from '@supabase/ssr';
+import { createBrowserClient } from '@supabase/ssr';
 
 type TicketWithProfile = SupportTicket & {
     profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
