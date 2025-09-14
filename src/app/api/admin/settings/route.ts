@@ -1,5 +1,6 @@
 
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -20,7 +21,18 @@ const settingsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-    const supabase = createClient();
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value
+                },
+            },
+        }
+    )
 
     // 1. Check for authenticated user
     const { data: { user } } = await supabase.auth.getUser();
