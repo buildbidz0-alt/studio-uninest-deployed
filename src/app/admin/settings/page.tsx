@@ -11,8 +11,8 @@ const defaultSettings: MonetizationSettings = {
         post_price: 10,
     },
     vendor: {
-        charge_for_posts: false,
-        post_price: 10,
+        charge_for_platform_access: false,
+        price_per_service_per_month: 500,
     },
     start_date: null,
 };
@@ -38,7 +38,7 @@ export default async function AdminSettingsPage() {
              <Card>
                 <CardHeader>
                     <CardTitle>Monetization</CardTitle>
-                    <CardDescription>Manage settings for charging users for services like posting listings.</CardDescription>
+                    <CardDescription>Manage how students and vendors are charged for using the platform.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SettingsForm currentSettings={settings} />

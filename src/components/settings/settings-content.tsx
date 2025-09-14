@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User as UserIcon, Book, Utensils, Laptop, Bed } from 'lucide-react';
+import { Loader2, User as UserIcon, Book, Utensils, Laptop, Bed, Info, AlertTriangle } from 'lucide-react';
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,6 +32,8 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Checkbox } from '../ui/checkbox';
+import { useRazorpay } from '@/hooks/use-razorpay';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 const vendorCategoriesList = [
     { id: "library", label: "Library", icon: Book },
@@ -66,11 +68,13 @@ const passwordFormSchema = z.object({
 
 export default function SettingsContent() {
   const { toast } = useToast();
-  const { user, loading, supabase, role, vendorCategories: userVendorCategories } = useAuth();
+  const { user, loading, supabase, role } = useAuth();
+  const { openCheckout, isLoaded } = useRazorpay();
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
   const [isBannerLoading, setIsBannerLoading] = useState(false);
+  const [monetizationSettings, setMonetizationSettings] = useState<any>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -93,7 +97,9 @@ export default function SettingsContent() {
   });
   
   const isLibraryVendor = profileForm.watch('vendorCategories')?.includes('library');
-
+  const watchedVendorCategories = profileForm.watch('vendorCategories');
+  const isVendorActive = user?.user_metadata?.is_vendor_active || false;
+  
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -103,6 +109,18 @@ export default function SettingsContent() {
   });
 
   useEffect(() => {
+    const fetchMonetizationSettings = async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'monetization')
+        .single();
+      setMonetizationSettings(data?.value);
+    };
+
+    fetchMonetizationSettings();
+
     if (user) {
       profileForm.reset({
         fullName: user.user_metadata?.full_name || '',
@@ -119,14 +137,72 @@ export default function SettingsContent() {
         setBannerPreviewUrl(user.user_metadata.banner_url);
       }
     }
-  }, [user, profileForm])
+  }, [user, profileForm, supabase]);
 
-  async function onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
+  const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
+    if (!user) return;
+  
+    const vendorSettings = monetizationSettings?.vendor;
+    const requiresPayment =
+      values.role === 'vendor' &&
+      vendorSettings?.charge_for_platform_access &&
+      !isVendorActive &&
+      (values.vendorCategories?.length ?? 0) > 0;
+  
+    if (requiresPayment) {
+      const numberOfServices = values.vendorCategories?.length ?? 0;
+      const totalCost = numberOfServices * vendorSettings.price_per_service_per_month;
+  
+      if (totalCost <= 0) {
+        // If cost is zero, just activate them
+        await saveProfile(values, true);
+        return;
+      }
+  
+      try {
+        const response = await fetch('/api/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: totalCost * 100, currency: 'INR' }),
+        });
+  
+        const order = await response.json();
+        if (!response.ok) throw new Error(order.error || 'Failed to create payment order.');
+  
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'UniNest Vendor Subscription',
+          description: `Monthly fee for ${numberOfServices} service(s).`,
+          order_id: order.id,
+          handler: async (response: any) => {
+            // On successful payment, save the profile with active status
+            await saveProfile(values, true, response.razorpay_payment_id);
+          },
+          modal: { ondismiss: () => setIsProfileLoading(false) },
+          prefill: { name: user.user_metadata?.full_name || '', email: user.email || '' },
+          notes: { type: 'vendor_subscription', userId: user.id },
+          theme: { color: '#4A90E2' },
+        };
+        openCheckout(options);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Could not connect to payment gateway.';
+        toast({ variant: 'destructive', title: 'Payment Error', description: errorMessage });
+        setIsProfileLoading(false);
+      }
+    } else {
+      // No payment required, just save the profile
+      await saveProfile(values, isVendorActive);
+    }
+  };
+
+  async function saveProfile(values: z.infer<typeof profileFormSchema>, isNowActive: boolean, paymentId?: string) {
     if (!user) return;
     setIsProfileLoading(true);
 
     const userData = {
-        ...user.user_metadata, // Preserve existing metadata
+        ...user.user_metadata,
         full_name: values.fullName,
         handle: values.handle,
         contact_number: values.contactNumber,
@@ -134,34 +210,29 @@ export default function SettingsContent() {
         role: values.role,
         opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
         vendor_categories: values.role === 'vendor' ? values.vendorCategories : [],
+        is_vendor_active: values.role === 'vendor' ? isNowActive : false,
+        last_payment_id: paymentId || user.user_metadata?.last_payment_id,
         library_details: values.role === 'vendor' && values.vendorCategories?.includes('library') ? values.libraryDetails : undefined,
     };
     
-    // Step 1: Update Auth User Metadata
-    const { data: authData, error: authError } = await supabase.auth.updateUser({ data: userData });
-
+    const { error: authError } = await supabase.auth.updateUser({ data: userData });
     if (authError) {
         toast({ variant: 'destructive', title: 'Auth Error', description: authError.message });
         setIsProfileLoading(false);
         return;
     }
     
-    // Step 2: Update Public Profiles Table
-    const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-            full_name: values.fullName,
-            handle: values.handle,
-            bio: values.bio,
-            role: values.role, // This is the crucial fix
-         })
-        .eq('id', user.id);
+    const { error: profileError } = await supabase.from('profiles').update({ 
+        full_name: values.fullName,
+        handle: values.handle,
+        bio: values.bio,
+        role: values.role,
+     }).eq('id', user.id);
 
     if (profileError) {
       toast({ variant: 'destructive', title: 'Profile Error', description: 'Could not update public profile. ' + profileError.message });
     } else {
       toast({ title: 'Profile Updated', description: 'Your profile has been updated successfully.' });
-      // This will trigger a re-render in useAuth hook and update the UI
       window.location.reload();
     }
     setIsProfileLoading(false);
@@ -264,7 +335,7 @@ export default function SettingsContent() {
 
     const filePath = `${user.id}/banner-${Date.now()}`;
     const { error: uploadError } = await supabase.storage
-      .from('products') // Using 'products' bucket for banners as well, can be changed
+      .from('products') 
       .upload(filePath, selectedBannerFile);
     
     if (uploadError) {
@@ -302,6 +373,14 @@ export default function SettingsContent() {
     }
     setIsBannerLoading(false);
   }
+  
+  const vendorSettings = monetizationSettings?.vendor;
+  const showPaymentAlert =
+    profileForm.watch('role') === 'vendor' &&
+    vendorSettings?.charge_for_platform_access &&
+    !isVendorActive &&
+    (watchedVendorCategories?.length ?? 0) > 0;
+  const totalCost = (watchedVendorCategories?.length ?? 0) * (vendorSettings?.price_per_service_per_month ?? 0);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -388,7 +467,7 @@ export default function SettingsContent() {
                             <RadioGroupItem value="student" />
                           </FormControl>
                           <FormLabel className="font-normal">
-                            User as Student
+                            Student
                           </FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
@@ -396,7 +475,7 @@ export default function SettingsContent() {
                             <RadioGroupItem value="vendor" />
                           </FormControl>
                           <FormLabel className="font-normal">
-                            User as Vendor
+                            Vendor
                           </FormLabel>
                         </FormItem>
                       </RadioGroup>
@@ -546,9 +625,19 @@ export default function SettingsContent() {
                   </Card>
                )}
 
+              {showPaymentAlert && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Action Required: Complete Subscription</AlertTitle>
+                  <AlertDescription>
+                    To activate your vendor services, a payment of <strong>₹{totalCost}</strong> is required. Click the button below to complete your subscription.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <Button type="submit" disabled={isProfileLoading}>
                 {isProfileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
+                {showPaymentAlert ? `Pay ₹${totalCost} and Save` : 'Save Changes'}
               </Button>
             </form>
           </Form>

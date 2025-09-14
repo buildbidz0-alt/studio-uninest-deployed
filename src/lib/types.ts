@@ -45,6 +45,7 @@ export type Product = {
     full_name: string;
     avatar_url: string;
     handle: string;
+    user_metadata: any;
   };
   // This field is for the raw query result
   profiles?: {
@@ -125,14 +126,19 @@ export type PostWithAuthor = {
   isFollowed: boolean;
 };
 
-type MonetizationRoleSetting = {
+type StudentMonetizationSetting = {
     charge_for_posts: boolean;
     post_price: number;
 }
 
+type VendorMonetizationSetting = {
+    charge_for_platform_access: boolean;
+    price_per_service_per_month: number;
+}
+
 export type MonetizationSettings = {
-    student: MonetizationRoleSetting;
-    vendor: MonetizationRoleSetting;
+    student: StudentMonetizationSetting;
+    vendor: VendorMonetizationSetting;
     start_date: string | null;
 };
 

@@ -18,14 +18,19 @@ import { format } from 'date-fns';
 import type { MonetizationSettings } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 
-const monetizationRoleSettingSchema = z.object({
+const studentMonetizationSettingSchema = z.object({
   charge_for_posts: z.boolean(),
   post_price: z.coerce.number().min(0, 'Price must be a positive number.'),
 });
 
+const vendorMonetizationSettingSchema = z.object({
+  charge_for_platform_access: z.boolean(),
+  price_per_service_per_month: z.coerce.number().min(0, 'Price must be a positive number.'),
+});
+
 const formSchema = z.object({
-  student: monetizationRoleSettingSchema,
-  vendor: monetizationRoleSettingSchema,
+  student: studentMonetizationSettingSchema,
+  vendor: vendorMonetizationSettingSchema,
   start_date: z.date().optional().nullable(),
 });
 
@@ -45,8 +50,8 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
             post_price: currentSettings.student.post_price,
         },
         vendor: {
-            charge_for_posts: currentSettings.vendor.charge_for_posts,
-            post_price: currentSettings.vendor.post_price,
+            charge_for_platform_access: currentSettings.vendor.charge_for_platform_access,
+            price_per_service_per_month: currentSettings.vendor.price_per_service_per_month,
         },
         start_date: currentSettings.start_date ? new Date(currentSettings.start_date) : null,
     },
@@ -83,16 +88,16 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
         
         {/* Student Settings */}
         <div className='space-y-6 rounded-lg border p-4'>
-            <h3 className="text-lg font-semibold">Student Listing Fees</h3>
+            <h3 className="text-lg font-semibold">Student Monetization</h3>
             <FormField
             control={form.control}
             name="student.charge_for_posts"
             render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border bg-background p-4">
                 <div className="space-y-0.5">
-                    <FormLabel className="text-base">Charge Students for Listings</FormLabel>
+                    <FormLabel className="text-base">Charge Per Listing</FormLabel>
                     <FormDescription>
-                    Enable this to charge students a fee for creating a new product listing.
+                    Charge students a fee for creating a new product listing.
                     </FormDescription>
                 </div>
                 <FormControl>
@@ -121,16 +126,16 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
 
         {/* Vendor Settings */}
         <div className='space-y-6 rounded-lg border p-4'>
-            <h3 className="text-lg font-semibold">Vendor Listing Fees</h3>
+            <h3 className="text-lg font-semibold">Vendor Monetization</h3>
             <FormField
             control={form.control}
-            name="vendor.charge_for_posts"
+            name="vendor.charge_for_platform_access"
             render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border bg-background p-4">
                 <div className="space-y-0.5">
-                    <FormLabel className="text-base">Charge Vendors for Listings</FormLabel>
+                    <FormLabel className="text-base">Charge for Platform Access</FormLabel>
                     <FormDescription>
-                     Enable this to charge vendors a fee for creating new service/product listings.
+                     Charge vendors a monthly subscription fee per service they provide.
                     </FormDescription>
                 </div>
                 <FormControl>
@@ -144,12 +149,12 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
             />
             <FormField
             control={form.control}
-            name="vendor.post_price"
+            name="vendor.price_per_service_per_month"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Vendor Listing Price (INR)</FormLabel>
+                <FormLabel>Price per Service per Month (INR)</FormLabel>
                 <FormControl>
-                    <Input type="number" placeholder="e.g., 100" {...field} />
+                    <Input type="number" placeholder="e.g., 500" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
