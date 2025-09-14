@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import Image from 'next/image';
@@ -26,7 +24,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
     : 'Anonymous';
   
   const canContact = user && user.id !== product.seller_id;
-  const isLibraryOrHostel = product.category === 'Library' || product.category === 'Hostels';
+  const isBookable = ['Library', 'Hostels', 'Food Mess', 'Cyber Café'].includes(product.category);
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
     e.stopPropagation();
@@ -67,15 +65,17 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                     {product.category === 'Library' ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
                 </p>
                 <div className='flex gap-2'>
-                {canContact ? (
+                {canContact && (
                     <Button variant="outline" size="sm" onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id, product.name))}>
                         <MessageSquare className="mr-2 size-4"/>
                         Contact
                     </Button>
-                ) : null}
+                )}
                 
-                {isLibraryOrHostel ? (
-                    <Button size="sm">View Details</Button>
+                {isBookable ? (
+                    <Button size="sm" asChild>
+                        <Link href={getCardLink()}>View Details</Link>
+                    </Button>
                 ) : (
                     <Button size="sm" disabled={isBuying} onClick={(e) => handleButtonClick(e, () => onBuyNow(product))}>
                       {isBuying ? <Loader2 className="animate-spin" /> : 'Buy Now'}

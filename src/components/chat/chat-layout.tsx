@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -6,12 +5,12 @@ import ChatList from './chat-list';
 import ChatMessages from './chat-messages';
 import type { Room, Message, Profile } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ArrowLeft, Camera, Loader2, Search, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+import NewChatModal from './new-chat-modal';
 
 export default function ChatLayout() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -22,6 +21,8 @@ export default function ChatLayout() {
   const { user, supabase, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const router = useRouter();
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -36,7 +37,6 @@ export default function ChatLayout() {
     }
     setLoadingRooms(true);
     try {
-      // Call the RPC function to get all chat room data for the user
       const { data, error } = await supabase.rpc('get_chat_rooms_for_user', { p_user_id: user.id });
 
       if (error) {
@@ -140,19 +140,54 @@ export default function ChatLayout() {
     }
   };
 
+  const handleStartNewChat = async (otherUser: Profile) => {
+    if (!user || !supabase) {
+      toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
+      return;
+    }
+    if (user.id === otherUser.id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You cannot start a chat with yourself.' });
+      return;
+    }
+    setIsNewChatModalOpen(false);
+    
+    try {
+        const { data, error } = await supabase.rpc('create_private_chat', {
+            p_user1_id: user.id,
+            p_user2_id: otherUser.id,
+        });
+
+        if (error) throw error;
+        const newRoomId = data;
+
+        // Insert a starting message to "activate" the chat for both users
+        const { error: messageError } = await supabase.from('chat_messages').insert({
+            room_id: newRoomId,
+            user_id: user.id,
+            content: `Started a new chat with ${otherUser.full_name}.`,
+        });
+
+        if (messageError) throw messageError;
+
+        await fetchRooms();
+        router.push('/chat');
+        // The selection will happen via useEffect after rooms are refetched
+        
+    } catch (error) {
+        console.error('Error starting chat session:', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not start a new chat session.' });
+    }
+  }
+
   const ChatListScreen = () => (
     <div className="flex flex-col h-full">
        <header className="p-4 space-y-4 bg-card border-b">
           <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-primary">Messages</h1>
-              <div className="flex items-center gap-2">
-                 <Button variant="ghost" size="icon"><Camera className="size-5" /></Button>
-                 <Button variant="ghost" size="icon"><MoreVertical className="size-5" /></Button>
-              </div>
-          </div>
-          <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-              <Input placeholder="Search" className="pl-10 rounded-full" />
+              <Button variant="ghost" size="icon" onClick={() => setIsNewChatModalOpen(true)}>
+                <Plus className="size-6" />
+                <span className="sr-only">New Chat</span>
+              </Button>
           </div>
       </header>
        {loadingRooms ? (
@@ -181,41 +216,27 @@ export default function ChatLayout() {
     );
   }
 
-  if (isMobile) {
-    return (
-      <div className="h-[calc(100vh-8rem)]">
-        {selectedRoom ? (
-          <div className="flex flex-col h-full">
-            <ChatMessages
-              room={selectedRoom}
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              onBack={() => setSelectedRoom(null)}
-              loading={loadingMessages}
-              currentUser={user}
-            />
-          </div>
-        ) : (
-          <ChatListScreen />
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-8rem)]">
-      <div className="col-span-1 border-r">
-        <ChatListScreen />
+    <>
+      <NewChatModal 
+        isOpen={isNewChatModalOpen} 
+        onOpenChange={setIsNewChatModalOpen} 
+        onSelectUser={handleStartNewChat}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-8rem)]">
+        <div className="col-span-1 border-r">
+          <ChatListScreen />
+        </div>
+        <div className="col-span-2 flex flex-col">
+          <ChatMessages
+            room={selectedRoom}
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            loading={loadingMessages}
+            currentUser={user}
+          />
+        </div>
       </div>
-      <div className="col-span-2 flex flex-col">
-        <ChatMessages
-          room={selectedRoom}
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          loading={loadingMessages}
-          currentUser={user}
-        />
-      </div>
-    </div>
+    </>
   );
 }

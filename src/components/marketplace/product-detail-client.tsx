@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -130,17 +128,23 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-            const { data: roomId, error } = await supabase.rpc('create_or_get_private_chat_room', {
+            const { data, error } = await supabase.rpc('create_private_chat', {
                 p_user1_id: currentUser.id,
                 p_user2_id: product.seller_id,
             });
 
-            if (error) {
-                throw error;
-            }
-            
-            router.push('/chat');
+            if (error) throw error;
+            const newRoomId = data;
 
+            const { error: messageError } = await supabase.from('chat_messages').insert({
+                room_id: newRoomId,
+                user_id: currentUser.id,
+                content: `Hi, I'm interested in your product: ${product.name}`,
+            });
+
+            if (messageError) throw messageError;
+
+            router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
@@ -148,7 +152,8 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
     }, [currentUser, supabase, toast, router, product.seller_id, product.name]);
     
     const canInteract = currentUser && currentUser.id !== product.seller_id;
-    const isContactOnly = ['Books', 'Other Products', 'Cyber Café'].includes(product.category);
+    const isBookable = ['Library', 'Hostels', 'Food Mess', 'Cyber Café'].includes(product.category);
+
 
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-8">
@@ -199,7 +204,7 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
                                 Contact Seller
                             </Button>
                             
-                            {!isContactOnly && (
+                            {!isBookable && (
                                 <Button size="lg" className="flex-1 text-lg" onClick={handleBuyNow} disabled={!isLoaded || isBuying}>
                                     {isBuying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingBag className="mr-2" />}
                                     Buy Now

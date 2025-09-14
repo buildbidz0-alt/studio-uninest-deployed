@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -7,7 +5,7 @@ import ProductCard from '@/components/marketplace/product-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ListFilter, Library, Utensils, Laptop, Bed, Book, Package, X, Loader2, Plus, MessageSquare, Armchair } from 'lucide-react';
-import type { Product } from '@/lib/types';
+import type { Product, Profile } from '@/lib/types';
 import Link from 'next/link';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -197,17 +195,24 @@ export default function MarketplaceContent() {
         }
 
         try {
-            const { data: roomId, error } = await supabase.rpc('create_or_get_private_chat_room', {
+            const { data, error } = await supabase.rpc('create_private_chat', {
                 p_user1_id: user.id,
                 p_user2_id: sellerId,
             });
 
-            if (error) {
-                throw error;
-            }
-            
-            router.push('/chat');
+            if (error) throw error;
+            const newRoomId = data;
 
+            // Insert a starting message to "activate" the chat for both users
+            const { error: messageError } = await supabase.from('chat_messages').insert({
+                room_id: newRoomId,
+                user_id: user.id,
+                content: `Hi, I'm interested in your product: ${productName}`,
+            });
+
+            if (messageError) throw messageError;
+
+            router.push('/chat');
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
