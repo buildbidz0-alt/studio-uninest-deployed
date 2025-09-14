@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -157,7 +158,7 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
 
             if (findRoomError) throw findRoomError;
 
-            if (existingRoom && existingRoom.id) {
+            if (existingRoom && existingRoom.length > 0 && existingRoom[0].id) {
                 router.push('/chat');
                 return;
             }

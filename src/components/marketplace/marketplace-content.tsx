@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -200,7 +201,7 @@ export default function MarketplaceContent() {
                     p_user1_id: user.id,
                     p_user2_id: sellerId,
                 });
-            
+
             if (findRoomError) throw findRoomError;
 
             if (existingRoom && existingRoom.id) {
@@ -217,7 +218,6 @@ export default function MarketplaceContent() {
             if (newRoomError) throw newRoomError;
             
             router.push('/chat');
-
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
