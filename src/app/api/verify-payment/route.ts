@@ -1,4 +1,5 @@
 
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -6,8 +7,14 @@ import crypto from 'crypto';
 // This function creates a Supabase client that is authenticated on behalf of the user
 // by using the JWT token from the Authorization header.
 const createAuthedSupabaseClient = async (request: NextRequest) => {
+    // These values MUST be accessed via process.env on the server
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    
+    // Explicitly check if the env vars are loaded
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Server configuration error: Supabase URL or Anon Key is missing.');
+    }
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -112,3 +119,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Failed to save payment record: ${error.message}` }, { status: 500 });
     }
 }
+

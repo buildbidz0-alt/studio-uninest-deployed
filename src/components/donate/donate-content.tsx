@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -99,6 +100,33 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
 
   const progressPercentage = goalAmount > 0 ? Math.min((raisedAmount / goalAmount) * 100, 100) : 0;
   
+  const handlePaymentSuccess = async (paymentResponse: any, accessToken: string) => {
+    const amount = parseInt(donationAmount, 10);
+    const verificationResponse = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`, // Pass the token here
+        },
+        body: JSON.stringify({
+            orderId: paymentResponse.razorpay_order_id,
+            razorpay_payment_id: paymentResponse.razorpay_payment_id,
+            razorpay_signature: paymentResponse.razorpay_signature,
+            type: 'donation',
+            amount: amount,
+        })
+    });
+
+    const result = await verificationResponse.json();
+    setIsDonating(false);
+
+    if (!verificationResponse.ok) {
+         toast({ variant: 'destructive', title: 'Error Saving Donation', description: result.error || 'Your donation was processed, but we failed to record it. Please contact support.'});
+    } else {
+        router.push(`/donate/thank-you?amount=${amount}`);
+    }
+  }
+  
   const handleDonate = async (amountStr: string) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to donate.' });
@@ -127,31 +155,7 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
         name: 'UniNest Donation',
         description: 'Support student innovation!',
         order_id: order.id,
-        handler: async function (response: any, accessToken: string) {
-            const verificationResponse = await fetch('/api/verify-payment', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${accessToken}`, // Pass the token here
-                },
-                body: JSON.stringify({
-                    orderId: order.id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                    type: 'donation',
-                    // No longer need to pass userId, it's derived from the token
-                    amount: amount,
-                })
-            });
-
-            const result = await verificationResponse.json();
-
-            if (!verificationResponse.ok) {
-                 toast({ variant: 'destructive', title: 'Error Saving Donation', description: result.error || 'Your donation was processed, but we failed to record it. Please contact support.'});
-            } else {
-                router.push(`/donate/thank-you?amount=${amount}`);
-            }
-        },
+        handler: handlePaymentSuccess,
         prefill: { name: user?.user_metadata?.full_name || '', email: user?.email || '' },
         notes: { type: 'donation', userId: user?.id },
         theme: { color: '#1B365D' },
@@ -318,3 +322,4 @@ export default function DonateContent({ initialDonors, initialGoal, initialRaise
     </div>
   );
 }
+

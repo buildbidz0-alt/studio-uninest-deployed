@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -70,6 +71,34 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
     }
   }, [isOpen, supabase]);
 
+  const handlePaymentSuccess = async (paymentResponse: any, accessToken: string) => {
+    const amount = parseInt(donationAmount, 10);
+    const verificationResponse = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+            orderId: paymentResponse.razorpay_order_id,
+            razorpay_payment_id: paymentResponse.razorpay_payment_id,
+            razorpay_signature: paymentResponse.razorpay_signature,
+            type: 'donation',
+            amount: amount,
+        })
+    });
+
+    const result = await verificationResponse.json();
+    setIsDonating(false);
+
+    if (!verificationResponse.ok) {
+         toast({ variant: 'destructive', title: 'Donation record failed', description: result.error || 'Your payment was successful but we couldn\'t record it. Please contact support.' });
+    } else {
+        router.push(`/donate/thank-you?amount=${amount}`);
+    }
+    onOpenChange(false);
+  }
+
   const handleDonate = async () => {
     const amount = parseInt(donationAmount, 10);
     if (isNaN(amount) || amount <= 0) {
@@ -105,31 +134,7 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
         name: 'UniNest Donation',
         description: 'Support student innovation!',
         order_id: order.id,
-        handler: async function (response: any, accessToken: string) {
-            const verificationResponse = await fetch('/api/verify-payment', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${accessToken}`, // Pass the token here
-                },
-                body: JSON.stringify({
-                    orderId: order.id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                    type: 'donation',
-                    amount: amount,
-                })
-            });
-
-            const result = await verificationResponse.json();
-
-            if (!verificationResponse.ok) {
-                 toast({ variant: 'destructive', title: 'Donation record failed', description: result.error || 'Your payment was successful but we couldn\'t record it. Please contact support.' });
-            } else {
-                router.push(`/donate/thank-you?amount=${amount}`);
-            }
-            onOpenChange(false);
-        },
+        handler: handlePaymentSuccess,
         modal: { ondismiss: () => setIsDonating(false) },
         prefill: { name: user?.user_metadata?.full_name || '', email: user?.email || '' },
         notes: { type: 'donation', userId: user?.id },
@@ -202,3 +207,4 @@ export default function DonationModal({ isOpen, onOpenChange }: DonationModalPro
     </Dialog>
   );
 }
+

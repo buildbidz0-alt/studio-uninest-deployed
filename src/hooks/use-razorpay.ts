@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -77,7 +78,6 @@ export function useRazorpay() {
         const accessToken = session.access_token;
         
         // Pass the original response and the access token to the original handler
-        // The calling component will be responsible for sending it to the API
         if (originalHandler) {
             originalHandler(response, accessToken);
         }
@@ -90,3 +90,4 @@ export function useRazorpay() {
 
   return { openCheckout, isLoaded };
 }
+

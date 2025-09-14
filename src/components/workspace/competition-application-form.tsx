@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -50,42 +51,44 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     },
   });
 
-  const saveEntry = async (values: z.infer<typeof formSchema>, accessToken?: string, paymentId?: string) => {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
-      }
+  const handlePaymentSuccess = async (paymentResponse: any, accessToken: string) => {
+    const values = form.getValues();
+    const verificationBody = {
+        orderId: paymentResponse.razorpay_order_id,
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+        type: 'competition_entry',
+        competitionId: competition.id,
+        phone_number: values.phone_number,
+        whatsapp_number: values.whatsapp_number,
+    };
+    const headers: HeadersInit = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}`};
 
-      const verificationResponse = await fetch('/api/verify-payment', {
+    const verificationResponse = await fetch('/api/verify-payment', {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify({
-          razorpay_payment_id: paymentId,
-          type: 'competition_entry',
-          // userId is now derived from the token on the backend
-          competitionId: competition.id,
-          phone_number: values.phone_number,
-          whatsapp_number: values.whatsapp_number,
-        })
+        body: JSON.stringify(verificationBody)
     });
-    
-    const result = await verificationResponse.json();
 
-    if (!verificationResponse.ok) {
+    const result = await verificationResponse.json();
+    setIsLoading(false);
+
+     if (!verificationResponse.ok) {
         toast({ variant: 'destructive', title: 'Error Saving Entry', description: result.error || 'Your payment was processed, but we failed to save your entry. Please contact support.' });
-        setIsLoading(false);
     } else {
         toast({ title: 'Entry Successful!', description: `You have successfully entered ${competition.title}.` });
         router.push(`/workspace/competitions/${competition.id}`);
     }
   }
 
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
 
     if (competition.entry_fee <= 0) {
         const { data: { session } } = await supabase!.auth.getSession();
-        await saveEntry(values, session?.access_token);
+        // This is a free entry, so we don't have a razorpay payment response, but we still need the token.
+        await handlePaymentSuccess({}, session!.access_token);
         return;
     }
 
@@ -109,35 +112,7 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
           currency: order.currency,
           name: `Entry Fee: ${competition.title}`,
           order_id: order.id,
-          handler: async (paymentResponse: any, accessToken: string) => {
-            const verificationBody = {
-                orderId: order.id,
-                razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                razorpay_signature: paymentResponse.razorpay_signature,
-                type: 'competition_entry',
-                competitionId: competition.id,
-                phone_number: values.phone_number,
-                whatsapp_number: values.whatsapp_number,
-            };
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (accessToken) {
-                headers['Authorization'] = `Bearer ${accessToken}`;
-            }
-
-            const verificationResponse = await fetch('/api/verify-payment', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(verificationBody)
-            });
-
-            const result = await verificationResponse.json();
-             if (!verificationResponse.ok) {
-                toast({ variant: 'destructive', title: 'Error Saving Entry', description: result.error || 'Your payment was processed, but we failed to save your entry. Please contact support.' });
-            } else {
-                toast({ title: 'Entry Successful!', description: `You have successfully entered ${competition.title}.` });
-                router.push(`/workspace/competitions/${competition.id}`);
-            }
-          },
+          handler: handlePaymentSuccess,
           modal: { ondismiss: () => setIsLoading(false) },
           prefill: { name: values.name, email: values.email, contact: values.phone_number },
           notes: { type: 'competition_entry', competitionId: competition.id, userId: user.id },
@@ -184,3 +159,4 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     </Card>
   );
 }
+
