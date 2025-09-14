@@ -10,6 +10,7 @@ import TicketStatusChanger from "@/components/admin/tickets/ticket-status-change
 import Link from "next/link";
 import type { SupportTicket, Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export const revalidate = 0; // Force dynamic rendering
 
@@ -68,9 +69,9 @@ export default async function AdminTicketsPage() {
                                 </TableRow>
                             ) : (
                                 tickets.map(ticket => (
-                                    <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/50">
+                                    <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/50" onClick={() => (window.location.href = `/admin/tickets/${ticket.id}`)}>
                                         <TableCell>
-                                            <Link href={`/admin/tickets/${ticket.id}`} className="flex items-center gap-3">
+                                            <div className="flex items-center gap-3">
                                                 <Avatar className="size-9">
                                                     <AvatarImage src={ticket.profiles?.avatar_url || undefined} alt={ticket.profiles?.full_name || 'User'} />
                                                     <AvatarFallback>{ticket.profiles?.full_name?.[0]}</AvatarFallback>
@@ -78,10 +79,10 @@ export default async function AdminTicketsPage() {
                                                 <div>
                                                     <p className="font-medium">{ticket.profiles?.full_name}</p>
                                                 </div>
-                                            </Link>
+                                            </div>
                                         </TableCell>
                                         <TableCell className="font-medium max-w-xs truncate">
-                                            <Link href={`/admin/tickets/${ticket.id}`} className="hover:underline">
+                                            <Link href={`/admin/tickets/${ticket.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>
                                                 {ticket.subject}
                                             </Link>
                                         </TableCell>
