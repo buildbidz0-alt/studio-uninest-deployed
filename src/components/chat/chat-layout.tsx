@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import ChatList from './chat-list';
 import ChatMessages from './chat-messages';
-import type { Room, Message } from '@/lib/types';
+import type { Room, Message, Profile } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ArrowLeft, Camera, Loader2, Search, MoreVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -37,14 +38,67 @@ export default function ChatLayout() {
     setLoadingRooms(true);
     
     try {
-        // Call the new, reliable database function
-        const { data, error } = await supabase.rpc('get_user_chat_rooms', { p_user_id: user.id });
+        // Step 1: Get all room IDs the user is a part of.
+        const { data: participant_data, error: participant_error } = await supabase
+            .from('chat_room_participants')
+            .select('room_id')
+            .eq('user_id', user.id);
 
-        if (error) {
-            throw error;
+        if (participant_error) throw participant_error;
+
+        const roomIds = participant_data.map(p => p.room_id);
+        if (roomIds.length === 0) {
+            setRooms([]);
+            setLoadingRooms(false);
+            return;
         }
 
-        setRooms(data as Room[] || []);
+        // Step 2: Get all participants for those rooms to find the other user.
+        const { data: all_participants, error: all_participants_error } = await supabase
+            .from('chat_room_participants')
+            .select('room_id, user_id, profiles(id, full_name, avatar_url)')
+            .in('room_id', roomIds);
+        
+        if (all_participants_error) throw all_participants_error;
+
+        // Step 3: Get the last message for each room.
+        const { data: last_messages, error: messages_error } = await supabase
+            .from('chat_messages')
+            .select('room_id, content, created_at')
+            .in('room_id', roomIds)
+            .order('created_at', { ascending: false });
+
+        if (messages_error) throw messages_error;
+        
+        const lastMessageMap = new Map<string, { content: string; created_at: string }>();
+        last_messages.forEach(msg => {
+            if (!lastMessageMap.has(msg.room_id)) {
+                lastMessageMap.set(msg.room_id, { content: msg.content, created_at: msg.created_at });
+            }
+        });
+
+        // Step 4: Construct the room list.
+        const roomsData: Room[] = roomIds.map(roomId => {
+            const participants = all_participants.filter(p => p.room_id === roomId);
+            const otherParticipant = participants.find(p => p.user_id !== user.id);
+            const lastMessage = lastMessageMap.get(roomId);
+
+            return {
+                id: roomId,
+                name: otherParticipant?.profiles?.full_name || 'Chat',
+                avatar: otherParticipant?.profiles?.avatar_url || null,
+                last_message: lastMessage?.content || 'No messages yet.',
+                last_message_timestamp: lastMessage?.created_at || null,
+                unread_count: 0, // Simplified for this fix
+                room_created_at: '', // Not essential for this view
+            };
+        }).sort((a, b) => {
+            if (!a.last_message_timestamp) return 1;
+            if (!b.last_message_timestamp) return -1;
+            return new Date(b.last_message_timestamp).getTime() - new Date(a.last_message_timestamp).getTime();
+        });
+        
+        setRooms(roomsData);
 
     } catch (error: any) {
         console.error('Error fetching user rooms:', error);
@@ -99,21 +153,31 @@ export default function ChatLayout() {
         { event: 'INSERT', schema: 'public', table: 'chat_messages' },
         async (payload) => {
           const newMessage = payload.new as Message;
-          // If the message is for the currently selected room, add it to the view
-          if (selectedRoom && newMessage.room_id === selectedRoom.id) {
-              const { data: profileData, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', newMessage.user_id)
-                .single();
-              
-              if (!error) {
-                  newMessage.profile = profileData;
-              }
-             setMessages((prevMessages) => [...prevMessages, newMessage]);
+          // Check if user is a participant of the room for the new message
+          const { data: participant } = await supabase
+              .from('chat_room_participants')
+              .select('id')
+              .eq('room_id', newMessage.room_id)
+              .eq('user_id', user.id)
+              .single();
+
+          if (participant) {
+            // If the message is for the currently selected room, add it to the view
+            if (selectedRoom && newMessage.room_id === selectedRoom.id) {
+                const { data: profileData, error } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('id', newMessage.user_id)
+                  .single();
+                
+                if (!error && profileData) {
+                    newMessage.profile = profileData as Profile;
+                }
+               setMessages((prevMessages) => [...prevMessages, newMessage]);
+            }
+            // In all cases, refetch the room list to update last message and order
+            fetchRooms();
           }
-          // In all cases, refetch the room list to update last message and order
-          fetchRooms();
         }
       )
       .subscribe();
