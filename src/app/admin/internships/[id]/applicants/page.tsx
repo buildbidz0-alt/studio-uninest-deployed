@@ -7,28 +7,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import Link from 'next/link';
+import { getApplicants } from "./actions";
 
 export default async function InternshipApplicantsPage({ params }: { params: { id: string } }) {
     const supabase = createClient();
 
-    const { data: internship } = await supabase
+    const { data: internship, error: internshipError } = await supabase
         .from('internships')
         .select('role, company')
         .eq('id', params.id)
         .single();
     
-    if (!internship) {
+    if (internshipError || !internship) {
         notFound();
     }
 
-    const { data: applications, error } = await supabase
-        .from('internship_applications')
-        .select('*')
-        .eq('internship_id', params.id)
-        .order('created_at', { ascending: false });
+    const { applications, error } = await getApplicants(params.id);
 
     if (error) {
-        return <p>Error loading applications: {error.message}</p>
+        return <p>Error loading applications: {error}</p>
     }
 
     return (
