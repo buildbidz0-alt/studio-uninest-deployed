@@ -28,7 +28,6 @@ export default async function CompetitionApplicantsPage({ params }: { params: { 
             razorpay_payment_id,
             profiles:user_id (
                 full_name,
-                email,
                 avatar_url
             )
         `)
@@ -71,7 +70,7 @@ export default async function CompetitionApplicantsPage({ params }: { params: { 
                                                 </Avatar>
                                                 <div>
                                                     <p className="font-medium">{(entry.profiles as any)?.full_name}</p>
-                                                    <p className="text-sm text-muted-foreground">{(entry.profiles as any)?.email}</p>
+                                                    <p className="text-sm text-muted-foreground">User ID: { (entry as any).user_id }</p>
                                                 </div>
                                             </div>
                                         </TableCell>
