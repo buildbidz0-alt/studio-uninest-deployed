@@ -46,50 +46,30 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
-  const isMyProfile = handleFromParams === user?.user_metadata?.handle;
+  // The concept of "my profile" is now determined by whether we are on the /profile/[handle] route
+  // and that handle matches the logged in user's handle, OR if we are on the base /profile route.
+  const isMyProfile = (handleFromParams && user && handleFromParams === user.user_metadata?.handle) || (!handleFromParams && !!user);
 
   useEffect(() => {
-    // If it's not the user's own profile page, the data is pre-fetched via server component
-    // If it IS the user's own profile page, we might need to fetch it client-side if not passed
-    if (authLoading) return;
-
-    if (!handleFromParams) {
-        // This is the /profile route
-        if (user) {
-            // If user is logged in, redirect to their profile page
-            const userHandle = user.user_metadata?.handle;
-            if (userHandle) {
-                window.location.replace(`/profile/${userHandle}`);
-            } else {
-                // Handle case where user has no handle (e.g. first login)
-                // Maybe redirect to settings
-                window.location.replace('/settings');
-            }
-        } else {
-            // Not logged in, redirect to login
-            window.location.replace('/login');
-        }
-        return; // Stop execution to allow for redirect
-    }
-
-    if (!initialProfile) {
-        // This case is for when data is not pre-fetched, e.g. client-side navigation
+    // If data is not pre-fetched (e.g. client-side navigation to a different user's profile)
+    if (!initialProfile && handleFromParams) {
         const fetchProfile = async () => {
-            if (!supabase || !handleFromParams) return;
-            
-            // This is a simplified fetch, ideally it would be one RPC call like on the server
+            if (!supabase) return;
+            setLoading(true);
             const { data, error } = await supabase.from('profiles').select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)').eq('handle', handleFromParams).single();
             
             if (error || !data) {
                 setProfile(null);
             } else {
                 setProfile(data as any);
+                // In a real app, you would also fetch their content here.
+                // For now, we are relying on initialContent.
             }
             setLoading(false);
         }
         fetchProfile();
     }
-  }, [handleFromParams, authLoading, user, supabase, initialProfile]);
+  }, [handleFromParams, supabase, initialProfile]);
 
 
   useEffect(() => {
@@ -147,7 +127,7 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
     notFound();
   }
 
-  const avatarUrl = isMyProfile ? user?.user_metadata?.avatar_url : profile.avatar_url;
+  const avatarUrl = profile.avatar_url;
   const profileFullName = profile.full_name || 'Anonymous User';
 
   return (
