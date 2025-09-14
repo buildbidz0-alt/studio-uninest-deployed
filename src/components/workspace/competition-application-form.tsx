@@ -50,14 +50,19 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     },
   });
 
-  const saveEntry = async (values: z.infer<typeof formSchema>, paymentId?: string) => {
+  const saveEntry = async (values: z.infer<typeof formSchema>, accessToken?: string, paymentId?: string) => {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const verificationResponse = await fetch('/api/verify-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({
           razorpay_payment_id: paymentId,
           type: 'competition_entry',
-          userId: user.id,
+          // userId is now derived from the token on the backend
           competitionId: competition.id,
           phone_number: values.phone_number,
           whatsapp_number: values.whatsapp_number,
@@ -79,7 +84,8 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     setIsLoading(true);
 
     if (competition.entry_fee <= 0) {
-        await saveEntry(values);
+        const { data: { session } } = await supabase!.auth.getSession();
+        await saveEntry(values, session?.access_token);
         return;
     }
 
@@ -103,20 +109,24 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
           currency: order.currency,
           name: `Entry Fee: ${competition.title}`,
           order_id: order.id,
-          handler: async (paymentResponse: any) => {
+          handler: async (paymentResponse: any, accessToken: string) => {
             const verificationBody = {
                 orderId: order.id,
                 razorpay_payment_id: paymentResponse.razorpay_payment_id,
                 razorpay_signature: paymentResponse.razorpay_signature,
                 type: 'competition_entry',
-                userId: user.id,
                 competitionId: competition.id,
                 phone_number: values.phone_number,
                 whatsapp_number: values.whatsapp_number,
             };
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (accessToken) {
+                headers['Authorization'] = `Bearer ${accessToken}`;
+            }
+
             const verificationResponse = await fetch('/api/verify-payment', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(verificationBody)
             });
 

@@ -3,8 +3,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Removed 'export const runtime = 'edge';' to allow the use of the Node.js 'crypto' module.
+// This function creates a Supabase client that is authenticated on behalf of the user
+// by using the JWT token from the Authorization header.
+const createAuthedSupabaseClient = async (request: NextRequest) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+        throw new Error('Missing Authorization header');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+        throw new Error('Authentication failed: ' + (error?.message || 'User not found'));
+    }
+
+    return { supabase, user };
+};
+
+
+// This function creates a Supabase admin client using the service role key.
+// It should be used for operations that require elevated privileges.
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -16,47 +40,45 @@ const getSupabaseAdmin = () => {
 }
 
 export async function POST(request: NextRequest) {
-    const body = await request.json();
-    const {
-        orderId,
-        razorpay_payment_id,
-        razorpay_signature,
-        type, // 'donation' or 'competition_entry'
-        userId,
-        amount,
-        competitionId,
-        phone_number,
-        whatsapp_number,
-    } = body;
-    
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    
-    if (!userId) {
-        return NextResponse.json({ error: 'User ID is missing.' }, { status: 400 });
-    }
-
-    // 1. Verify Razorpay Signature only if it's a paid transaction
-    if (orderId && razorpay_payment_id && razorpay_signature) {
-        if (!keySecret) {
-            return NextResponse.json({ error: 'Razorpay secret not configured.' }, { status: 500 });
-        }
-        const shasum = crypto.createHmac('sha256', keySecret);
-        shasum.update(`${orderId}|${razorpay_payment_id}`);
-        const digest = shasum.digest('hex');
-
-        if (digest !== razorpay_signature) {
-            return NextResponse.json({ error: 'Invalid payment signature.' }, { status: 400 });
-        }
-    }
-
-
-    // 2. Signature is valid (or not required), now save the record using admin client
     try {
+        const { supabase, user } = await createAuthedSupabaseClient(request);
+        const body = await request.json();
+        
+        const {
+            orderId,
+            razorpay_payment_id,
+            razorpay_signature,
+            type, // 'donation' or 'competition_entry'
+            amount,
+            competitionId,
+            phone_number,
+            whatsapp_number,
+        } = body;
+        
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        
+        // 1. Verify Razorpay Signature if it's a paid transaction
+        if (orderId && razorpay_payment_id && razorpay_signature) {
+            if (!keySecret) {
+                return NextResponse.json({ error: 'Razorpay secret not configured.' }, { status: 500 });
+            }
+            const shasum = crypto.createHmac('sha256', keySecret);
+            shasum.update(`${orderId}|${razorpay_payment_id}`);
+            const digest = shasum.digest('hex');
+
+            if (digest !== razorpay_signature) {
+                return NextResponse.json({ error: 'Invalid payment signature.' }, { status: 400 });
+            }
+        }
+
+        // 2. Signature is valid (or not required), now save the record.
+        // It's safer to use the admin client for writes to bypass RLS,
+        // as the user's identity has already been verified.
         const supabaseAdmin = getSupabaseAdmin();
         
         if (type === 'donation') {
             const { error } = await supabaseAdmin.from('donations').insert({
-                user_id: userId,
+                user_id: user.id, // Use the verified user ID from the token
                 amount: amount,
                 currency: 'INR',
                 razorpay_payment_id: razorpay_payment_id,
@@ -66,7 +88,7 @@ export async function POST(request: NextRequest) {
         } else if (type === 'competition_entry') {
             const { error } = await supabaseAdmin.from('competition_entries').insert({
                 competition_id: competitionId,
-                user_id: userId,
+                user_id: user.id, // Use the verified user ID
                 razorpay_payment_id: razorpay_payment_id,
                 phone_number: phone_number,
                 whatsapp_number: whatsapp_number,
@@ -80,7 +102,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, message: 'Payment record saved successfully.' });
 
     } catch (error: any) {
-        console.error('Error saving payment record:', error);
+        console.error('Error in verify-payment route:', error);
+        // Distinguish between auth errors and other errors
+        if (error.message.includes('Authentication failed')) {
+            return NextResponse.json({ error: error.message }, { status: 401 });
+        }
         return NextResponse.json({ error: `Failed to save payment record: ${error.message}` }, { status: 500 });
     }
 }

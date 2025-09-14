@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useToast } from './use-toast';
+import { useAuth } from './use-auth';
 
 declare global {
   interface Window {
@@ -13,6 +14,7 @@ declare global {
 export function useRazorpay() {
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
+  const { supabase } = useAuth();
   const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
   useEffect(() => {
@@ -45,14 +47,38 @@ export function useRazorpay() {
       return;
     }
       
-    if (!isLoaded) {
+    if (!isLoaded || !supabase) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Razorpay is not loaded yet. Please try again in a moment.',
+        description: 'Payment gateway is not ready. Please try again in a moment.',
       });
       return;
     }
+
+    // New logic: Override the handler to include the auth token
+    const originalHandler = options.handler;
+    options.handler = async (response: any) => {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+            toast({
+                variant: 'destructive',
+                title: 'Authentication Error',
+                description: 'You must be logged in to complete this payment. Please log in and try again.',
+            });
+            return;
+        }
+
+        const accessToken = session.access_token;
+        
+        // Pass the original response and the access token to the original handler
+        // The calling component will be responsible for sending it to the API
+        if (originalHandler) {
+            originalHandler(response, accessToken);
+        }
+    };
+
 
     const rzp = new window.Razorpay({ ...options, key: razorpayKey });
     rzp.open();
