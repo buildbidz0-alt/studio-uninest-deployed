@@ -150,14 +150,51 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         }
 
         try {
-            const { data, error } = await supabase.rpc('get_or_create_private_chat', {
-                user1_id: currentUser.id,
-                user2_id: hostel.seller_id
-            });
+            // Find rooms where the current user is a participant
+            const { data: userRooms, error: userRoomsError } = await supabase
+                .from('chat_room_participants')
+                .select('room_id')
+                .eq('user_id', currentUser.id);
 
-            if (error) {
-                throw error;
+            if (userRoomsError) throw userRoomsError;
+
+            const userRoomIds = userRooms.map(r => r.room_id);
+
+            if (userRoomIds.length > 0) {
+                 // Check if the seller is in any of these rooms, and that the room is a private room with only 2 people
+                const { data: mutualRooms, error: mutualRoomsError } = await supabase
+                    .from('chat_room_participants')
+                    .select('room_id, chat_rooms(is_private)')
+                    .eq('user_id', hostel.seller_id)
+                    .in('room_id', userRoomIds);
+                
+                if (mutualRoomsError) throw mutualRoomsError;
+
+                const privateMutualRoom = mutualRooms.find(r => r.chat_rooms?.is_private);
+
+                if (privateMutualRoom) {
+                    router.push('/chat');
+                    return;
+                }
             }
+
+            // If no mutual room is found, create a new one
+            const { data: newRoom, error: newRoomError } = await supabase
+                .from('chat_rooms')
+                .insert({ is_private: true })
+                .select('id')
+                .single();
+            
+            if (newRoomError) throw newRoomError;
+
+            const { error: participantsError } = await supabase
+                .from('chat_room_participants')
+                .insert([
+                    { room_id: newRoom.id, user_id: currentUser.id },
+                    { room_id: newRoom.id, user_id: hostel.seller_id },
+                ]);
+
+            if (participantsError) throw participantsError;
             
             router.push('/chat');
 
@@ -264,3 +301,5 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         </div>
     );
 }
+
+    
