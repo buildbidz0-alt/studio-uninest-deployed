@@ -56,22 +56,21 @@ export default async function AdminTicketsPage() {
                                 <TableHead>Subject</TableHead>
                                 <TableHead>Category</TableHead>
                                 <TableHead>Submitted</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead className="text-right">Status</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {!tickets || tickets.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         No support tickets found.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 tickets.map(ticket => (
-                                    <TableRow key={ticket.id}>
+                                    <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/50">
                                         <TableCell>
-                                            <div className="flex items-center gap-3">
+                                            <Link href={`/admin/tickets/${ticket.id}`} className="flex items-center gap-3">
                                                 <Avatar className="size-9">
                                                     <AvatarImage src={ticket.profiles?.avatar_url || undefined} alt={ticket.profiles?.full_name || 'User'} />
                                                     <AvatarFallback>{ticket.profiles?.full_name?.[0]}</AvatarFallback>
@@ -79,7 +78,7 @@ export default async function AdminTicketsPage() {
                                                 <div>
                                                     <p className="font-medium">{ticket.profiles?.full_name}</p>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         </TableCell>
                                         <TableCell className="font-medium max-w-xs truncate">
                                             <Link href={`/admin/tickets/${ticket.id}`} className="hover:underline">
@@ -88,15 +87,8 @@ export default async function AdminTicketsPage() {
                                         </TableCell>
                                         <TableCell><Badge variant="outline">{ticket.category}</Badge></TableCell>
                                         <TableCell>{format(new Date(ticket.created_at), 'PPP')}</TableCell>
-                                        <TableCell>
-                                            <TicketStatusChanger ticketId={ticket.id} currentStatus={ticket.status} />
-                                        </TableCell>
                                         <TableCell className="text-right">
-                                           <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/admin/tickets/${ticket.id}`}>
-                                                    View Details
-                                                </Link>
-                                            </Button>
+                                            <TicketStatusChanger ticketId={ticket.id} currentStatus={ticket.status} />
                                         </TableCell>
                                     </TableRow>
                                 ))
