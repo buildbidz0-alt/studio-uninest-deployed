@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 // Explicitly define the types for clarity
 type ProductWithProfile = Product & {
-    profiles: Pick<Profile, 'full_name' | 'email' | 'handle'> | null;
+    profiles: Pick<Profile, 'full_name' | 'handle'> | null;
 };
 
 
@@ -24,7 +24,6 @@ export default async function AdminListingsPage() {
             *,
             profiles:seller_id (
                 full_name,
-                email,
                 handle
             )
         `)
@@ -75,7 +74,7 @@ export default async function AdminListingsPage() {
                                         <TableCell>
                                             <Link href={`/profile/${listing.profiles?.handle}`} className="hover:underline">
                                                 <div className="font-medium">{listing.profiles?.full_name || 'N/A'}</div>
-                                                <div className="text-sm text-muted-foreground">{listing.profiles?.email || 'No email'}</div>
+                                                <div className="text-sm text-muted-foreground">@{listing.profiles?.handle || 'N/A'}</div>
                                             </Link>
                                         </TableCell>
                                         <TableCell>
