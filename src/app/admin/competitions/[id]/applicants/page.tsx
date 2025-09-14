@@ -26,7 +26,7 @@ export default async function CompetitionApplicantsPage({ params }: { params: { 
             id,
             created_at,
             razorpay_payment_id,
-            profiles:user_id (
+            profiles!inner (
                 full_name,
                 email,
                 avatar_url
