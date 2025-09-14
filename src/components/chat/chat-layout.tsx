@@ -38,7 +38,6 @@ export default function ChatLayout() {
     setLoadingRooms(true);
     
     try {
-        // Step 1: Get all room IDs the user is a part of.
         const { data: participant_data, error: participant_error } = await supabase
             .from('chat_room_participants')
             .select('room_id')
@@ -53,7 +52,6 @@ export default function ChatLayout() {
             return;
         }
 
-        // Step 2: Get all participants for those rooms to find the other user.
         const { data: all_participants, error: all_participants_error } = await supabase
             .from('chat_room_participants')
             .select('room_id, user_id, profiles(id, full_name, avatar_url)')
@@ -61,20 +59,27 @@ export default function ChatLayout() {
         
         if (all_participants_error) throw all_participants_error;
 
-        // Step 3: Get the last message for each room.
         const { data: last_messages, error: messages_error } = await supabase
-            .rpc('get_last_messages_for_rooms', { p_room_ids: roomIds });
+            .from('chat_messages')
+            .select(`
+                room_id,
+                content,
+                created_at
+            `)
+            .in('room_id', roomIds)
+            .order('created_at', { ascending: false });
 
         if (messages_error) throw messages_error;
         
         const lastMessageMap = new Map<string, { content: string; created_at: string }>();
-        last_messages.forEach(msg => {
-            if (!lastMessageMap.has(msg.room_id)) {
-                lastMessageMap.set(msg.room_id, { content: msg.content, created_at: msg.created_at });
-            }
-        });
+        if (last_messages) {
+            last_messages.forEach(msg => {
+                if (!lastMessageMap.has(msg.room_id)) {
+                    lastMessageMap.set(msg.room_id, { content: msg.content, created_at: msg.created_at });
+                }
+            });
+        }
 
-        // Step 4: Construct the room list.
         const roomsData: Room[] = roomIds.map(roomId => {
             const participants = all_participants.filter(p => p.room_id === roomId);
             const otherParticipant = participants.find(p => p.user_id !== user.id);
@@ -86,8 +91,8 @@ export default function ChatLayout() {
                 avatar: otherParticipant?.profiles?.avatar_url || null,
                 last_message: lastMessage?.content || 'No messages yet.',
                 last_message_timestamp: lastMessage?.created_at || null,
-                unread_count: 0, // Simplified for this fix
-                room_created_at: '', // Not essential for this view
+                unread_count: 0, 
+                room_created_at: '',
             };
         }).sort((a, b) => {
             if (!a.last_message_timestamp) return 1;
