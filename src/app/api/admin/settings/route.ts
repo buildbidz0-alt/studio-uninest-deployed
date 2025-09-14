@@ -28,8 +28,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Check if the user is an admin
-    if (user.user_metadata?.role !== 'admin') {
+    // 2. Check if the user is an admin by checking their profile
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') {
         return NextResponse.json({ error: 'Forbidden: Admins only' }, { status: 403 });
     }
 
@@ -54,6 +55,18 @@ export async function POST(request: NextRequest) {
     if (dbError) {
         console.error('Error upserting settings:', dbError);
         return NextResponse.json({ error: 'Failed to save settings in database' }, { status: 500 });
+    }
+
+    // 5. Log the action to the audit log
+    const { error: logError } = await supabase.from('audit_log').insert({
+        admin_id: user.id,
+        action: 'settings_update',
+        details: 'Updated monetization settings.'
+    });
+
+    if (logError) {
+        console.error("Failed to write to audit log:", logError);
+        // Do not fail the request, but log the error
     }
 
     return NextResponse.json({ message: 'Settings updated successfully' }, { status: 200 });
