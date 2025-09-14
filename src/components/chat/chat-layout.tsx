@@ -36,6 +36,7 @@ export default function ChatLayout() {
     }
     setLoadingRooms(true);
     try {
+      // Call the RPC function to get all chat room data for the user
       const { data, error } = await supabase.rpc('get_chat_rooms_for_user', { p_user_id: user.id });
 
       if (error) {
