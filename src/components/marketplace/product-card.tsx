@@ -72,10 +72,8 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                         Contact Seller
                     </Button>
                 ) : isLibrary || isHostel ? (
-                    <Button asChild>
-                        <Link href={getCardLink()}>
-                          View Details
-                        </Link>
+                    <Button>
+                      View Details
                     </Button>
                 ) : null}
                 </div>
