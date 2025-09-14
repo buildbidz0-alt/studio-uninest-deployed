@@ -1,22 +1,18 @@
-
 'use client';
 
 import PageHeader from "@/components/admin/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TicketStatusChanger from "@/components/admin/tickets/ticket-status-changer";
 import Link from "next/link";
 import type { SupportTicket, Profile } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-
-export const revalidate = 0; // Force dynamic rendering
+import { createClient as createBrowserClient } from '@supabase/ssr';
 
 type TicketWithProfile = SupportTicket & {
     profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
@@ -30,9 +26,6 @@ export default function AdminTicketsPage() {
 
     useEffect(() => {
         const fetchTickets = async () => {
-            // Since this is a client component, we create a client-side Supabase instance.
-            // Note: It's better to pass data from a server component parent if possible, 
-            // but for this fix, we'll fetch on the client.
             const supabase = createBrowserClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
