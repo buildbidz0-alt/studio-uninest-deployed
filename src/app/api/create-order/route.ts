@@ -46,11 +46,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(order, { status: 200 });
     
-  } catch (error) {
-    console.error('An unexpected error occurred:', error);
-    if (error instanceof Error) {
-        return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
-    }
-    return NextResponse.json({ error: 'An unknown error occurred during payment processing.' }, { status: 500 });
+  } catch (error: any) {
+    console.error('An unexpected error occurred in create-order route:', error);
+    // Send back the specific error from Razorpay or a generic one
+    const errorMessage = error?.error?.description || error.message || 'An unknown error occurred during payment processing.';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
