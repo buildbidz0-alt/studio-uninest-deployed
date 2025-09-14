@@ -195,28 +195,23 @@ export default function MarketplaceContent() {
         }
 
         try {
-            // This is a simplified check. A proper implementation would check a participants table.
-            const { data: existingMessages, error: messagesError } = await supabase
-                .from('chat_messages')
-                .select('room_id')
-                .or(`and(user_id.eq.${user.id},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${sellerId}')),and(user_id.eq.${sellerId},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${user.id}'))`)
-                .limit(1);
+            const { data: existingRoom } = await supabase.rpc('get_mutual_private_room', { p_user1_id: user.id, p_user2_id: sellerId });
 
-            if (messagesError) throw messagesError;
-
-            if (existingMessages && existingMessages.length > 0) {
+            if (existingRoom && existingRoom.length > 0) {
                 router.push('/chat');
                 return;
             }
 
-            const { data: newRoom, error: newRoomError } = await supabase.from('chat_rooms').insert({}).select().single();
+            const { data: newRoomId, error: newRoomError } = await supabase.rpc('create_chat_room_with_participants', { p_user1_id: user.id, p_user2_id: sellerId });
+            
             if (newRoomError) throw newRoomError;
             
             const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
-                room_id: newRoom.id,
+                room_id: newRoomId,
                 user_id: user.id,
                 content: `Hi, I'm interested in "${productName}".`,
             });
+
             if (welcomeMessageError) throw welcomeMessageError;
 
             router.push('/chat');

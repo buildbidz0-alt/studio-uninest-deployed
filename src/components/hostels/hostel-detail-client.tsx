@@ -149,25 +149,19 @@ export default function HostelDetailClient({ hostel, initialRooms, initialOrders
         }
 
         try {
-            // This is a simplified check. A proper implementation would check a participants table.
-            const { data: existingMessages, error: messagesError } = await supabase
-                .from('chat_messages')
-                .select('room_id')
-                .or(`and(user_id.eq.${currentUser.id},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${hostel.seller_id}')),and(user_id.eq.${hostel.seller_id},room_id.in(SELECT room_id FROM chat_messages WHERE user_id = '${currentUser.id}'))`)
-                .limit(1);
+            const { data: existingRoom } = await supabase.rpc('get_mutual_private_room', { p_user1_id: currentUser.id, p_user2_id: hostel.seller_id });
 
-            if (messagesError) throw messagesError;
-
-            if (existingMessages && existingMessages.length > 0) {
+            if (existingRoom && existingRoom.length > 0) {
                 router.push('/chat');
                 return;
             }
 
-            const { data: newRoom, error: newRoomError } = await supabase.from('chat_rooms').insert({}).select().single();
+            const { data: newRoomId, error: newRoomError } = await supabase.rpc('create_chat_room_with_participants', { p_user1_id: currentUser.id, p_user2_id: hostel.seller_id });
+
             if (newRoomError) throw newRoomError;
             
             const { error: welcomeMessageError } = await supabase.from('chat_messages').insert({
-                room_id: newRoom.id,
+                room_id: newRoomId,
                 user_id: currentUser.id,
                 content: `Hi, I have a question about ${hostel.name}.`,
             });
