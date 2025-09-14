@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -74,13 +75,9 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                 </Button>
             )}
             
-            {isBookable ? (
+            {isBookable && (
                 <Button size="sm" asChild>
                     <Link href={getCardLink()}>View Details</Link>
-                </Button>
-            ) : (
-                <Button size="sm" disabled={isBuying} onClick={(e) => handleButtonClick(e, () => onBuyNow(product))}>
-                  {isBuying ? <Loader2 className="animate-spin" /> : 'Buy Now'}
                 </Button>
             )}
             </div>
@@ -89,3 +86,4 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
     </Card>
   );
 }
+
