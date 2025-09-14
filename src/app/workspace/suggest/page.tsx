@@ -25,6 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { submitSuggestion } from './actions';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -34,6 +36,7 @@ const formSchema = z.object({
 });
 
 export default function SuggestPage() {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -43,21 +46,38 @@ export default function SuggestPage() {
       title: '',
       description: '',
       deadline: '',
-      contact: '',
+      contact: user?.email || '',
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    // Mock API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log(values);
-    setIsLoading(false);
-    toast({
-      title: 'Suggestion Submitted!',
-      description: 'Thank you for your contribution. Our team will review it shortly.',
+    
+    const formData = new FormData();
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) {
+        formData.append(key, value);
+      }
     });
-    form.reset();
+
+    const result = await submitSuggestion(formData);
+
+    if (result.error) {
+        toast({ variant: 'destructive', title: 'Error', description: result.error });
+    } else {
+        toast({
+            title: 'Suggestion Submitted!',
+            description: 'Thank you for your contribution. Our team will review it shortly.',
+        });
+        form.reset({
+            title: '',
+            description: '',
+            deadline: '',
+            contact: user?.email || '',
+        });
+    }
+    
+    setIsLoading(false);
   }
 
   return (
@@ -127,7 +147,7 @@ export default function SuggestPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || !user}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Submit for Review
               </Button>
