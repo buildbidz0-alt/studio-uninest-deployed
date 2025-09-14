@@ -12,12 +12,11 @@ export default async function AdminLogsPage() {
         .from('audit_log')
         .select(`
             *,
-            admin:profiles (
+            admin:admin_id (
                 full_name,
                 avatar_url
             )
         `)
-        .eq('admin_id', 'profiles.id')
         .order('created_at', { ascending: false })
         .limit(100);
 
