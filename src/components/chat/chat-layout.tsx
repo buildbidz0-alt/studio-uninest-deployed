@@ -31,82 +31,25 @@ export default function ChatLayout() {
 
   const fetchRooms = useCallback(async () => {
     if (!user || !supabase) {
-        setLoadingRooms(false);
-        return;
-    };
-
+      setLoadingRooms(false);
+      return;
+    }
     setLoadingRooms(true);
-    
     try {
-        const { data: participant_data, error: participant_error } = await supabase
-            .from('chat_room_participants')
-            .select('room_id')
-            .eq('user_id', user.id);
+      // Call the new RPC function
+      const { data, error } = await supabase.rpc('get_chat_rooms_for_user', { p_user_id: user.id });
 
-        if (participant_error) throw participant_error;
-
-        const roomIds = participant_data.map(p => p.room_id);
-        if (roomIds.length === 0) {
-            setRooms([]);
-            setLoadingRooms(false);
-            return;
-        }
-
-        const { data: all_participants, error: all_participants_error } = await supabase
-            .from('chat_room_participants')
-            .select('room_id, user_id, profiles(id, full_name, avatar_url)')
-            .in('room_id', roomIds);
-        
-        if (all_participants_error) throw all_participants_error;
-
-        const { data: last_messages, error: messages_error } = await supabase
-            .from('chat_messages')
-            .select(`
-                room_id,
-                content,
-                created_at
-            `)
-            .in('room_id', roomIds)
-            .order('created_at', { ascending: false });
-
-        if (messages_error) throw messages_error;
-        
-        const lastMessageMap = new Map<string, { content: string; created_at: string }>();
-        if (last_messages) {
-            last_messages.forEach(msg => {
-                if (!lastMessageMap.has(msg.room_id)) {
-                    lastMessageMap.set(msg.room_id, { content: msg.content, created_at: msg.created_at });
-                }
-            });
-        }
-
-        const roomsData: Room[] = roomIds.map(roomId => {
-            const participants = all_participants.filter(p => p.room_id === roomId);
-            const otherParticipant = participants.find(p => p.user_id !== user.id);
-            const lastMessage = lastMessageMap.get(roomId);
-
-            return {
-                id: roomId,
-                name: otherParticipant?.profiles?.full_name || 'Chat',
-                avatar: otherParticipant?.profiles?.avatar_url || null,
-                last_message: lastMessage?.content || 'No messages yet.',
-                last_message_timestamp: lastMessage?.created_at || null,
-                unread_count: 0, 
-                room_created_at: '',
-            };
-        }).sort((a, b) => {
-            if (!a.last_message_timestamp) return 1;
-            if (!b.last_message_timestamp) return -1;
-            return new Date(b.last_message_timestamp).getTime() - new Date(a.last_message_timestamp).getTime();
-        });
-        
-        setRooms(roomsData);
+      if (error) {
+        throw error;
+      }
+      
+      setRooms(data || []);
 
     } catch (error: any) {
-        console.error('Error fetching user rooms:', error);
-        toast({ variant: 'destructive', title: 'Error loading chats', description: error.message });
+      console.error('Error fetching user rooms:', error);
+      toast({ variant: 'destructive', title: 'Error loading chats', description: error.message });
     } finally {
-        setLoadingRooms(false);
+      setLoadingRooms(false);
     }
   }, [user, supabase, toast]);
   
