@@ -149,8 +149,8 @@ export default function CompetitionDetailClient({ competition: initialCompetitio
                     <TabsTrigger value="results" disabled={!isCompetitionOver || !competition.winner_id}>Results</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details" className="mt-6">
-                     <div className="prose dark:prose-invert max-w-none text-muted-foreground">
-                        <p>{competition.description}</p>
+                     <div className="prose dark:prose-invert max-w-none">
+                        <p className="text-muted-foreground whitespace-pre-wrap">{competition.description}</p>
                     </div>
                      <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t mt-6">
                         <Button size="lg" className="flex-1" disabled={hasApplied || isCompetitionOver} asChild>

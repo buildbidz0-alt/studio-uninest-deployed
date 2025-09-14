@@ -98,8 +98,8 @@ export default function InternshipDetailClient({ internship, initialApplicants }
                 </div>
             </div>
 
-            <div className="prose dark:prose-invert max-w-none text-muted-foreground">
-                <p>{internship.description || 'No detailed description provided. Please refer to the official job description if available.'}</p>
+            <div className="prose dark:prose-invert max-w-none">
+                <p className="text-muted-foreground whitespace-pre-wrap">{internship.description || 'No detailed description provided. Please refer to the official job description if available.'}</p>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
