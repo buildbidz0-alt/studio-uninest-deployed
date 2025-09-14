@@ -12,11 +12,12 @@ export default async function AdminLogsPage() {
         .from('audit_log')
         .select(`
             *,
-            admin:admin_id (
+            admin:profiles (
                 full_name,
                 avatar_url
             )
         `)
+        .eq('admin_id', 'profiles.id')
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -48,10 +49,10 @@ export default async function AdminLogsPage() {
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Avatar className="size-7">
-                                                    <AvatarImage src={log.admin?.avatar_url} />
-                                                    <AvatarFallback>{log.admin?.full_name?.[0]}</AvatarFallback>
+                                                    <AvatarImage src={(log.admin as any)?.avatar_url} />
+                                                    <AvatarFallback>{(log.admin as any)?.full_name?.[0]}</AvatarFallback>
                                                 </Avatar>
-                                                {log.admin?.full_name}
+                                                {(log.admin as any)?.full_name}
                                             </div>
                                         </TableCell>
                                         <TableCell><span className="font-mono text-xs">{log.action}</span></TableCell>
