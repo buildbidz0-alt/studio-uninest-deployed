@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Product, Profile } from "@/lib/types";
 import ListingsTable from "@/components/admin/listings/table";
 
+export const revalidate = 0;
+
 // Explicitly define the types for clarity
 type ProductWithProfile = Product & {
     profiles: Pick<Profile, 'full_name' | 'handle'> | null;

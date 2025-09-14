@@ -4,6 +4,8 @@ import CompetitionForm from "@/components/admin/competitions/form";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from 'next/navigation';
 
+export const revalidate = 0;
+
 export default async function EditCompetitionPage({ params }: { params: { id: string } }) {
     const supabase = createClient();
     const { data: competition } = await supabase.from('competitions').select('*').eq('id', params.id).single();

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import ApplicantsTable from "@/components/admin/competitions/applicants-table";
 
+export const revalidate = 0;
+
 export default async function CompetitionApplicantsPage({ params }: { params: { id: string } }) {
     const supabase = createClient();
 

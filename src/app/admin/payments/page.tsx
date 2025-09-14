@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 
+export const revalidate = 0;
+
 type Payment = {
     id: string;
     amount: number;

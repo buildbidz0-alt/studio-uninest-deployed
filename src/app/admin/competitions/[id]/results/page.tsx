@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { declareWinner } from "./actions";
 import ResultsForm from "./form";
 
+export const revalidate = 0;
 
 export default async function CompetitionResultsPage({ params }: { params: { id: string } }) {
     const supabase = createClient();

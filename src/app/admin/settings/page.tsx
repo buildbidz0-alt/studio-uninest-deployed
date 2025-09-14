@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import SettingsForm from "@/components/admin/settings/form";
 import type { MonetizationSettings } from "@/lib/types";
 
+export const revalidate = 0;
+
 const defaultSettings: MonetizationSettings = {
     student: {
         charge_for_posts: false,

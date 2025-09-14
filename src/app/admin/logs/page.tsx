@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+export const revalidate = 0;
+
 export default async function AdminLogsPage() {
     const supabase = createClient();
     const { data: logs } = await supabase

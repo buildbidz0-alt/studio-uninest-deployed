@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { getApplicants } from "./actions";
 import InternshipApplicantsTable from "@/components/admin/internships/applicants-table";
 
+export const revalidate = 0;
+
 export default async function InternshipApplicantsPage({ params }: { params: { id: string } }) {
     const supabase = createClient();
 

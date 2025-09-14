@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import DonateContent from '@/components/donate/donate-content';
 import { createClient } from '@/lib/supabase/server';
 
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'Support UniNest – Fuel the Future of Students',
   description: 'Your donation helps UniNest stay alive for your campus. Join the Hall of Heroes and contribute to keep the platform running for students.',
