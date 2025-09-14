@@ -81,6 +81,11 @@ export default function ProfileClient({ initialProfile, initialContent }: Profil
         } else {
             setIsFollowing(true);
             setFollowerCount(c => c + 1);
+            // Create notification for the followed user
+            await supabase.rpc('create_new_follower_notification', {
+                followed_id_param: profile.id,
+                follower_id_param: user.id
+            });
         }
     }
     setIsFollowLoading(false);

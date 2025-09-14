@@ -113,7 +113,13 @@ export default function FeedContent() {
       };
       setPosts([ newPost, ...posts]);
       toast({ title: 'Post created successfully!' });
-      // In a real app, you'd trigger a notification for followers here, likely via a DB function.
+      
+      // Call the RPC to create notifications for followers
+      const { error: rpcError } = await supabase.rpc('create_new_post_notifications', {
+        post_id_param: newPost.id,
+        post_author_id_param: user.id
+      });
+      if (rpcError) console.error("Error creating post notifications:", rpcError);
     }
   };
 
@@ -207,6 +213,12 @@ export default function FeedContent() {
            if (error) {
               toast({ variant: 'destructive', title: 'Error', description: "Could not follow user." });
               return false;
+          } else {
+              // Create a notification for the user who was followed
+              await supabase.rpc('create_new_follower_notification', {
+                  followed_id_param: userIdToFollow,
+                  follower_id_param: user.id
+              });
           }
       }
       // Update the followed state for all posts by this user in the feed
