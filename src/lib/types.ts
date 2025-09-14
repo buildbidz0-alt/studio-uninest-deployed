@@ -155,4 +155,9 @@ export type SupportTicket = {
   status: 'Open' | 'In Progress' | 'Closed' | 'Archived';
   priority: 'Low' | 'Medium' | 'High';
   screenshot_url?: string | null;
+  profile?: {
+      id: string;
+      full_name: string;
+      avatar_url: string | null;
+  } | null;
 };

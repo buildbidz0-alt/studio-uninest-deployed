@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/admin/page-header";
@@ -15,7 +16,7 @@ import { Loader2 } from "lucide-react";
 import { createBrowserClient } from '@supabase/ssr';
 
 type TicketWithProfile = SupportTicket & {
-    profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
+    profile: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
 }
 
 export default function AdminTicketsPage() {
@@ -35,7 +36,7 @@ export default function AdminTicketsPage() {
                 .from('support_tickets')
                 .select(`
                     *,
-                    profiles (
+                    profile:profiles (
                         id,
                         full_name,
                         avatar_url
@@ -99,11 +100,11 @@ export default function AdminTicketsPage() {
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="size-9">
-                                                    <AvatarImage src={ticket.profiles?.avatar_url || undefined} alt={ticket.profiles?.full_name || 'User'} />
-                                                    <AvatarFallback>{ticket.profiles?.full_name?.[0]}</AvatarFallback>
+                                                    <AvatarImage src={ticket.profile?.avatar_url || undefined} alt={ticket.profile?.full_name || 'User'} />
+                                                    <AvatarFallback>{ticket.profile?.full_name?.[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <p className="font-medium">{ticket.profiles?.full_name}</p>
+                                                    <p className="font-medium">{ticket.profile?.full_name}</p>
                                                 </div>
                                             </div>
                                         </TableCell>
