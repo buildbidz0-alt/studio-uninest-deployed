@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -36,54 +35,16 @@ export default function ChatLayout() {
     };
 
     setLoadingRooms(true);
-
+    
     try {
-        // 1. Get all room IDs for the current user
-        const { data: participantData, error: participantError } = await supabase
-            .from('chat_room_participants')
-            .select('room_id')
-            .eq('user_id', user.id);
+        // Call the new, reliable database function
+        const { data, error } = await supabase.rpc('get_user_chat_rooms', { p_user_id: user.id });
 
-        if (participantError) throw participantError;
-
-        const roomIds = participantData.map(p => p.room_id);
-        if (roomIds.length === 0) {
-            setRooms([]);
-            setLoadingRooms(false);
-            return;
+        if (error) {
+            throw error;
         }
-        
-        // 2. Fetch details for these rooms
-        const { data: roomsData, error: roomsError } = await supabase
-            .from('chat_rooms')
-            .select(`
-                id,
-                created_at,
-                participants:chat_room_participants(
-                    profiles(id, full_name, avatar_url)
-                ),
-                last_message:chat_messages(content, created_at)
-            `)
-            .in('id', roomIds)
-            .order('created_at', { referencedTable: 'chat_messages', ascending: false })
-            .limit(1, { referencedTable: 'chat_messages' });
 
-        if (roomsError) throw roomsError;
-
-        const formattedRooms = roomsData.map(room => {
-            const otherParticipant = room.participants.find(p => p.profiles?.id !== user.id)?.profiles;
-            return {
-                id: room.id,
-                name: otherParticipant?.full_name || 'Chat',
-                avatar: otherParticipant?.avatar_url || null,
-                last_message: room.last_message[0]?.content || 'No messages yet',
-                last_message_timestamp: room.last_message[0]?.created_at || room.created_at,
-                unread_count: 0, // Simplified for now
-                room_created_at: room.created_at,
-            };
-        }).sort((a, b) => new Date(b.last_message_timestamp).getTime() - new Date(a.last_message_timestamp).getTime());
-
-        setRooms(formattedRooms);
+        setRooms(data as Room[] || []);
 
     } catch (error: any) {
         console.error('Error fetching user rooms:', error);
