@@ -19,7 +19,8 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
         .from('support_tickets')
         .select(`
             *,
-            profile:profiles!user_id (
+            profile:profiles (
+                id,
                 full_name,
                 email,
                 avatar_url,
