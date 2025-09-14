@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 
 
 type LibraryDashboardProps = {
-    products: Product[]; // This will contain library listings
+    products: Product[];
     orders: any[];
 }
 
@@ -43,7 +43,6 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
             toast({ variant: 'destructive', title: 'Error', description: `Failed to ${newStatus === 'approved' ? 'approve' : 'reject'} booking.` });
         } else {
             toast({ title: 'Success', description: `Booking has been ${newStatus}.` });
-            // Optimistic UI update
             setOrders(currentOrders => currentOrders.filter(o => o.id !== orderId));
         }
         setUpdatingOrderId(null);
@@ -55,7 +54,7 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
                 <h2 className="text-2xl font-bold">No Library Found</h2>
                 <p className="text-muted-foreground mt-2">You haven't created a library listing yet.</p>
                 <Button asChild className="mt-4">
-                    <Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Create Library Listing</Link>
+                    <Link href="/vendor/products/new?category=Library"><PlusCircle className="mr-2"/> Create Library Listing</Link>
                 </Button>
             </div>
         )

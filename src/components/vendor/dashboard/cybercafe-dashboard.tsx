@@ -8,7 +8,6 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import type { Product } from "@/lib/types";
 import Link from "next/link";
 
-// Mock data for charts, as we don't have time-series data
 const usageData = [
   { time: '10 AM', users: 5 }, { time: '11 AM', users: 8 },
   { time: '12 PM', users: 12 }, { time: '1 PM', users: 15 },
@@ -111,7 +110,7 @@ export default function CybercafeDashboard({ products, orders }: CybercafeDashbo
                                 </div>
                             ))
                          ) : (
-                            <p className="text-muted-foreground text-center py-10">No service plans found. <Link href="/vendor/products/new" className="text-primary underline">Add a plan</Link>.</p>
+                            <p className="text-muted-foreground text-center py-10">No service plans found. <Link href="/vendor/products/new?category=Cyber+Café" className="text-primary underline">Add a plan</Link>.</p>
                          )}
                     </CardContent>
                 </Card>

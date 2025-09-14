@@ -12,18 +12,19 @@ const categoryMap: { [key: string]: { label: string; component: React.FC<any> } 
     'library': { label: 'Library', component: LibraryDashboard },
     'food-mess': { label: 'Food Mess', component: FoodMessDashboard },
     'hostels': { label: 'Hostels', component: HostelDashboard },
-    'cybercafe': { label: 'Cybercafe', component: CybercafeDashboard },
+    'cybercafe': { label: 'Cybercafé', component: CybercafeDashboard },
 };
 
 async function getVendorDataForCategory(categoryLabel: string, userId: string) {
     const supabase = createClient();
 
-    let productCategories = [categoryLabel];
-    // Special handling for hostels to include rooms
+    let productCategories: string[] = [];
     if (categoryLabel === 'Hostels') {
-        productCategories.push('Hostel Room');
+        productCategories = ['Hostels', 'Hostel Room'];
+    } else {
+        productCategories.push(categoryLabel);
     }
-
+    
     const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
@@ -35,7 +36,6 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         return { products: [], orders: [] };
     }
     
-    // Fetch orders relevant to the vendor's products in the current category
     const productIds = (productsData || []).map(p => p.id);
 
     const { data: ordersData, error: ordersError } = productIds.length > 0
@@ -60,7 +60,6 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
             .in('order_items.product_id', productIds)
             .order('created_at', { ascending: false })
         : { data: [], error: null };
-
 
     if (ordersError) {
         console.error('Error fetching orders for vendor dashboard:', ordersError);

@@ -23,7 +23,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
     const [orders, setOrders] = useState(initialOrders);
     const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
     
-    const hostels = products.filter(p => p.category === 'Hostels');
+    const hostel = products.find(p => p.category === 'Hostels');
     const rooms = products.filter(p => p.category === 'Hostel Room');
 
     const pendingApprovals = orders.filter(o => o.status === 'pending_approval');
@@ -48,20 +48,17 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
         setUpdatingOrderId(null);
     }
 
-    if (hostels.length === 0) {
+    if (!hostel) {
        return (
          <div className="text-center py-10">
                 <h2 className="text-2xl font-bold">No Hostel Found</h2>
                 <p className="text-muted-foreground mt-2">You haven't created a hostel listing yet.</p>
                 <Button asChild className="mt-4">
-                    <Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Create Hostel Listing</Link>
+                    <Link href="/vendor/products/new?category=Hostels"><PlusCircle className="mr-2"/> Create Hostel Listing</Link>
                 </Button>
             </div>
        )
     }
-
-    // Assuming a vendor manages one hostel for simplicity
-    const hostel = hostels[0];
 
     return (
         <div className="space-y-8">
@@ -103,7 +100,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
                         <CardTitle className="flex items-center gap-2"><Bed className="text-primary"/> Room Listings</CardTitle>
                         <CardDescription>Manage your available rooms.</CardDescription>
                     </div>
-                    <Button asChild><Link href="/vendor/products/new"><PlusCircle className="mr-2"/> Add Room</Link></Button>
+                    <Button asChild><Link href="/vendor/products/new?category=Hostel+Room"><PlusCircle className="mr-2"/> Add Room</Link></Button>
                 </CardHeader>
                  <CardContent>
                      {rooms.length > 0 ? (
@@ -130,7 +127,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
                             </TableBody>
                         </Table>
                     ) : (
-                         <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet. <Link href="/vendor/products/new" className="text-primary underline">Add a room now</Link>.</p>
+                         <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet. <Link href="/vendor/products/new?category=Hostel+Room" className="text-primary underline">Add a room now</Link>.</p>
                     )}
                 </CardContent>
             </Card>
