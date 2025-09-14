@@ -21,6 +21,8 @@ import { submitApplication } from '@/app/workspace/internships/[id]/apply/action
 const formSchema = z.object({
   name: z.string().min(2, 'Name is required.'),
   email: z.string().email('Invalid email address.'),
+  phone_number: z.string().min(10, 'Please enter a valid phone number.'),
+  whatsapp_number: z.string().min(10, 'Please enter a valid WhatsApp number.'),
   coverLetter: z.string().optional(),
   resume: z.any().refine(file => file instanceof File, "Resume is required."),
 });
@@ -40,6 +42,8 @@ export default function ApplicationForm({ internshipId, user }: ApplicationFormP
     defaultValues: {
       name: user.user_metadata?.full_name || '',
       email: user.email || '',
+      phone_number: user.user_metadata?.phone_number || '',
+      whatsapp_number: user.user_metadata?.whatsapp_number || '',
       coverLetter: '',
     },
   });
@@ -51,6 +55,8 @@ export default function ApplicationForm({ internshipId, user }: ApplicationFormP
     formData.append('internshipId', String(internshipId));
     formData.append('name', values.name);
     formData.append('email', values.email);
+    formData.append('phone_number', values.phone_number);
+    formData.append('whatsapp_number', values.whatsapp_number);
     formData.append('coverLetter', values.coverLetter || '');
     if (values.resume) {
         formData.append('resume', values.resume);
@@ -83,6 +89,12 @@ export default function ApplicationForm({ internshipId, user }: ApplicationFormP
                 )} />
                  <FormField control={form.control} name="email" render={({ field }) => (
                     <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>
+                )} />
+                 <FormField control={form.control} name="phone_number" render={({ field }) => (
+                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                 <FormField control={form.control} name="whatsapp_number" render={({ field }) => (
+                    <FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
             </div>
              <FormField control={form.control} name="coverLetter" render={({ field }) => (

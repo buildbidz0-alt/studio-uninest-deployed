@@ -20,6 +20,8 @@ import { useAuth } from '@/hooks/use-auth';
 const formSchema = z.object({
   name: z.string().min(2, 'Name is required.'),
   email: z.string().email('Invalid email address.'),
+  phone_number: z.string().min(10, 'Please enter a valid phone number.'),
+  whatsapp_number: z.string().min(10, 'Please enter a valid WhatsApp number.'),
 });
 
 type CompetitionApplicationFormProps = {
@@ -43,10 +45,12 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     defaultValues: {
       name: user.user_metadata?.full_name || '',
       email: user.email || '',
+      phone_number: user.user_metadata?.phone_number || '',
+      whatsapp_number: user.user_metadata?.whatsapp_number || '',
     },
   });
 
-  const saveEntry = async (paymentId?: string) => {
+  const saveEntry = async (values: z.infer<typeof formSchema>, paymentId?: string) => {
       const verificationResponse = await fetch('/api/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,6 +59,8 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
           type: 'competition_entry',
           userId: user.id,
           competitionId: competition.id,
+          phone_number: values.phone_number,
+          whatsapp_number: values.whatsapp_number,
         })
     });
     
@@ -73,7 +79,7 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
     setIsLoading(true);
 
     if (competition.entry_fee <= 0) {
-        await saveEntry();
+        await saveEntry(values);
         return;
     }
 
@@ -98,17 +104,20 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
           name: `Entry Fee: ${competition.title}`,
           order_id: order.id,
           handler: async (paymentResponse: any) => {
+            const verificationBody = {
+                orderId: order.id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+                type: 'competition_entry',
+                userId: user.id,
+                competitionId: competition.id,
+                phone_number: values.phone_number,
+                whatsapp_number: values.whatsapp_number,
+            };
             const verificationResponse = await fetch('/api/verify-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    orderId: order.id,
-                    razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                    razorpay_signature: paymentResponse.razorpay_signature,
-                    type: 'competition_entry',
-                    userId: user.id,
-                    competitionId: competition.id,
-                })
+                body: JSON.stringify(verificationBody)
             });
 
             const result = await verificationResponse.json();
@@ -120,7 +129,7 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
             }
           },
           modal: { ondismiss: () => setIsLoading(false) },
-          prefill: { name: values.name, email: values.email },
+          prefill: { name: values.name, email: values.email, contact: values.phone_number },
           notes: { type: 'competition_entry', competitionId: competition.id, userId: user.id },
           theme: { color: '#1B365D' },
         };
@@ -146,6 +155,12 @@ export default function CompetitionApplicationForm({ competition, user }: Compet
                 )} />
                  <FormField control={form.control} name="email" render={({ field }) => (
                     <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>
+                )} />
+                 <FormField control={form.control} name="phone_number" render={({ field }) => (
+                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                 <FormField control={form.control} name="whatsapp_number" render={({ field }) => (
+                    <FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
             </div>
             

@@ -17,19 +17,10 @@ const getSupabaseAdmin = () => {
 const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
     if (!file || file.size === 0) return null;
     
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Supabase credentials for storage are not configured.');
-        return null;
-    }
-
-    // Create a new client specifically for storage with the service key
-    const supabaseStorageAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
+    const supabaseAdmin = getSupabaseAdmin();
     const filePath = `admin/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabaseStorageAdmin.storage
+    
+    const { error: uploadError } = await supabaseAdmin.storage
       .from(bucket)
       .upload(filePath, file);
     
@@ -38,8 +29,9 @@ const uploadFile = async (file: File, bucket: string): Promise<string | null> =>
       return null;
     }
     
-    // Construct the URL manually instead of making another API call
-    const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
       
     return publicUrl;
 }

@@ -29,6 +29,8 @@ const formSchema = z.object({
   category: z.string({ required_error: "Please select a category." }),
   image: z.any().optional(),
   location: z.string().optional(),
+  phone_number: z.string().optional(),
+  whatsapp_number: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,6 +44,8 @@ type ProductFormProps = {
     category: string;
     image_url: string | null;
     location: string | null;
+    phone_number?: string | null;
+    whatsapp_number?: string | null;
   };
   chargeForPosts?: boolean;
   postPrice?: number;
@@ -84,6 +88,8 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
       price: product?.price || 0,
       category: product?.category || '',
       location: product?.location || '',
+      phone_number: product?.phone_number || user?.user_metadata?.contact_number || '',
+      whatsapp_number: product?.whatsapp_number || user?.user_metadata?.whatsapp_number || '',
     },
   });
   
@@ -230,6 +236,17 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
                                 <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="e.g., Near Main Campus" {...field} value={field.value || ''}/></FormControl><FormMessage /></FormItem>
                         )} />
                     )}
+
+                    {role === 'vendor' && (
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <FormField control={form.control} name="phone_number" render={({ field }) => (
+                                <FormItem><FormLabel>Contact Phone</FormLabel><FormControl><Input type="tel" placeholder="Your business phone" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="whatsapp_number" render={({ field }) => (
+                                <FormItem><FormLabel>WhatsApp Number</FormLabel><FormControl><Input type="tel" placeholder="Your WhatsApp contact" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </div>
+                    )}
                    
                      <FormField control={form.control} name="image" render={({ field: { onChange, value, ...rest } }) => (
                         <FormItem>
@@ -259,5 +276,3 @@ export default function ProductForm({ product, chargeForPosts = false, postPrice
     </Card>
   );
 }
-
-    

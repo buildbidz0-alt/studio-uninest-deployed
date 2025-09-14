@@ -48,6 +48,8 @@ export async function submitApplication(formData: FormData) {
             internshipId: Number(formData.get('internshipId')),
             name: formData.get('name') as string,
             email: formData.get('email') as string,
+            phone_number: formData.get('phone_number') as string,
+            whatsapp_number: formData.get('whatsapp_number') as string,
             coverLetter: formData.get('coverLetter') as string,
         };
 
@@ -55,7 +57,7 @@ export async function submitApplication(formData: FormData) {
         let resumeUrl: string | null = null;
         
         if (resumeFile && resumeFile instanceof File && resumeFile.size > 0) {
-            resumeUrl = await uploadFile(supabaseAdmin, resumeFile, 'products', user.id);
+            resumeUrl = await uploadFile(supabaseAdmin, resumeFile, 'internship-applications', user.id);
             if (!resumeUrl) {
                 return { error: 'Failed to upload resume.' };
             }
@@ -68,6 +70,8 @@ export async function submitApplication(formData: FormData) {
           user_id: user.id,
           name: rawFormData.name,
           email: rawFormData.email,
+          phone_number: rawFormData.phone_number,
+          whatsapp_number: rawFormData.whatsapp_number,
           cover_letter: rawFormData.coverLetter,
           resume_url: resumeUrl,
         });

@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
         userId,
         amount,
         competitionId,
+        phone_number,
+        whatsapp_number,
     } = body;
     
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -66,6 +68,8 @@ export async function POST(request: NextRequest) {
                 competition_id: competitionId,
                 user_id: userId,
                 razorpay_payment_id: razorpay_payment_id,
+                phone_number: phone_number,
+                whatsapp_number: whatsapp_number,
             });
             if (error) throw error;
             
