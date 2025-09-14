@@ -11,10 +11,34 @@ export const revalidate = 0; // force dynamic rendering
 export default async function AdminInternshipsPage() {
     const supabase = createClient();
 
-    const { data: internships, error } = await supabase
+    const { data: internshipsData, error: internshipsError } = await supabase
         .from('internships')
-        .select('*, internship_applications(count)')
+        .select('*')
         .order('created_at', { ascending: false });
+
+    if (internshipsError) {
+        return (
+             <div className="space-y-8">
+                <PageHeader title="Internships" description="Manage all internship listings." />
+                <InternshipsTable internships={[]} error={internshipsError.message} />
+            </div>
+        )
+    }
+
+    // Manually fetch application counts for each internship to avoid relationship errors
+    const internships = await Promise.all(
+        internshipsData.map(async (internship) => {
+            const { count, error: countError } = await supabase
+                .from('internship_applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('internship_id', internship.id);
+
+            return {
+                ...internship,
+                internship_applications: [{ count: countError ? 0 : count }],
+            };
+        })
+    );
 
     return (
         <div className="space-y-8">
@@ -26,7 +50,7 @@ export default async function AdminInternshipsPage() {
                     </Link>
                  </Button>
             </PageHeader>
-            <InternshipsTable internships={internships || []} error={error?.message} />
+            <InternshipsTable internships={internships || []} error={internshipsError?.message} />
         </div>
     )
 }
