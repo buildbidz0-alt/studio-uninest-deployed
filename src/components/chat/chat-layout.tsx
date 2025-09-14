@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -95,31 +96,21 @@ export default function ChatLayout() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages' },
         async (payload) => {
-          const newMessage = payload.new as Message;
-          // Check if user is a participant of the room for the new message
-          const { data: participant } = await supabase
-              .from('chat_room_participants')
-              .select('id')
-              .eq('room_id', newMessage.room_id)
-              .eq('user_id', user.id)
-              .single();
-
-          if (participant) {
-            // If the message is for the currently selected room, add it to the view
-            if (selectedRoom && newMessage.room_id === selectedRoom.id) {
-                const { data: profileData, error } = await supabase
-                  .from('profiles')
-                  .select('*')
-                  .eq('id', newMessage.user_id)
-                  .single();
-                
-                if (!error && profileData) {
-                    newMessage.profile = profileData as Profile;
-                }
-               setMessages((prevMessages) => [...prevMessages, newMessage]);
-            }
-            // In all cases, refetch the room list to update last message and order
-            fetchRooms();
+           // Refetch rooms to get new "last message" and order
+          fetchRooms();
+          // If the message is for the currently selected room, add it to the view
+          if (selectedRoom && payload.new.room_id === selectedRoom.id) {
+              const newMessage = payload.new as Message;
+              const { data: profileData, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', newMessage.user_id)
+                .single();
+              
+              if (!error && profileData) {
+                  newMessage.profile = profileData as Profile;
+              }
+             setMessages((prevMessages) => [...prevMessages, newMessage]);
           }
         }
       )
