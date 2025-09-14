@@ -60,11 +60,17 @@ export default function SettingsForm({ currentSettings }: SettingsFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
+    // Prepare the data for the API, ensuring date is a string
+    const dataToSend = {
+      ...values,
+      start_date: values.start_date ? values.start_date.toISOString() : null,
+    };
+
     try {
         const response = await fetch('/api/admin/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
+            body: JSON.stringify(dataToSend),
         });
 
         const result = await response.json();

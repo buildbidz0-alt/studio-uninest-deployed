@@ -16,7 +16,7 @@ const vendorMonetizationSchema = z.object({
 const settingsSchema = z.object({
   student: studentMonetizationSchema,
   vendor: vendorMonetizationSchema,
-  start_date: z.string().datetime().nullable().optional(),
+  start_date: z.string().datetime({ offset: true }).nullable(),
 });
 
 export async function POST(request: NextRequest) {
