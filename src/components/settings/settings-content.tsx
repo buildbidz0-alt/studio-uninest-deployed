@@ -167,7 +167,7 @@ export default function SettingsContent() {
     setIsProfileLoading(false);
   }
 
-  async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>>) {
+  async function onPasswordSubmit(values: z.infer<typeof passwordFormSchema>) {
     setIsPasswordLoading(true);
     const { error } = await supabase.auth.updateUser({
       password: values.newPassword,
