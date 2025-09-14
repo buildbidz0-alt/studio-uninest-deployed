@@ -20,18 +20,17 @@ type TicketWithProfile = SupportTicket & {
 export default async function AdminTicketsPage() {
     const supabase = createClient();
     
-    // Fetch tickets and join with profiles directly
+    // Fetch tickets and join with profiles directly using an explicit join
     const { data: ticketsData, error } = await supabase
         .from('support_tickets')
         .select(`
             *,
-            profiles (
+            profiles:user_id (
                 id,
                 full_name,
                 avatar_url
             )
         `)
-        .eq('user_id', 'profiles.id')
         .order('created_at', { ascending: false });
 
     if (error) {
