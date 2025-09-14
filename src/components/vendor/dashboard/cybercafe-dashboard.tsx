@@ -22,7 +22,7 @@ type CybercafeDashboardProps = {
 }
 
 export default function CybercafeDashboard({ products, orders }: CybercafeDashboardProps) {
-    const services = products;
+    const services = products.filter(p => p.category === 'Cybercafé');
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     const stats = { revenue: totalRevenue, orders: orders.length };
 
@@ -93,7 +93,7 @@ export default function CybercafeDashboard({ products, orders }: CybercafeDashbo
                             <CardDescription>Manage your service pricing.</CardDescription>
                         </div>
                         <Button asChild>
-                           <Link href="/vendor/products/new">
+                           <Link href="/vendor/products/new?category=Cybercafé">
                              <PlusCircle className="mr-2"/> Add New Plan
                            </Link>
                         </Button>
@@ -110,7 +110,7 @@ export default function CybercafeDashboard({ products, orders }: CybercafeDashbo
                                 </div>
                             ))
                          ) : (
-                            <p className="text-muted-foreground text-center py-10">No service plans found. <Link href="/vendor/products/new?category=Cyber+Café" className="text-primary underline">Add a plan</Link>.</p>
+                            <p className="text-muted-foreground text-center py-10">No service plans found. <Link href="/vendor/products/new?category=Cybercafé" className="text-primary underline">Add a plan</Link>.</p>
                          )}
                     </CardContent>
                 </Card>

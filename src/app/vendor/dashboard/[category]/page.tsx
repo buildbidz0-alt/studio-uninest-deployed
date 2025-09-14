@@ -22,7 +22,13 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
     if (categoryLabel === 'Hostels') {
         productCategories = ['Hostels', 'Hostel Room'];
     } else {
-        productCategories.push(categoryLabel);
+        // This maps the URL-friendly key back to the database value
+        const foundCategory = Object.entries(categoryMap).find(([key, val]) => val.label === categoryLabel);
+        if (foundCategory) {
+           productCategories.push(foundCategory[1].label);
+        } else {
+           productCategories.push(categoryLabel);
+        }
     }
     
     const { data: productsData, error: productsError } = await supabase
@@ -50,8 +56,6 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
                 buyer_id,
                 buyer:profiles!buyer_id(full_name, avatar_url),
                 order_items:order_items!inner(
-                    seat_number,
-                    library_id,
                     product_id,
                     products ( name, category )
                 )
