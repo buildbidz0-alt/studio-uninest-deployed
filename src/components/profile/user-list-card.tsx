@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -28,9 +29,11 @@ export default function UserListCard({ users, emptyMessage }: UserListCardProps)
     return (
         <Card>
             <CardContent className="p-4 space-y-4">
-                {users.map(profile => (
+                {users.map(profile => {
+                    const profileLink = profile.handle ? `/profile/${profile.handle}` : '#';
+                    return (
                     <div key={profile.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                        <Link href={`/profile/${profile.handle}`} className="flex items-center gap-3">
+                        <Link href={profileLink} className="flex items-center gap-3">
                              <Avatar>
                                 <AvatarImage src={profile.avatar_url || undefined} />
                                 <AvatarFallback>{profile.full_name?.[0]}</AvatarFallback>
@@ -44,7 +47,7 @@ export default function UserListCard({ users, emptyMessage }: UserListCardProps)
                             <Button variant="outline" size="sm">Follow</Button>
                         )}
                     </div>
-                ))}
+                )})}
             </CardContent>
         </Card>
     );
