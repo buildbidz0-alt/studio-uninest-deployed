@@ -25,7 +25,8 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
   const canContact = user && user.id !== product.seller_id;
   const isLibrary = product.category === 'Library';
   const isHostel = product.category === 'Hostels';
-  const isContactOnly = ['Books', 'Other Products', 'Cyber Café', 'Food Mess'].includes(product.category);
+  const isDirectPurchase = ['Food Mess'].includes(product.category);
+  const isContactFirst = ['Books', 'Other Products', 'Cyber Café'].includes(product.category);
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
     e.stopPropagation();
@@ -66,7 +67,7 @@ export default function ProductCard({ product, user, onBuyNow, onChat, isBuying,
                     {isLibrary ? `₹${product.price.toLocaleString()}/seat` : `₹${product.price.toLocaleString()}`}
                 </p>
                 <div className='flex gap-2'>
-                {canContact && isContactOnly ? (
+                {canContact && (isContactFirst || isDirectPurchase) ? (
                     <Button onClick={(e) => handleButtonClick(e, () => onChat(product.seller_id))}>
                         <MessageSquare className="mr-2 size-4"/>
                         Contact Seller
