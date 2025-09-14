@@ -78,7 +78,7 @@ export async function createProduct(formData: FormData) {
             return { error: error.message };
         }
         
-        if (rawFormData.category === 'Library' && rawFormData.total_seats) {
+        if (rawFormData.category === 'Library' && rawFormData.total_seats && newProduct) {
             const seatProducts = Array.from({ length: rawFormData.total_seats }, (_, i) => ({
                 name: `Seat ${i + 1}`,
                 category: 'Library Seat',

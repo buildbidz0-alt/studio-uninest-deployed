@@ -233,8 +233,18 @@ export default function SettingsContent() {
       toast({ variant: 'destructive', title: 'Profile Error', description: 'Could not update public profile. ' + profileError.message });
     } else {
         if (values.role === 'vendor' && values.vendorCategories?.includes('library') && values.libraryDetails?.totalSeats) {
-             const { data: libraryProduct } = await supabase.from('products').select('id').eq('seller_id', user.id).eq('category', 'Library').single();
-             if (libraryProduct) {
+             const { data: libraryProduct, error: upsertError } = await supabase.from('products').upsert({
+                seller_id: user.id,
+                category: 'Library',
+                name: values.fullName,
+                total_seats: values.libraryDetails.totalSeats,
+                price: values.libraryDetails.price || 0,
+                description: values.bio || `A library managed by ${values.fullName}`,
+             }, { onConflict: 'seller_id, category' }).select().single();
+             
+             if (upsertError) {
+                console.error("Failed to upsert library product:", upsertError);
+             } else if (libraryProduct) {
                  const seatProducts = Array.from({ length: values.libraryDetails.totalSeats }, (_, i) => ({
                     name: `Seat ${i + 1}`,
                     category: 'Library Seat',
