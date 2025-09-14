@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { format } from 'date-fns';
+
 
 type LibraryDashboardProps = {
     products: Product[]; // This will contain library listings
@@ -99,6 +100,8 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
                                 <TableRow>
                                     <TableHead>Student</TableHead>
                                     <TableHead>Seat</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Time Slot</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -108,6 +111,12 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
                                         <TableCell className="font-medium">{booking.buyer?.full_name || 'N/A'}</TableCell>
                                         <TableCell>
                                             Seat {booking.order_items?.map((oi: any) => oi.seat_number || 'N/A').join(', ') || 'N/A'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {booking.booking_date ? format(new Date(booking.booking_date), 'PPP') : 'N/A'}
+                                        </TableCell>
+                                         <TableCell>
+                                            {booking.booking_slot || 'N/A'}
                                         </TableCell>
                                         <TableCell className="text-right space-x-2">
                                             {updatingOrderId === booking.id ? (

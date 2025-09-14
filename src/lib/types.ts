@@ -1,4 +1,3 @@
-
 import type { User } from "@supabase/supabase-js";
 
 export type Profile = {
@@ -76,6 +75,8 @@ export type Order = {
   total_amount: number;
   razorpay_payment_id: string;
   status: 'pending_approval' | 'approved' | 'rejected' | 'completed' | null;
+  booking_date?: string | null;
+  booking_slot?: string | null;
   order_items: OrderItem[];
   buyer: Profile;
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -8,13 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { IndianRupee, Loader2, MessageSquare, MapPin, Armchair, Monitor } from 'lucide-react';
+import { Loader2, MessageSquare, MapPin, Armchair, Monitor } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import type { Product } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import ReservationForm from '@/components/booking/reservation-form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+
 
 type Seat = {
     id: string; 
@@ -35,10 +43,10 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
     const [seats, setSeats] = useState<Seat[]>([]);
     const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
     const [isBooking, setIsBooking] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentOrders, setCurrentOrders] = useState(initialOrders);
 
     const totalSeats = library.total_seats || 50;
-    const pricePerSeat = library.price || 10;
 
     const generateSeats = useCallback((orders: any[]) => {
         const seatStatusMap = new Map<string, 'booked' | 'pending'>();
@@ -112,34 +120,33 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
         setSelectedSeat((prev) => (prev?.id === seat.id ? null : seat));
     };
 
-    const handleBookingRequest = async () => {
+    const handleBookingRequest = async (bookingDate: Date, bookingSlot: string) => {
         if (!selectedSeat || !currentUser || !supabase) {
-             toast({
-                variant: 'destructive',
-                description: 'Please select a seat and log in to continue.',
-            });
-            return;
+             toast({ variant: 'destructive', description: 'Please select a seat and log in to continue.' });
+            return false;
         }
         setIsBooking(true);
 
         const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
             buyer_id: currentUser.id,
             vendor_id: library.seller_id,
-            total_amount: pricePerSeat,
-            status: 'pending_approval'
+            total_amount: library.price,
+            status: 'pending_approval',
+            booking_date: bookingDate.toISOString(),
+            booking_slot: bookingSlot,
         }).select('id').single();
 
         if (orderError || !newOrder) {
             toast({ variant: 'destructive', description: 'Failed to create reservation request.'});
             setIsBooking(false);
-            return;
+            return false;
         }
 
         const { error: itemError } = await supabase.from('order_items').insert({
             order_id: newOrder.id,
             product_id: library.id,
             quantity: 1,
-            price: pricePerSeat,
+            price: library.price,
             seat_number: parseInt(selectedSeat.id),
             library_id: library.id,
         });
@@ -147,15 +154,63 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
         if (itemError) {
             await supabase.from('orders').delete().eq('id', newOrder.id);
             toast({ variant: 'destructive', description: 'Failed to complete reservation details.'});
+            setIsBooking(false);
+            return false;
         } else {
             toast({
                 title: 'Reservation Requested!',
-                description: `Your request for seat ${selectedSeat.id} has been sent for approval.`,
+                description: `Your request for seat ${selectedSeat.id} on ${bookingDate.toLocaleDateString()} (${bookingSlot}) has been sent.`,
             });
             setSelectedSeat(null);
+            setIsBooking(false);
+            setIsModalOpen(false);
+            return true;
         }
-        setIsBooking(false);
     }
+    
+     const handleChat = useCallback(async () => {
+        if (!currentUser || !supabase) {
+            toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to chat.' });
+            return;
+        }
+        if (currentUser.id === library.seller_id) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You cannot start a chat with yourself.' });
+            return;
+        }
+
+        try {
+            const { data: existingRoom, error: findRoomError } = await supabase
+                .rpc('get_mutual_private_room', { p_user1_id: currentUser.id, p_user2_id: library.seller_id });
+
+            if (findRoomError) throw findRoomError;
+
+            if (existingRoom && existingRoom.length > 0) {
+                router.push('/chat');
+                return;
+            }
+
+            const { data: newRoom, error: newRoomError } = await supabase
+                .from('chat_rooms')
+                .insert({ is_private: true }).select('id').single();
+            
+            if (newRoomError) throw newRoomError;
+
+            const { error: participantsError } = await supabase
+                .from('chat_room_participants')
+                .insert([
+                    { room_id: newRoom.id, user_id: currentUser.id },
+                    { room_id: newRoom.id, user_id: library.seller_id },
+                ]);
+
+            if (participantsError) throw participantsError;
+            
+            router.push('/chat');
+        } catch (error) {
+            console.error('Error starting chat session:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });
+        }
+    }, [currentUser, supabase, toast, router, library.seller_id]);
+
 
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-8">
@@ -176,6 +231,12 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="size-5" />
                         <span className="font-semibold text-foreground">{library.location || 'Location not specified'}</span>
+                    </div>
+                     <div className="flex flex-col sm:flex-row gap-4">
+                         <Button size="lg" variant="outline" className="flex-1 text-lg" onClick={handleChat}>
+                            <MessageSquare className="mr-2" />
+                            Chat with Manager
+                        </Button>
                     </div>
                     <p className="text-muted-foreground">{library.description}</p>
                     
@@ -245,12 +306,31 @@ export default function LibraryDetailClient({ library, initialOrders, currentUse
                             </div>
                              <div className="flex justify-between items-center text-lg">
                                 <span className="text-muted-foreground">Price:</span>
-                                <span className="font-bold">{selectedSeat ? `₹${pricePerSeat} (Pay at library)` : '₹0'}</span>
+                                <span className="font-bold">{selectedSeat ? `₹${library.price} (Pay at library)` : '₹0'}</span>
                             </div>
-                            <Button size="lg" className="w-full" disabled={!selectedSeat || !currentUser || isBooking} onClick={handleBookingRequest}>
-                                {isBooking && <Loader2 className="animate-spin mr-2" />}
-                                Request Reservation
-                            </Button>
+                            
+                            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                              <DialogTrigger asChild>
+                                <Button size="lg" className="w-full" disabled={!selectedSeat || !currentUser || isBooking}>
+                                    Book Seat
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Complete Your Reservation</DialogTitle>
+                                </DialogHeader>
+                                {selectedSeat && currentUser && (
+                                    <ReservationForm 
+                                        seatId={selectedSeat.id}
+                                        price={library.price}
+                                        user={currentUser}
+                                        onSubmit={handleBookingRequest}
+                                        isLoading={isBooking}
+                                    />
+                                )}
+                              </DialogContent>
+                            </Dialog>
+
                         </CardFooter>
                     </Card>
                 </div>
