@@ -52,7 +52,9 @@ export default function ApplicationForm({ internshipId, user }: ApplicationFormP
     formData.append('name', values.name);
     formData.append('email', values.email);
     formData.append('coverLetter', values.coverLetter || '');
-    formData.append('resume', values.resume);
+    if (values.resume) {
+        formData.append('resume', values.resume);
+    }
 
     const result = await submitApplication(formData);
     
@@ -86,8 +88,22 @@ export default function ApplicationForm({ internshipId, user }: ApplicationFormP
              <FormField control={form.control} name="coverLetter" render={({ field }) => (
                 <FormItem><FormLabel>Cover Letter (Optional)</FormLabel><FormControl><Textarea placeholder="Why are you a good fit for this role?" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-             <FormField control={form.control} name="resume" render={({ field: { onChange, ...rest } }) => (
-                <FormItem><FormLabel>Resume/Pitch (PDF)</FormLabel><FormControl><Input type="file" accept=".pdf" onChange={(e) => onChange(e.target.files?.[0])} {...rest} /></FormControl><FormMessage /></FormItem>
+             <FormField control={form.control} name="resume" render={({ field: { onChange, value, ...rest } }) => (
+                <FormItem>
+                    <FormLabel>Resume/Pitch (PDF)</FormLabel>
+                    <FormControl>
+                        <Input 
+                            type="file" 
+                            accept=".pdf" 
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) onChange(file);
+                            }} 
+                            {...rest} 
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
              )} />
 
             <Button type="submit" disabled={isLoading}>
@@ -100,4 +116,3 @@ export default function ApplicationForm({ internshipId, user }: ApplicationFormP
     </Card>
   );
 }
-
