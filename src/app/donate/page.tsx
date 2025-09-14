@@ -41,8 +41,8 @@ export default async function DonatePage() {
         .from('donations')
         .select('amount');
 
-    if (donorsError) console.error('Error fetching donors:', donorsError);
-    if (raisedError) console.error('Error fetching raised amount:', raisedError);
+    if (donorsError) console.error('Error fetching donors:', donorsError.message);
+    if (raisedError) console.error('Error fetching raised amount:', raisedError.message);
 
     const aggregatedDonors: AggregatedDonor[] = (donations || []).reduce((acc: any[], current) => {
         if (!current.profiles) return acc;
