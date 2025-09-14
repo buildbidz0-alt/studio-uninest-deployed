@@ -49,6 +49,10 @@ const profileFormSchema = z.object({
   openingHours: z.string().max(200, 'Opening hours must not exceed 200 characters.').optional(),
   role: z.enum(['student', 'vendor']),
   vendorCategories: z.array(z.string()).optional(),
+  libraryDetails: z.object({
+      totalSeats: z.coerce.number().optional(),
+      price: z.coerce.number().optional(),
+  }).optional(),
 });
 
 const passwordFormSchema = z.object({
@@ -84,8 +88,11 @@ export default function SettingsContent() {
       openingHours: user?.user_metadata?.opening_hours || '',
       role: user?.user_metadata?.role || 'student',
       vendorCategories: user?.user_metadata?.vendor_categories || [],
+      libraryDetails: user?.user_metadata?.library_details || { totalSeats: 0, price: 0 },
     },
   });
+  
+  const isLibraryVendor = profileForm.watch('vendorCategories')?.includes('library');
 
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
@@ -106,6 +113,7 @@ export default function SettingsContent() {
         openingHours: user.user_metadata?.opening_hours || '',
         role: user.user_metadata?.role || 'student',
         vendorCategories: user.user_metadata?.vendor_categories || [],
+        libraryDetails: user.user_metadata?.library_details || { totalSeats: 50, price: 10 },
       })
       if (user.user_metadata?.banner_url) {
         setBannerPreviewUrl(user.user_metadata.banner_url);
@@ -125,7 +133,8 @@ export default function SettingsContent() {
         bio: values.bio,
         role: values.role,
         opening_hours: values.role === 'vendor' ? values.openingHours : undefined,
-        vendor_categories: values.role === 'vendor' ? values.vendorCategories.map(c => c.replace('-', ' ')) : [],
+        vendor_categories: values.role === 'vendor' ? values.vendorCategories : [],
+        library_details: values.role === 'vendor' && values.vendorCategories?.includes('library') ? values.libraryDetails : undefined,
     };
     
     // Step 1: Update Auth User Metadata
@@ -522,7 +531,8 @@ export default function SettingsContent() {
                     name="openingHours"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Opening Hours</FormLabel>
+                        <FormLabel>Opening Hours / Shifts</FormLabel>
+                         <FormDescription>For libraries, list each shift on a new line (e.g., 9am-1pm).</FormDescription>
                         <FormControl>
                         <Textarea placeholder="e.g., Mon-Fri: 9am-5pm, Sat: 10am-2pm" className="resize-none" {...field} />
                         </FormControl>
@@ -531,6 +541,35 @@ export default function SettingsContent() {
                     )}
                 />
               )}
+               {isLibraryVendor && (
+                  <Card className="bg-muted/50 p-4">
+                    <h4 className="font-semibold mb-2">Library Configuration</h4>
+                     <div className="grid sm:grid-cols-2 gap-4">
+                         <FormField
+                            control={profileForm.control}
+                            name="libraryDetails.totalSeats"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Total Seats</FormLabel>
+                                <FormControl><Input type="number" placeholder="50" {...field} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={profileForm.control}
+                            name="libraryDetails.price"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Price per Month</FormLabel>
+                                <FormControl><Input type="number" placeholder="1000" {...field} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                     </div>
+                  </Card>
+               )}
               <Button type="submit" disabled={isProfileLoading}>
                 {isProfileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes

@@ -9,11 +9,13 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import ReservationForm from './reservation-form';
+import type { User } from '@supabase/supabase-js';
 
 type Seat = {
-    id: string; // This is the seat number, e.g., "1", "24"
-    productId: number; // This is the actual product ID from the database
+    id: string; 
+    productId: number; 
     status: 'available' | 'booked' | 'pending';
 }
 
@@ -24,15 +26,15 @@ export default function SeatSelectionClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const { toast } = useToast();
-  const [libraryConfig, setLibraryConfig] = useState({ totalSeats: 50, price: 10 });
+  const [libraryConfig, setLibraryConfig] = useState({ totalSeats: 50, price: 10, openingHours: '' });
   const [libraryVendorId, setLibraryVendorId] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
 
   const fetchSeatStatus = useCallback(async () => {
     if (!supabase) return;
     setIsLoading(true);
 
-    // 1. Find the library vendor
     const { data: libraryVendor } = await supabase
         .from('profiles')
         .select('id, user_metadata')
@@ -49,10 +51,13 @@ export default function SeatSelectionClient() {
     }
     
     setLibraryVendorId(libraryVendor.id);
-    const config = libraryVendor.user_metadata?.library_details || { totalSeats: 50, price: 10 };
-    setLibraryConfig(config);
+    const config = libraryVendor.user_metadata || { totalSeats: 50, price: 10, openingHours: '9 AM - 9 PM' };
+    setLibraryConfig({
+        totalSeats: config.library_details?.totalSeats || 50,
+        price: config.library_details?.price || 10,
+        openingHours: config.opening_hours || '9 AM - 9 PM'
+    });
 
-    // 2. Fetch all "Library Seat" products for this vendor (source of truth)
     const { data: seatProducts, error: productsError } = await supabase
         .from('products')
         .select('id, name')
@@ -66,7 +71,6 @@ export default function SeatSelectionClient() {
         return;
     }
 
-    // 3. Fetch all relevant orders to determine seat status
     const { data: orders } = await supabase
         .from('orders')
         .select('id, status, order_items(products(id))')
@@ -86,7 +90,6 @@ export default function SeatSelectionClient() {
         }
     });
 
-    // 4. Create the final seats array based on actual products
     const newSeats: Seat[] = (seatProducts || []).map(product => {
         const statusInfo = seatStatusMap.get(product.id);
         return {
@@ -94,7 +97,7 @@ export default function SeatSelectionClient() {
             productId: product.id,
             status: statusInfo?.status || 'available',
         }
-    }).sort((a, b) => parseInt(a.id) - parseInt(b.id)); // Ensure seats are in order
+    }).sort((a, b) => parseInt(a.id) - parseInt(b.id)); 
     
     setSeats(newSeats);
     setIsLoading(false);
@@ -132,34 +135,35 @@ export default function SeatSelectionClient() {
         });
         return;
     }
-    setSelectedSeat((prev) => (prev?.id === seat.id ? null : seat));
+    setSelectedSeat(seat);
+    setIsFormOpen(true);
   };
-
-  const handleBookingRequest = async () => {
+  
+  const handleBookingRequest = async (bookingSlot: string) => {
     if (!selectedSeat || !user || !supabase || !libraryVendorId) {
          toast({
             variant: 'destructive',
             description: 'Please select a seat and log in to continue.',
         });
-        return;
+        return false;
     }
     setIsBooking(true);
 
-    // Create the order record
     const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
         buyer_id: user.id,
         vendor_id: libraryVendorId,
         total_amount: libraryConfig.price,
-        status: 'pending_approval'
+        status: 'pending_approval',
+        booking_slot: bookingSlot,
+        booking_date: new Date().toISOString(), // For monthly, we just record the booking date
     }).select('id').single();
 
     if (orderError || !newOrder) {
         toast({ variant: 'destructive', description: 'Failed to create reservation request.'});
         setIsBooking(false);
-        return;
+        return false;
     }
 
-    // Create the order item linking the order to the specific seat product
     const { error: itemError } = await supabase.from('order_items').insert({
         order_id: newOrder.id,
         product_id: selectedSeat.productId,
@@ -168,9 +172,10 @@ export default function SeatSelectionClient() {
     });
     
     if (itemError) {
-        // Rollback the order if item creation fails
         await supabase.from('orders').delete().eq('id', newOrder.id);
         toast({ variant: 'destructive', description: 'Failed to complete reservation details.'});
+        setIsBooking(false);
+        return false;
     } else {
         toast({
             title: 'Reservation Requested!',
@@ -178,22 +183,23 @@ export default function SeatSelectionClient() {
         });
         setSelectedSeat(null);
         fetchSeatStatus(); // Refresh state immediately
+        setIsBooking(false);
+        setIsFormOpen(false);
+        return true;
     }
-    
-    setIsBooking(false);
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <section>
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Book a Study Seat</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Book a Study Seat (Monthly)</h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Select an available seat to request a reservation. Your booking will be confirmed upon vendor approval.
+          Select an available seat to request a monthly reservation. Your booking will be confirmed upon vendor approval.
         </p>
       </section>
 
       <div className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-2">
+        <div className="md:col-span-3">
             <Card>
                 <CardContent className="p-4">
                     {isLoading ? (
@@ -222,7 +228,6 @@ export default function SeatSelectionClient() {
                                     className={cn(
                                     'p-1 rounded-md transition-colors relative',
                                     seat.status === 'available' && 'hover:bg-primary/20',
-                                    isSelected && 'bg-accent',
                                     )}
                                 >
                                     <Armchair
@@ -231,7 +236,6 @@ export default function SeatSelectionClient() {
                                         seat.status === 'available' && 'text-primary',
                                         seat.status === 'booked' && 'text-red-500',
                                         seat.status === 'pending' && 'text-yellow-500',
-                                        isSelected && 'text-accent-foreground'
                                     )}
                                     />
                                     <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-mono">{seat.id}</span>
@@ -242,7 +246,6 @@ export default function SeatSelectionClient() {
 
                         <div className="flex flex-wrap justify-center items-center gap-x-6 pt-4 text-sm">
                             <div className="flex items-center gap-2"><Armchair className="size-5 text-primary" /><span className="text-muted-foreground">Available</span></div>
-                            <div className="flex items-center gap-2"><Armchair className="size-5 text-accent" /><span className="text-muted-foreground">Selected</span></div>
                             <div className="flex items-center gap-2"><Armchair className="size-5 text-yellow-500" /><span className="text-muted-foreground">Pending</span></div>
                             <div className="flex items-center gap-2"><Armchair className="size-5 text-red-500" /><span className="text-muted-foreground">Booked</span></div>
                         </div>
@@ -251,33 +254,28 @@ export default function SeatSelectionClient() {
                 </CardContent>
             </Card>
         </div>
-
-        <div className="md:col-span-1">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Booking Summary</CardTitle>
-                    <CardDescription>Confirm your selection to request a reservation.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Selected Seat:</span>
-                        <span className="font-bold text-lg">{selectedSeat?.id || 'None'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Price:</span>
-                        <span className="font-bold text-lg">{selectedSeat ? `₹${libraryConfig.price} (Pay at library)` : '₹0'}</span>
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button className="w-full" disabled={!selectedSeat || !user || isBooking} onClick={handleBookingRequest}>
-                        {isBooking && <Loader2 className="animate-spin mr-2" />}
-                        Request Reservation
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
-
       </div>
+      
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Your Monthly Reservation</DialogTitle>
+            <DialogDescription>
+              Select your preferred shift and confirm your details for Seat {selectedSeat?.id}.
+            </DialogDescription>
+          </DialogHeader>
+          {user && selectedSeat && (
+            <ReservationForm
+                seatId={selectedSeat.id}
+                price={libraryConfig.price}
+                user={user}
+                onSubmit={handleBookingRequest}
+                isLoading={isBooking}
+                timeSlots={libraryConfig.openingHours.split('\n').filter(s => s.trim() !== '')}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

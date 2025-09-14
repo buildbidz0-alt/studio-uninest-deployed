@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { format } from 'date-fns';
+import { Badge } from "@/components/ui/badge";
 
 
 type LibraryDashboardProps = {
@@ -28,7 +29,6 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
 
     const library = products.find(p => p.category === 'Library');
 
-    const librarySpecificOrders = orders.filter(o => o.order_items.some((oi: any) => oi.library_id === library?.id));
     const pendingApprovals = orders.filter(o => o.status === 'pending_approval');
     const approvedBookings = orders.filter(o => o.status === 'approved');
     const totalSeats = library?.total_seats || 0;
@@ -92,7 +92,7 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
             <Card>
                  <CardHeader>
                     <CardTitle>Pending Approvals ({pendingApprovals.length})</CardTitle>
-                    <CardDescription>Review and approve or reject seat reservation requests.</CardDescription>
+                    <CardDescription>Review and approve or reject monthly seat reservation requests.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {pendingApprovals.length > 0 ? (
@@ -101,8 +101,8 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
                                 <TableRow>
                                     <TableHead>Student</TableHead>
                                     <TableHead>Seat</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Time Slot</TableHead>
+                                    <TableHead>Requested On</TableHead>
+                                    <TableHead>Shift</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -111,13 +111,13 @@ export default function LibraryDashboard({ products, orders: initialOrders }: Li
                                     <TableRow key={booking.id}>
                                         <TableCell className="font-medium">{booking.buyer?.full_name || 'N/A'}</TableCell>
                                         <TableCell>
-                                            Seat {booking.order_items?.map((oi: any) => oi.seat_number || 'N/A').join(', ') || 'N/A'}
+                                            Seat {booking.order_items?.map((oi: any) => oi.products?.name.split(' ')[1] || 'N/A').join(', ') || 'N/A'}
                                         </TableCell>
                                         <TableCell>
-                                            {booking.booking_date ? format(new Date(booking.booking_date), 'PPP') : 'N/A'}
+                                            {booking.created_at ? format(new Date(booking.created_at), 'PPP') : 'N/A'}
                                         </TableCell>
                                          <TableCell>
-                                            {booking.booking_slot || 'N/A'}
+                                            <Badge variant="outline">{booking.booking_slot || 'N/A'}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right space-x-2">
                                             {updatingOrderId === booking.id ? (
