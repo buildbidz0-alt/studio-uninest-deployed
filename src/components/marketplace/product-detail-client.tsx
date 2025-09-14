@@ -130,22 +130,17 @@ export default function ProductDetailClient({ product, currentUser }: ProductDet
         }
 
         try {
-            const { data: newRoom, error: createRoomError } = await supabase
-                .from('chat_rooms')
-                .insert({})
-                .select()
-                .single();
+            const { data: roomId, error } = await supabase.rpc('create_or_get_private_chat_room', {
+                p_user1_id: currentUser.id,
+                p_user2_id: product.seller_id,
+            });
 
-            if (createRoomError || !newRoom) {
-                throw createRoomError || new Error("Failed to create chat room.");
+            if (error) {
+                throw error;
             }
-
-            await supabase.from('chat_messages').insert([
-                { room_id: newRoom.id, user_id: currentUser.id, content: `Hi, I'm interested in "${product.name}".` },
-                { room_id: newRoom.id, user_id: product.seller_id, content: '' }
-            ]);
-
+            
             router.push('/chat');
+
         } catch (error) {
             console.error('Error starting chat session:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not start chat session.' });

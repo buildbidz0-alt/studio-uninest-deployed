@@ -114,20 +114,14 @@ export default function LibraryDetailClient({ library, initialSeatProducts, init
         }
 
         try {
-            const { data: newRoom, error: createRoomError } = await supabase
-                .from('chat_rooms')
-                .insert({})
-                .select()
-                .single();
+            const { data: roomId, error } = await supabase.rpc('create_or_get_private_chat_room', {
+                p_user1_id: currentUser.id,
+                p_user2_id: library.seller_id,
+            });
 
-            if (createRoomError || !newRoom) {
-                throw createRoomError || new Error("Failed to create chat room.");
+            if (error) {
+                throw error;
             }
-
-            await supabase.from('chat_messages').insert([
-                { room_id: newRoom.id, user_id: currentUser.id, content: `Hi, I have a question about the ${library.name}.` },
-                { room_id: newRoom.id, user_id: library.seller_id, content: '' }
-            ]);
             
             router.push('/chat');
         } catch (error) {
