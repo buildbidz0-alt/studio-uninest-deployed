@@ -50,7 +50,8 @@ export default async function LibraryDetailPage({ params }: LibraryDetailPagePro
                 id,
                 full_name,
                 avatar_url,
-                handle
+                handle,
+                user_metadata
             )
         `)
         .eq('id', params.id)
@@ -63,13 +64,28 @@ export default async function LibraryDetailPage({ params }: LibraryDetailPagePro
     
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Fetch all seat products for this library
+    const { data: seatProducts } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('seller_id', library.seller_id)
+        .eq('category', 'Library Seat');
+
     // Fetch all relevant orders to determine seat status
+    const seatProductIds = (seatProducts || []).map(p => p.id);
     const { data: orders } = await supabase
         .from('orders')
-        .select('id, status, order_items!inner(seat_number)')
+        .select('id, status, order_items!inner(product_id)')
         .eq('vendor_id', library.seller_id)
-        .eq('order_items.library_id', library.id)
+        .in('order_items.product_id', seatProductIds)
         .in('status', ['pending_approval', 'approved']);
         
-    return <LibraryDetailClient library={library as Product} initialOrders={orders || []} currentUser={user} />;
+    return (
+      <LibraryDetailClient 
+        library={library as Product} 
+        initialSeatProducts={seatProducts || []}
+        initialOrders={orders || []} 
+        currentUser={user} 
+      />
+    );
 }
