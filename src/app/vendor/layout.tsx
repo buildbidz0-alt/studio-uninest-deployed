@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VendorSidebarNav } from '@/components/vendor/vendor-sidebar-nav';
 import { Logo } from '@/components/icons';
-import { LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, Instagram } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,7 +86,13 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
                <Logo className="size-7 text-primary" />
                <h1 className="text-lg font-semibold">Vendor Hub</h1>
             </div>
-          <div className="flex flex-1 items-center justify-end gap-4">
+          <div className="flex flex-1 items-center justify-end gap-2">
+              <Button asChild variant="ghost" size="icon">
+                <Link href="https://www.instagram.com/uninest_x?igsh=MXhyaXhybmFndzY0NQ==" target="_blank" rel="noopener noreferrer">
+                    <Instagram className="size-5" />
+                    <span className="sr-only">Instagram</span>
+                </Link>
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">

@@ -20,8 +20,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '../ui/button';
-import { Heart, Loader2 } from 'lucide-react';
+import { Heart, Instagram, Loader2 } from 'lucide-react';
 import Head from 'next/head';
+import NotificationsDropdown from './notifications-dropdown';
+import UserDropdown from './user-dropdown';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { user, role, loading } = useAuth();
@@ -106,21 +108,24 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
-          <header className="flex md:hidden h-14 items-center justify-between border-b bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="flex items-center gap-1">
+          <header className="flex h-14 items-center justify-between border-b bg-background/95 px-2 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex items-center gap-1 md:hidden">
                 <SidebarTrigger className="-ml-1" />
                 <Link href="/" className="flex items-center gap-2">
                   <Logo className="size-7 text-primary" />
                   <h1 className="text-lg font-semibold">UniNest</h1>
                 </Link>
               </div>
-              <div className="flex items-center gap-1">
-                <Button asChild size="sm" variant="secondary" className="rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900">
-                    <Link href="/donate">
-                      <Heart className="size-4" />
-                      <span className="ml-1 font-bold">Donate</span>
+              <div className="flex-1" />
+              <div className="flex items-center gap-2">
+                 <Button asChild variant="ghost" size="icon">
+                    <Link href="https://www.instagram.com/uninest_x?igsh=MXhyaXhybmFndzY0NQ==" target="_blank" rel="noopener noreferrer">
+                        <Instagram className="size-5" />
+                        <span className="sr-only">Instagram</span>
                     </Link>
                 </Button>
+                {user && <NotificationsDropdown />}
+                <UserDropdown />
               </div>
           </header>
           <main className={cn(
