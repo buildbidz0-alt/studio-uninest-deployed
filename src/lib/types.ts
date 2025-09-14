@@ -1,3 +1,4 @@
+
 import type { User } from "@supabase/supabase-js";
 
 export type Profile = {
@@ -40,6 +41,7 @@ export type Product = {
   description: string;
   location: string | null;
   total_seats: number | null;
+  status: string;
   seller: {
     id: string;
     full_name: string;

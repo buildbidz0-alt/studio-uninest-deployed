@@ -18,10 +18,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, UserCog, UserX } from "lucide-react";
+import { MoreHorizontal, UserCog, UserX, Ban, UserCheck } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { updateUserRole } from "@/app/admin/users/actions";
+import { updateUserRole, suspendUser } from "@/app/admin/users/actions";
 import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 
 export type UserProfile = {
     id: string;
@@ -30,6 +31,7 @@ export type UserProfile = {
     avatar_url: string;
     role: string;
     created_at: string;
+    is_suspended: boolean;
 };
 
 type AdminUsersContentProps = {
@@ -50,12 +52,25 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
 
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
-        } else {
+        } else if (result.success) {
             toast({ title: 'Success', description: result.message });
             setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
         }
     }
     
+    const handleSuspendToggle = async (userId: string, isCurrentlySuspended: boolean) => {
+        setUpdatingUserId(userId);
+        const result = await suspendUser(userId, !isCurrentlySuspended);
+        setUpdatingUserId(null);
+        
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        } else if (result.success) {
+            toast({ title: 'Success', description: result.message });
+            setUsers(users.map(u => u.id === userId ? { ...u, is_suspended: !isCurrentlySuspended } : u));
+        }
+    }
+
     const getRoleBadgeVariant = (role: string) => {
         switch (role) {
             case 'admin': return 'destructive';
@@ -82,6 +97,7 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                         <TableRow>
                             <TableHead>User</TableHead>
                             <TableHead>Role</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Joined</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -89,13 +105,13 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                     <TableBody>
                         {users.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">
+                                <TableCell colSpan={5} className="text-center h-24">
                                     No users found.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             users.map(user => (
-                                <TableRow key={user.id}>
+                                <TableRow key={user.id} className={cn(user.is_suspended && "bg-muted/50")}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <Avatar className="size-9">
@@ -110,6 +126,12 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
+                                    </TableCell>
+                                     <TableCell>
+                                        {user.is_suspended 
+                                            ? <Badge variant="destructive">Suspended</Badge> 
+                                            : <Badge variant="default" className="bg-green-600">Active</Badge>
+                                        }
                                     </TableCell>
                                         <TableCell>
                                         {format(new Date(user.created_at), 'PPP')}
@@ -137,6 +159,18 @@ export default function AdminUsersContent({ initialUsers, initialError }: AdminU
                                                         <UserX className="mr-2 size-4" />
                                                         Demote to Student
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuSeparator/>
+                                                    {user.is_suspended ? (
+                                                         <DropdownMenuItem onClick={() => handleSuspendToggle(user.id, user.is_suspended)}>
+                                                            <UserCheck className="mr-2 size-4" />
+                                                            Unsuspend User
+                                                        </DropdownMenuItem>
+                                                    ) : (
+                                                         <DropdownMenuItem className="text-destructive" onClick={() => handleSuspendToggle(user.id, user.is_suspended)}>
+                                                            <Ban className="mr-2 size-4" />
+                                                            Suspend User
+                                                        </DropdownMenuItem>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         )}

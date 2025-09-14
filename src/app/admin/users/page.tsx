@@ -47,6 +47,7 @@ export default async function AdminUsersPage() {
                     avatar_url: profile?.avatar_url || authUser.user_metadata?.avatar_url,
                     role: authUser.user_metadata?.role || 'student', // <-- Source of truth for role
                     created_at: authUser.created_at,
+                    is_suspended: authUser.user_metadata?.is_suspended || false,
                 };
             });
         }
@@ -54,7 +55,7 @@ export default async function AdminUsersPage() {
 
     return (
         <div className="space-y-8">
-            <PageHeader title="User Management" description="View and manage user roles." />
+            <PageHeader title="User Management" description="View and manage user roles and status." />
             <AdminUsersContent initialUsers={users} initialError={error} />
         </div>
     );

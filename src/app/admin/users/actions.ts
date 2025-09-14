@@ -15,13 +15,18 @@ const getSupabaseAdmin = () => {
     return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-export async function updateUserRole(userId: string, newRole: 'co-admin' | 'student') {
+async function verifyAdmin() {
     const supabaseServer = createServerClient();
     const { data: { user: currentUser } } = await supabaseServer.auth.getUser();
 
     if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
-        return { error: 'Forbidden. Only the main admin can change roles.' };
+        throw new Error('Forbidden. Only the main admin can perform this action.');
     }
+    return currentUser;
+}
+
+export async function updateUserRole(userId: string, newRole: 'co-admin' | 'student') {
+    const currentUser = await verifyAdmin();
 
     if (currentUser.id === userId) {
         return { error: 'The main admin cannot change their own role.' };
@@ -31,14 +36,12 @@ export async function updateUserRole(userId: string, newRole: 'co-admin' | 'stud
         const supabaseAdmin = getSupabaseAdmin();
         
         // Update auth user metadata
-        const { data: { user: updatedUser }, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             userId,
             { user_metadata: { role: newRole } }
         );
 
-        if (updateError) {
-            throw updateError;
-        }
+        if (updateError) throw updateError;
 
         // Update public profiles table
         const { error: profileError } = await supabaseAdmin
@@ -46,14 +49,32 @@ export async function updateUserRole(userId: string, newRole: 'co-admin' | 'stud
             .update({ role: newRole })
             .eq('id', userId);
 
-        if (profileError) {
-            // Log this but don't fail the request, as the primary goal was met.
-            console.error('Could not update role in public profiles table:', profileError);
-        }
+        if (profileError) console.error('Could not update role in public profiles table:', profileError);
         
         revalidatePath('/admin/users');
         return { error: null, success: true, message: `User role updated to ${newRole}.` };
 
+    } catch(e: any) {
+        return { error: e.message };
+    }
+}
+
+export async function suspendUser(userId: string, isSuspended: boolean) {
+    const currentUser = await verifyAdmin();
+    if (currentUser.id === userId) {
+        return { error: 'You cannot suspend your own account.' };
+    }
+
+    try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: { is_suspended: isSuspended }
+        });
+        
+        if (error) throw error;
+        
+        revalidatePath('/admin/users');
+        return { error: null, success: true, message: `User has been ${isSuspended ? 'suspended' : 'unsuspended'}.` };
     } catch(e: any) {
         return { error: e.message };
     }
