@@ -15,7 +15,7 @@ type FoodMessDashboardProps = {
 };
 
 export default function FoodMessDashboard({ products, orders }: FoodMessDashboardProps) {
-    const menuItems = products.filter(p => p.category === 'Food Mess');
+    const menuItems = products; // Products are already filtered for this category
     const recentOrders = orders.slice(0, 3);
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     

@@ -15,22 +15,19 @@ const categoryMap: { [key: string]: { label: string; component: React.FC<any> } 
     'cybercafe': { label: 'Cybercafé', component: CybercafeDashboard },
 };
 
+// This function now fetches data specifically for the given category, improving efficiency.
 async function getVendorDataForCategory(categoryLabel: string, userId: string) {
     const supabase = createClient();
 
     let productCategories: string[] = [];
     if (categoryLabel === 'Hostels') {
+        // For the Hostel dashboard, we need both the main hostel product and its room products.
         productCategories = ['Hostels', 'Hostel Room'];
     } else {
-        // This maps the URL-friendly key back to the database value
-        const foundCategory = Object.entries(categoryMap).find(([key, val]) => val.label === categoryLabel);
-        if (foundCategory) {
-           productCategories.push(foundCategory[1].label);
-        } else {
-           productCategories.push(categoryLabel);
-        }
+        productCategories.push(categoryLabel);
     }
     
+    // 1. Fetch only the products relevant to this category dashboard
     const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
@@ -38,12 +35,13 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         .in('category', productCategories);
 
     if (productsError) {
-        console.error('Error fetching products for vendor dashboard:', productsError);
+        console.error(`Error fetching products for ${categoryLabel} dashboard:`, productsError);
         return { products: [], orders: [] };
     }
     
     const productIds = (productsData || []).map(p => p.id);
 
+    // 2. Fetch orders that contain items from the fetched products
     const { data: ordersData, error: ordersError } = productIds.length > 0
         ? await supabase
             .from('orders')
@@ -66,7 +64,8 @@ async function getVendorDataForCategory(categoryLabel: string, userId: string) {
         : { data: [], error: null };
 
     if (ordersError) {
-        console.error('Error fetching orders for vendor dashboard:', ordersError);
+        console.error(`Error fetching orders for ${categoryLabel} dashboard:`, ordersError);
+        // Return products even if orders fail
         return { products: (productsData as Product[]) || [], orders: [] };
     }
 
@@ -92,6 +91,7 @@ export default async function VendorCategoryDashboardPage({ params }: { params: 
 
     const DashboardComponent = categoryInfo.component;
 
+    // Pass the already filtered data to the specific dashboard component
     const props = {
         products,
         orders

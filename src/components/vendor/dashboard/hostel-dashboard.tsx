@@ -127,7 +127,7 @@ export default function HostelDashboard({ products, orders: initialOrders }: Hos
                             </TableBody>
                         </Table>
                     ) : (
-                         <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed yet. <Link href="/vendor/products/new?category=Hostel Room" className="text-primary underline">Add a room now</Link>.</p>
+                         <p className="text-muted-foreground text-center py-10 col-span-full">No rooms listed for this hostel. <Link href="/vendor/products/new?category=Hostel Room" className="text-primary underline">Add a room now</Link>.</p>
                     )}
                 </CardContent>
             </Card>

@@ -22,7 +22,7 @@ type CybercafeDashboardProps = {
 }
 
 export default function CybercafeDashboard({ products, orders }: CybercafeDashboardProps) {
-    const services = products.filter(p => p.category === 'Cybercafé');
+    const services = products; // products are already filtered for this category
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     const stats = { revenue: totalRevenue, orders: orders.length };
 
@@ -110,7 +110,7 @@ export default function CybercafeDashboard({ products, orders }: CybercafeDashbo
                                 </div>
                             ))
                          ) : (
-                            <p className="text-muted-foreground text-center py-10">No service plans found. <Link href="/vendor/products/new?category=Cybercafé" className="text-primary underline">Add a plan</Link>.</p>
+                            <p className="text-muted-foreground text-center py-10">No service plans found. <Link href="/vendor/products/new?category=Cybercafé" className="text-primary underline">Add a plan now</Link>.</p>
                          )}
                     </CardContent>
                 </Card>
