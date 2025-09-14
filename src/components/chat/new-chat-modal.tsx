@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,22 +26,48 @@ export default function NewChatModal({ isOpen, onOpenChange, onSelectUser }: New
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchSellers = async () => {
       if (!isOpen || !supabase) return;
       setLoading(true);
 
-      const { data, error } = await supabase.from('profiles').select('*');
+      // 1. Get distinct seller IDs from the products table
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('seller_id');
 
-      if (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch users.' });
-      } else {
-        // Exclude the current user from the list
-        setUsers(data.filter(u => u.id !== currentUser?.id));
+      if (productsError) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch seller list.' });
+        setLoading(false);
+        return;
       }
+
+      const sellerIds = [...new Set(products.map(p => p.seller_id))];
+      
+      // Exclude the current user from the list of sellers to contact
+      const filteredSellerIds = sellerIds.filter(id => id !== currentUser?.id);
+
+      if (filteredSellerIds.length === 0) {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch the profiles for those seller IDs
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', filteredSellerIds);
+
+      if (profilesError) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch user profiles.' });
+      } else {
+        setUsers(profiles);
+      }
+      
       setLoading(false);
     };
 
-    fetchUsers();
+    fetchSellers();
   }, [isOpen, supabase, toast, currentUser]);
 
   const filteredUsers = users.filter(user =>
@@ -52,13 +79,13 @@ export default function NewChatModal({ isOpen, onOpenChange, onSelectUser }: New
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Start a New Chat</DialogTitle>
-          <DialogDescription>Select a user to start a conversation with.</DialogDescription>
+          <DialogTitle>Contact a Seller</DialogTitle>
+          <DialogDescription>Select a seller from the marketplace to start a conversation with.</DialogDescription>
         </DialogHeader>
         <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input 
-                placeholder="Search by name or handle..."
+                placeholder="Search by seller name or handle..."
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -88,7 +115,7 @@ export default function NewChatModal({ isOpen, onOpenChange, onSelectUser }: New
                 </button>
               ))
             ) : (
-                <p className="text-center text-muted-foreground pt-10">No users found.</p>
+                <p className="text-center text-muted-foreground pt-10">No active sellers found in the marketplace.</p>
             )}
           </div>
         </ScrollArea>
