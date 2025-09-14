@@ -2,6 +2,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { revalidatePath } from 'next/cache';
 
 const getSupabaseAdmin = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,5 +31,27 @@ export async function getApplicants(internshipId: string) {
         return { applications: data || [], error: null };
     } catch (e: any) {
         return { applications: [], error: e.message };
+    }
+}
+
+
+export async function deleteInternshipApplication(applicationId: number, internshipId: string) {
+    try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const { error } = await supabaseAdmin
+            .from('internship_applications')
+            .delete()
+            .eq('id', applicationId);
+
+        if (error) {
+            return { error: error.message };
+        }
+        
+        revalidatePath(`/admin/internships/${internshipId}/applicants`);
+        revalidatePath('/admin/internships'); // Also revalidate main page for applicant counts
+        return { error: null };
+
+    } catch(e: any) {
+        return { error: e.message };
     }
 }

@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
@@ -14,40 +13,20 @@ const getSupabaseAdmin = () => {
     return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-export async function updateSuggestionStatus(suggestionId: number, status: 'approved' | 'rejected') {
+export async function deleteCompetitionEntry(entryId: number, competitionId: string) {
     try {
         const supabaseAdmin = getSupabaseAdmin();
         const { error } = await supabaseAdmin
-            .from('suggestions')
-            .update({ status })
-            .eq('id', suggestionId);
-
-        if (error) {
-            return { error: error.message };
-        }
-        
-        revalidatePath('/admin/suggestions');
-        return { error: null };
-
-    } catch(e: any) {
-        return { error: e.message };
-    }
-}
-
-
-export async function deleteSuggestion(suggestionId: number) {
-    try {
-        const supabaseAdmin = getSupabaseAdmin();
-        const { error } = await supabaseAdmin
-            .from('suggestions')
+            .from('competition_entries')
             .delete()
-            .eq('id', suggestionId);
+            .eq('id', entryId);
 
         if (error) {
             return { error: error.message };
         }
         
-        revalidatePath('/admin/suggestions');
+        revalidatePath(`/admin/competitions/${competitionId}/applicants`);
+        revalidatePath('/admin/competitions'); // Also revalidate main page for entry counts
         return { error: null };
 
     } catch(e: any) {
