@@ -112,6 +112,11 @@ export default function CompetitionsTable({ competitions: initialCompetitions, e
                                                             <Pencil className="mr-2 size-4" />Edit
                                                         </Link>
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/competitions/${comp.id}/applicants`}>
+                                                            <Users className="mr-2 size-4" />View Entrants
+                                                        </Link>
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive" onClick={() => setProductToDelete(comp)}>
                                                         <Trash2 className="mr-2 size-4" />Delete
                                                     </DropdownMenuItem>

@@ -118,6 +118,11 @@ export default function InternshipsTable({ internships: initialInternships, erro
                                                         <Pencil className="mr-2 size-4" />Edit
                                                       </Link>
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/internships/${item.id}/applicants`}>
+                                                            <Users className="mr-2 size-4" />View Applicants
+                                                        </Link>
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive" onClick={() => setProductToDelete(item)}>
                                                         <Trash2 className="mr-2 size-4" />Delete
                                                     </DropdownMenuItem>
